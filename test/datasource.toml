@@ -1,0 +1,194 @@
+# These are the default settings for any das2 datasource, everything in here
+# can be overridden by individual data source definitions
+
+# This is a lookup table for internal flow mime-types
+[format.das2stream]
+	mime = ["application/vnd.das2.das2stream", 
+           "text/vnd.das2.das2stream; charset=utf-8"
+   ]
+   desc = "Multimodal transport format for 2-D plots"
+
+[format.qstream]
+	mime = ["application/vnd.das2.qstream",
+	        "text/vnd.das2.qstream; charset=utf-8"
+	]
+	desc = "Native QDataset serialization"
+
+# This is the default command order for building pipelines.  Note that this 
+# is a conceptual order.  The actual command line on the server that 
+# corresponds to a program can be re-defined in each data source definition.
+#
+# Programs in the same array set are mutually exclusive, only one or the other
+# can be exec.  Each command is run if one of it's options are present in the
+# get query
+#
+# Also, the execution order depends on the stream type, which is 
+#
+[exec_order]
+	das2stream = [
+		['reader',],
+		['reducer', 'coverage' ],
+		['das2text', 'csv', 'hapi', 'votable', 'image']
+	]
+
+	qstream = [
+		['reader',],
+		['qreduce', 'qcover'],
+		['qascii', 'qcsv', 'qhapi', 'qvotable', 'qimage']
+	]
+
+desc = "This data source has no description, please give it one."
+
+
+# Default query parameter set
+
+[query.time]
+	desc = '''Constrain output to only include records within this time range'''
+	min_key = ['time.min', 'start_time']
+	max_key = ['time.max', 'end_time']
+  	type = 'time',
+  	range = [ '1977-01-01', 'now']
+  	required = true
+	
+[query.resolution]
+	 desc = """
+     Selects the time resolution desired for the dataset, by default data are
+     returned at the highest time resolution available.  If this parameter is
+     greater than zero and a reducer is defined for this dataset, values will
+     be average on the server prior to delivery across the network"""
+    type = 'float'
+    key = ['time.res', 'resolution']
+    units = 's'
+    default = 0
+
+[query.coverageInterval]
+     type='float'
+	  key='coverage'
+     units='s'
+     range=[60, 8640000] # 1 minute to 100 day intervals
+     default = 3600
+
+[query.fracDigits]
+  	type='int'
+  	range=[0, 9]
+  	default = 3
+  	desc = '''
+  	The number of digits in the fractional component of output data values
+  	'''
+	trigger = {option='format', value='das2text'}
+
+
+[query.fracSeconds]
+  	type='int'
+  	range=[0, 9]
+  	default = 3
+  	desc = '''
+  	The number of digits in the sub-seconds fraction in output time values
+  	'''
+	trigger = {option='format', value='das2text'}
+
+
+[query.format]
+	desc = '''The final output format after all processing stages'''
+	key = 'format'
+	type = 'string'
+	enum = [
+		{value='das2stream', desc='Multimodal transport format for 2-D plots'},
+		{value='das2text', desc='UTF-8 Multimodal transport format for 2-D plots'},
+		{value='qstream', desc='Native QDataset serialization'},
+		{value='hapi', desc='Heliophysics API format'},
+		{value='image', desc='Portable Network Graphics plot'}  
+	]
+
+
+##############################################################################
+# Reader defaults
+[cmd.reader]
+	#exec is never defined, you have to do that your self.
+	#exec = 
+
+	#You really shouldn't override this value
+	enable = true
+
+	# By default it is assumed that readers produce das2 streams
+	format = "das2Stream"
+
+	[cmd.reader.coord.time]
+		desc = 'Event Center Time'
+
+		# States that this value is sub-set by the time query option
+		subset = 'time'
+
+
+##############################################################################
+# Default reducer component
+
+[cmd.reducer]
+	desc = "Reduce data by averaging in the time dimension"
+	exec = 'das2_bin_avgsec -b $(time_min) $(resolution)'
+
+	trigger = {option='resolution', cmp='gt', value=0}
+
+	[cmd.reducer.coord.time]
+		# States that this value is sub-set by the resolution query option
+		binned = 'resolution'
+
+TODO:  Move coordinate space out of individual program definitions ?
+
+##############################################################################
+# Coverage component, normally implicit but added here explicitly for
+# any reader that does not have an interval parameter of it's own. 
+
+[cmd.coverage]
+   desc = """
+     Produce a line plot of the output data rate in sweeps/minute instead of
+     the normal data stream
+   """
+   trigger = {option='coverageInterval', cmp='gt', val=0}
+
+   exec = '''das2_bin_ratesec -b $(time_min) $(coverageInterval) 
+     -t "Sweeps/$(coverageInterval) s" -y "Juno Waves Survey Data Rate"
+   '''
+
+   [cmd.coverage.coord.time]
+   	name='time'
+   	desc='Event Time'
+
+   [cmd.coverage.data.rate]
+   	name='rate'
+      desc='Sweeps/Time Bin'
+
+#############################################################################
+# The default ascii converter
+
+[cmd.das2text]
+   desc = "Insure the output format is a text Das2 Stream"
+
+   trigger = {option='format', cmp='eq', value='Das2Text'}
+
+   exec = 'das2_ascii -s $(fracSeconds) -r $(fracDigits)'
+
+
+#############################################################################
+# The default helophysics API converter
+
+[cmd.hapi]
+   desc = "Convert the output to Helophysics API format"
+   trigger = {option='format', cmp='eq', value='hapi'}
+
+	# Individual data sources can override this if they like
+	enable = false
+
+   exec = 'das2_hapi -b $(time_min) -e $(time_max)'
+
+
+#############################################################################
+# The default votable converter
+
+[cmd.votable]
+   desc = "Convert the output to a VO-Table"
+   trigger = {option='format', cmp='eq', value='votable'}
+
+   exec = 'das2_votable'
+
+

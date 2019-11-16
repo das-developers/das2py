@@ -1,0 +1,45 @@
+# Important "no-software" server idea, Files and Das2 query parameters
+# --------------------------------------------------------------------
+#
+#   For files only datasets, the datasource catalog entry has to provide
+#   aggregation rules that are tied into das2 query parameters and thier 
+#   types.
+#
+#   This is important so that the same selection dialog that is presented
+#   for reading a stream can be re-used for reading from a file set.
+#
+#   For example, if a dataset has the paramenter:
+#
+#     reader.x.min
+#
+#   and that parameter is of type longitude and files are stored in
+#   5 degree blocks, the aggregation should be something like:
+#
+#     path/file_prefix_${reader.x+5}_V${_int_max_}.CSV
+#
+#   (where ${_max_int_} is the match the highest integer pattern)
+#
+#   Second example, if a dataset has the parameter:
+#
+#     reader.x.min
+#
+#   and that parameter is of type time, it has sub components, the
+#   aggregation would be:
+#
+#     path/prefix_${reader.x:year}${reader.x:month}${reader.x:day+1}.CSV
+#
+#   in the case that daily files are in use.
+#
+#   Some files are stored by the start time but the end time coverage
+#   period is only known because the next file in the sequence has value.
+#   In these cases the +SIZE part is left out and the client will need
+#   to just assume that file N handles all the time up to file N+1
+#
+#   The sequence get's more confused when 2-D (squares) are in each file
+#   or for CFD work 3-D (cubes) are stored in each file block.  This needs
+#   to be handled, but not sure what the implications are at this point.
+#
+#   Since the end client takes on the role of parsing the file we might need to
+#   provide some help for that.  I'm not sure what it is at this point.  For
+#   known types (CDF+ISTP, JSON+CSV, Das2 Stream, QStream) it's not needed
+#   and maybe that is the solution.

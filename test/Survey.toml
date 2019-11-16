@@ -1,0 +1,190 @@
+
+desc = 'Survey Mode Electric or Magnetic Spectral Densities'
+
+server = 'http://jupiter.physics.uiowa.edu/das/server'
+
+[authorization]
+  access = ['GROUP:juno']
+  realm = 'Juno Magnetospheric Working Group'
+
+[contact.tech]
+  name = 'Chris Piker'
+  email = 'chris-piker@uiowa.edu'
+
+[contact.sci]
+  name = 'Bill Kurth'
+  email = 'william-kurth@uiowa.edu'
+
+# Turn off the default text converter and it's options, we do that ourselves
+[cmd.das2text]
+  enabled = false
+  
+[query.fracDigits]
+	enabled = false
+
+[query.fracSeconds]
+	enabled = false
+
+  
+##############################################################################
+# Extra query options for this datasource
+
+# Override the valid range for the time query
+[query.time]
+   range = ['2010-06-01','now']
+
+
+[query.item]
+	desc = 'Select output arrays, by default all four electric types are streamed'
+	type = 'string'
+	enum = [
+      {value='B', desc='Magnetic field PDS products'},
+      {value='E', desc='All four Primary magnetic field PDS products'},
+      {value='LFRL', desc='Only output data from the low-band of the Low Frequency Receiver'},
+      {value='LFRH', desc='Only output data from the high-band of the Low Frequency Receiver'},
+      {value='HFRL', desc='Only output data from the baseband of the High Frequency Receivers'},
+      {value='HFRH', desc='Only output data from the frequency down-mixed sections of the High Frequency Receivers'}
+    ]
+    default="E"
+
+# Like many readers, this one wasn't designed to allow direct pass through of 
+# key.cmp=val strings, so command line translations are used
+[query.keepSpikes]
+	desc = 'Filter noise spikes caused by unnecessary pre-amp toggling'
+	type = 'boolean'
+	default = true
+	required = false
+
+
+##############################################################################
+# Reader Component Section
+
+[cmd.reader]
+
+  exec = '''
+/opt/project/juno/etc/invoke.sh waves_pds_srvrdr -l error flight 
+  $(time.min) $(time.max) $(item) $(format) $(keepSpikes)
+'''
+
+  [cmd.reader.coord.frequency]
+    desc='Channel Center Frequency'
+    units='Hz'
+
+  [cmd.reader.data.LFRB]
+    desc='Magetic field intensities from, 48 Hz to 20 kHz'
+    coordinates = ['time','frequency']
+
+  [cmd.reader.data.LFRL]
+    desc='Low band of the low frequency receiver, 48 Hz to 20 kHz'
+    coordinates = ['time','frequency']
+
+  [cmd.reader.data.LFRH]
+    desc='High band of the low frequency receiver, 20 to 141 kHz'
+    coordinates = ['time','frequency']
+
+  [cmd.reader.data.HFRL]
+    desc='Baseband of the high frequency receivers, 141 kHz 3 MHz'
+    coordinates = ['time','frequency']
+
+  [cmd.reader.data.HFRH]
+    desc='Sweep frequency bands of the high-frequency receivers, 3 to 42 MHz'
+    coordinates = ['time','frequency']
+
+	[cmd.reader.translate]
+		keepSpikes = [
+			{in = false, out = ''}, 
+			{in = true,  out = 'KEEP-SPIKES'} 
+		]
+
+		format = [
+			{default = ''},
+			{in = 'das2text', out = 'ascii'},
+			{in = 'ascii', out = 'ascii'}
+		]
+
+#############################################################################
+# Add extra splits for H-API conversion
+
+[cmd.hapi.split]
+	????
+
+
+#############################################################################
+# Examples
+
+[[example]]
+desc = "Shock 1"
+params = [ {key="time.min", val='2012-069'}, {key="time.max", val='2012-070'} ]
+
+[[example]]
+desc = "Shock 2"
+params = [ {key='time.min', val='2012-069'}, {key='time.max', val='2012-070'} ]
+
+[[example]]
+desc = "Shock 3"
+params = [ {key='time.min', val='2012-091'}, {key='time.max', val='2012-093'} ]
+
+[[example]]
+desc = "Shock 4"
+params = [ {key='time.min', val='2012-099'}, {key='time.max', val='2012-101'} ]
+
+[[example]]
+desc = "Shock 5"
+params = [ {key='time.min', val='2013-105'}, {key='time.max', val='2013-108'} ]
+
+[[example.cat]]
+desc = "Shock 6"
+params = [ {key='time.min', val='2013-115'}, {key='time.max', val='2013-119'} ]
+
+[[example]]
+desc = "Shock 7"
+params = [ {key='time.min', val='2013-140'}, {key='time.max', val='2013-141'} ]
+
+[[example]]
+desc = "Shock 8"
+params = [ {key='time.min', val='2013-243'}, {key='time.max', val='2013-244'} ]
+
+[[example]]
+desc = "Shock 9"
+params = [ {key='time.min', val='2014-055'}, {key='time.max', val='2014-066'} ]
+
+[[example]]
+desc = "Shock 10"
+params = [ {key='time.min', val='2014-098'}, {key='time.max', val='2014-100'} ]
+
+[[example]]
+desc = "Shock 11"
+params = [ {key='time.min', val='2015-086'}, {key='time.max', val='2015-089'} ]
+
+
+#exampleRange_10 = '2013-10-09 to 2013-10-10 | Earth Flyby'
+#exampleRange_11 = '2016-240T6:50 to 2016-240T18:50 | Perijove 1'
+
+# The following cache line list could be done using one liners except that
+# the cache lines that are tied to parameters start getting really long, so
+# we'll use the un-rolled list syntax
+[cache]
+0 = {storage = 'daily', resolution = 'intrinsic'}
+1 = {storage = 'daily', resolution = '60 s' }
+2 = {storage = 'monthly', resolution = '600 s'}
+3 = {storage = 'monthly', resolution = '3600 s'}
+
+[cache.10]
+storage = 'daily'
+resoultion = 'intrinsic'
+params = [ {key='item', val = 'B'} ]
+
+[cache.11]
+storage = 'daily'
+resolution = '60 s'
+params = [ {name='item', val = 'B'} ]
+
+[cache.12]
+storage = 'monthly'
+resolution = '600 s'
+params = [ {name='field', val = 'B'} ]
+
+[cache.13]
+storage = 'monthly'
+resolution = '3600 s'
+params = [ {key='field', val = 'B'} ]

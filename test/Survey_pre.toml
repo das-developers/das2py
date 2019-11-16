@@ -1,0 +1,345 @@
+title = 'Survey Mode Electric or Magnetic Spectral Densities'
+
+server = 'http://jupiter.physics.uiowa.edu/das/server'
+
+[authorization]
+  access = ['GROUP:juno']
+  realm = 'Juno Magnetospheric Working Group'
+
+[contacts]
+  tech = 'Chris Piker <chris-piker@uiowa.edu>'
+  sci = 'Bill Kurth <william-kurth@uiowa.edu>'
+
+##############################################################################
+# Reader Component Section
+
+[[prog]]
+  component = 'reader'  # Always need one of these defined
+  # This program is the first one in the chain (implicit), so after = nil
+  cmd = '''
+/opt/project/juno/etc/invoke.sh waves_pds_srvrdr -l error flight 
+  $(time.min) $(time.max) $(set) $(keepSpikes) $(ascii)
+'''
+
+  [prog.output]
+    format = 'das2Stream'      # Implicit
+
+  # This output implicitly added to any
+  # unless noImplicitTime is true.
+  [[prog.output.ind]]
+    name='time'
+    desc='Spacraft Event Time'
+    constraintParam='time'
+    rank = 1
+
+  # This output implicitly added to any
+  # reader if 'frequency' is mentioned
+  [[prog.output.ind]]
+    name='frequency'
+    desc='Channel Center Frequency'
+    rank = 1
+
+  [[prog.output.dep]]
+    name='LFRL'
+    desc='Low band of the low frequency receiver, 48 Hz to 20 kHz'
+    independent = ['time','frequency']
+    rank = 2
+
+  [[prog.output.dep]]
+    name='LFRH'
+    desc='High band of the low frequency receiver, 20 to 141 kHz'
+    independent = ['time','frequency']
+    rank = 2
+
+  [[prog.output.dep]]
+    name='HFRL'
+    desc='Baseband of the high frequency receivers, 141 kHz 3 MHz'
+    independent = ['time','frequency']
+    rank = 2
+
+  [[prog.output.dep]]
+    name='HFRH'
+    desc='Sweep frequency bands of the high-frequency receivers, 3 to 42 MHz'
+    independent = ['time','frequency']
+    rank = 2
+
+  ##############################################################################
+  # Implicit time parameter added to any program that is a reader component,
+  # which doesn't have 'noImplicitTime' sent as a program property.
+  # Given here for illustrative purposes 
+  [[prog.param]]
+    desc = "Constrain output to only include records with in the given even time"
+    key  = 'time', 
+    type ='time', 
+    cmp  =['min', 'max'], 
+    range = ['2010-06-01','now']
+    required = true
+
+  # End Implicit ###############################################################
+
+  [[prog.param]]
+    desc = 'Select survey PDS product type'
+    key = 'set'
+    type = 'enum'
+    values = [
+      {val='E', desc='Primary electric field PDS products'}, asnoetu
+      {val='B', desc='Primary magnetic field PDS products'},
+      {val='EINT', desc='Electric interference products'},
+      {val='EUNC', desc='Uncorrected electric field PDS products'},
+      {val='BINT', desc='Magnetic interference products'},
+      {val='BUNC', desc='Uncorrected magnetic field PDS products'}
+    ]
+    default="E"
+
+  # Like many readers, this one wasn't designed to allow direct pass through of 
+  # key.cmp=val strings, so command line translations are used
+  [[prog.param]]
+    desc = 'Filter noise spikes caused by unnecessary pre-amp toggling'
+    key = 'keepSpikes'
+    type = 'boolean'
+    default = true
+    required = false
+    translate = [ {val=false, format=''}, {val=true, format='KEEP-SPIKES'} ]
+
+  # Another key without a value
+  [[prog.param]]
+    desc = 'Output data in ascii format'
+    key  = 'ascii'
+    type = 'boolean'
+    default = false
+    required = false
+    translate = [{val=true, format='ascii'}, {val=false, format=''} ]
+
+
+##############################################################################
+# Coverage component, normally implicit but added here explicitly for
+# any reader that does not have an interval parameter of it's own. 
+
+[[prog]]
+   component = "coverage"
+   desc = """
+     Produce a line plot of the output data rate in sweeps/minute instead of
+     the normal data stream
+   """
+   after = 'reader'
+   enabled = false
+
+   autoEnable = {key='coverage', cmp='eq', val=true}
+
+   cmd = '''das2_bin_ratesec -b %(reader.time.min) %(coverageInterval) 
+     -t "Sweeps/%(interval) s" -y "Juno Waves Survey Data Rate"
+   '''
+
+   [[prog.input]]
+     format = 'das2Stream'
+
+   [[prog.output]]
+     format = 'das2Stream'
+
+     [[prog.output.ind]]
+       name='time'
+       desc='Spacraft Event Time'
+       rank = 1
+
+     [[prog.output.dep]]
+       name='rate'
+       desc='Sweeps/Time Bin'
+       rank = 1
+
+   [[prog.param]]
+     key='coverage'
+     type='boolean'
+     default='false'
+
+   [[prog.param]]
+     key='coverageInterval'
+     type='float'
+     units='s'
+     range=[60, 8640000] # 1 minute to 100 day intervals
+
+
+# End Implicit ###############################################################
+
+##############################################################################
+# Reducer Component, normally implicit but added here explicitly for
+# illustrative purposes 
+
+[[prog]]
+  desc = "Reduce data by averaging in the time dimension"
+  component = 'reducer'
+  cmd = 'das2_bin_avgsec %(resolution)'
+  after = 'coverage'
+  enabled = false
+
+  autoEnable = {key='resolution', cmp='gt', val=0}
+
+  [[prog.param]]
+    key = 'resolution'
+    desc = """
+     Selects the time resolution desired for the dataset, by default data are
+     returned at the highest time resolution available.  If this parameter is
+     greater than zero and a reducer is defined for this dataset, values will
+     be average on the server prior to delivery across the network"""
+    type = 'float'
+    cmp=['eq']  # This is the default comparison operator set
+    units = 's'
+    default = 0
+
+  [[prog.input]]
+    format = 'das2Stream'
+
+  [[prog.output]]
+    format = 'das2Stream'
+
+# End Implicit ###############################################################
+
+
+
+
+#param_04 = 'LFRL - Only output data from the low-band of the Low Frequency Receiver'
+#param_05 = 'LFRH - Only output data from the high-band of the Low Frequency Receiver'
+#param_06 = 'HFRL - Only output data from the baseband of the High Frequency Receivers'
+#param_07 = 'HFRH - Only output data from the frequency down-mixed sections of the High Frequency Receivers'
+
+
+# And finally the examples.  These are just a sets of query parameters
+# with descriptions
+
+[[example]]
+desc = "Shock 1"
+params = [ 
+   {key="time", cmp="min", val='2012-069'},
+   {key="time", cmp="max", val='2012-070'},
+]
+
+[[example]]
+desc = "Shock 2"
+params = [
+   {key='time', cmp="min", val='2012-069'},
+   {key='time', cmp="max", val='2012-070'},
+]
+
+[[example]]
+desc = "Shock 3"
+params = [
+   {key='time', cmp="min", val='2012-091'},
+   {key='time', cmp="max", val='2012-093'},
+]
+
+[[example]]
+desc = "Shock 4"
+params = [
+   {key='time', cmp="min", val='2012-099'},
+   {key='time', cmp="max", val='2012-101'}
+]
+
+[[example]]
+desc = "Shock 5"
+params = [
+   {key='time', cmp="min", val='2013-105'},
+   {key='time', cmp="max", val='2013-108'}
+]
+
+[[example]]
+desc = "Shock 6"
+params = [
+   {key='time', cmp="min", val='2013-115'},
+   {key='time', cmp="max", val='2013-119'}
+]
+
+[[example]]
+desc = "Shock 7"
+params = [
+   {key='time', cmp="min", val='2013-140'},
+   {key='time', cmp="max", val='2013-141'}
+]
+
+[[example]]
+desc = "Shock 8"
+params = [
+   {key='time', cmp="min", val='2013-243'},
+   {key='time', cmp="max", val='2013-244'}
+]
+
+[[example]]
+desc = "Shock 9"
+params = [
+   {key='time', cmp="min", val='2014-055'},
+   {key='time', cmp="max", val='2014-066'}
+]
+
+[[example]]
+desc = "Shock 10"
+params = [
+   {key='time', cmp="min", val='2014-098'},
+   {key='time', cmp="max", val='2014-100'}
+]
+
+[[example]]
+desc = "Shock 11"
+params = [
+   {key='time', cmp="min", val='2015-086'},
+   {key='time', cmp="max", val='2015-089'}
+] 
+
+
+#exampleRange_10 = '2013-10-09 to 2013-10-10 | Earth Flyby'
+#exampleRange_11 = '2016-240T6:50 to 2016-240T18:50 | Perijove 1'
+
+# The following cache line list could be done using one liners except that
+# the cache lines that are tied to parameters start getting really long, so
+# we'll use the un-rolled list syntax
+[[cache]]
+id = 0
+storage = 'daily'
+resolution = 'intrinsic'
+
+[[cache]]
+id = 1
+storage = 'daily'
+resolution = '60 s'
+
+[[cache]]
+id = 2
+storage = 'monthly'
+resolution = '600 s'
+
+[[cache]]
+id = 3
+storage = 'monthly'
+resolution = '3600 s'
+
+[[cache]]
+id = 10
+storage = 'daily'
+resoultion = 'intrinsic'
+params = [ {key='field', cmp='eq', value = 'B'} ]
+
+[[cache]]
+id = 11
+storage = 'daily'
+resolution = '60 s'
+params = [ {name='field', val = 'B'} ]
+
+[[cache]]
+id = 12
+storage = 'monthly'
+resolution = '600 s'
+params = [ {name='field', val = 'B'} ]
+
+[[cache]]
+id = 13
+storage = 'monthly'
+resolution = '3600 s'
+params = [ {key='field', val = 'B'} ]
+
+#cacheLevel_20 = 'intrinsic | daily | LFRL'
+#cacheLevel_21 = 'intrinsic | daily | LFRH'
+#cacheLevel_22 = 'intrinsic | daily | HFRL'
+#cacheLevel_23 = 'intrinsic | daily | HFRH'
+
+# The following parameter changes the output so much that it should
+# be part of a different DSDF
+# param_03 = 'XMAS (If specified only output the Xmas flag)'
+
+

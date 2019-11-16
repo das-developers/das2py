@@ -1,0 +1,6 @@
+Ex 11: Federated Catalog
+------------------------
+
+.. literalinclude:: ../../examples/ex11_catalog_listings.py
+	:linenos:
+	:language: python

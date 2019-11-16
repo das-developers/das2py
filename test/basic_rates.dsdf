@@ -1,0 +1,122 @@
+description = 'Uncalibrated basic detection rates from the JEDI-090, JEDI-180 and JEDI-270 instruments'
+summary     = 'Instrument Co-Investigator: <b>Barry Mauk</b>, Applied Physics Laboratory'
+techContact = 'Chris Piker <chris-piker@uiowa.edu>, George Clark <George.Clark@jhuapl.edu>'
+sciContact = 'Chris Paranicas <chris.paranicas@jhuapl.edu>'
+
+das2Stream = 1
+reader = '/opt/project/juno/bin/centos6.x86_64/waves_invoke.sh jedi_l2_raterdr --das2times=scet bin_width.eq.600 bin_shift.eq.60'
+
+reader_23 = '/opt/project/juno/bin/centos6.x86_64/waves_invoke.sh jedi_l2_raterdr'
+
+reducer = 'das2_bin_avgsec'
+
+server = 'http://jupiter.physics.uiowa.edu/das/server'
+
+
+validRange      = '2013-279 to now'
+exampleRange_00 = '2015-12-30 to 2016-01-02'
+
+
+; -------------------------------------------------------------------------------------------------
+; Explicitly stating what happens if implicitTimeItem = true or not stated
+
+; TODO: Add to Das 2.3 + HAPI spec
+implicitTimeItem = false
+item_00       = 'scet  | Spacecraft event time | on | required'
+
+; Since we have param translation, should change fixed section to look like a param string
+;           
+;           cacheLevel_00 = 'intrinsic | daily'  (no change)
+;           cacheLevel_01 = '3600 s | monthly '
+;
+;           cacheLevel_10 = 'intrinsic | daily | energy_band=10 to 50 keV'
+;           cacheLevel_11 = '3600 s | monthly | energy_band=10 to 50 keV, bin_width=60 '
+;
+;        The caching code will be converted to use external query parameters for decision making
+;
+cacheLevel_00 = 'intrinsic | daily'
+cacheLevel_01 = '3600 s | monthly '
+
+cacheLevel_10 = 'intrinsic | daily | energy.eq.10 '
+cacheLevel_11 = '3600 s | monthly | energy.eq.10 '
+
+
+; -------------------------------------------------------------------------------------------------
+
+item_01       = 'events | Average event rate for the Ions in the specified Energy Band and Sensor Set | on | required'
+
+; A word about substitutions.
+; Substitutions with the pattern %(thing) are handled when the DSDF is listed
+; Substitutions with the pattern %{thing} are handled when the DSDF is used to load data
+
+
+; TODO: Add to das 2.3 + hapi spec
+; data are:   query key | Display Name | required/optional | time/real/integer/string/enum | valid | default | units ]
+
+; -------------------------------------------------------------------------------------------------
+; Explicitly stating what happens implicitly if implicitTimeParam = true, or not stated
+implicitTimeParams = false
+
+; another automatic variable, the cache control parameter list.  Caching depends on normalized
+; variables for everything that is not automatically set or used by the cache creation program.
+; To distinguish auto-vars from just defaults constant vars the following is assumed to exist if
+; not set, the format is:
+;
+;        " begin range vars (comma separated) | end range vars (comma separated) | 
+;          resolution vars (comma separated) "
+;
+; The parmeters that the cache reader/writer program uses to navigate the cache are given here
+; in external form as these are more regular.
+; 
+cacheNavParams = "time.min | time.max | time.res"
+
+param_00      = 'time.min | Minimum Time | required | time | %(validRange) | 2015-12-30 | UTC'
+; TODO: Add to Das 2.3 server spec, re-write rules for reader parameters
+; implicit version: paramTrans_00   = '%{PVALUE} | 0'
+paramTrans_00   = 'scet.ge.%{PVALUE} | 0'
+paramInfo_00  = 'Data points should correspond to times greater than or equal to this value.'
+
+param_01      = 'time.max | Maximum Time | required | time | %(validRange) | 2016-01-02 | UTC'
+; implicit version: paramTrans_00   = '%{PVALUE} | 1'
+paramTrans_01 = 'scet.lt.%{PVALUE} | 1'
+paramInfo_01  = 'Data points should correspond to times less than this value.'
+
+; in implicit version, time.res is only specified if reducer != not_reducable
+param_02      = 'time.res | Relsolution | optional | real | | intrinsic | s'
+paramTrans_02 = '\| %(reducer) %{PVALUE} | -1'
+paramInfo_02  = 'The size in seconds of the time averaged bins, the keyword "intrinsic" '+$
+                'may be used to disable time binning.'
+
+; End of explicit time parameters ----------------------------------------------------------------
+
+param_03      = 'energy_band | Energy Band | optional | enum | 10 to 50 keV,  > 50 keV | > 50 KeV '
+; If the enum had a way to provide human lables for values, the auto-translation would pick
+; up the conversions below
+paramTrans_03 = 'energy_band.eq.10, energy_band.eq.50'
+paramInfo_03  = 'JEDI basic counts are collected in low energy (10 - 50 keV) and high energy '+$
+               '( >50 keV) bands.  By default high energy ion counts are delivered'
+
+param_04      = 'sensor_set | Sensor Set | optional | enum | 90, 270, 180, spin-plane, all-sky | spin-plane'
+; this should be handled by the automatic translations.
+paramTrans_04 = 'sensor_set.eq.%{PVALUE}'
+paramInfo_04  = 'JEDI has 3 sensors named 90, 270 and 180.  Sensors 90 and 270 detect ' + $
+               'partical energies in the spacecraft spin plane and provide basically the ' + $
+               'same kind of data.  Sensor 180 is different it''s look fan is in a plane ' + $
+               'perpendicular to the spin plane.  Thus as Juno rotates it observes almost ' + $
+               'the entire sky.  By default this selector is set to "spin-plane" and data ' + $
+               'are drawn from sensor 90 or 270 files, whichever is available '
+
+param_05      = 'bin_width | Bin Width | optional | real |  | 600 | s '
+; this should be handled by the automatic translations.
+paramTrans_05 = 'bin_width.eq.%{PVALUE}'
+paramInfo_05  = 'Prior to output raw JEDI rate data are collected into bins of this width, the ' + $
+               'default is 10 minutes.  Setting the bin_width to 0 turns off binning.'
+
+param_06      = 'bin_shift | Bin Shift | optional | real | | 60 | s '
+; this should be handled by the automatic translations.
+paramTrans_05 = 'bin_shift.eq.%{PVALUE}'
+paramInfo_06  = 'If this value is less than the bin width, then bins overlap in time.  ' + $
+               'The default is 60 seconds giving a bin overlap of 90%.'
+
+
+

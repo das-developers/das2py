@@ -1,0 +1,25 @@
+[00]000359<stream version="2.2">
+<properties String:title="['cas_fpe']%{xCacheResInfo}"
+            String:xLabel="SCET (UTC)"
+            Datum:xTagWidth="10 s"
+            String:yScaleType="log"
+            DatumRange:xCacheRange="2017-09-04T00:00:00.000000 to 2017-09-05T00:00:00.000000 UTC"
+            String:xCacheResInfo=" (Intrinsic Resolution)"
+/>
+</stream>
+	[01]000623<packet>
+  <x type="time25" units="us2000"></x>
+  <y type="little_endian_real4" name="freq" units="Hz" >
+    <properties String:ySummary="Plasma Frequency"
+                String:yLabel="Frequency (Hz)" />
+  </y>
+  <y type="little_endian_real4" name="elec_density" units="cm**-3" >
+    <properties String:ySummary="Electron number density"
+                String:yLabel="Electron Density (cm**-3)" />
+  </y>
+  <y type="little_endian_real4" name="mag_field_strength" units="nT" >
+    <properties String:ySummary="Magnetic field strength in nano tesla"
+                String:yLabel="Magnetic Field (nT)" />
+  </y>
+</packet>
+[xx]000127<exception type="NoDataInInterval" message="No cas data in the interval 2017-09-04T00:00:00.000 to 2017-09-05T00:00:00.000" />

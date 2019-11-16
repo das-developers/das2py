@@ -1,0 +1,6 @@
+Ex 10: Constructing Datasets
+----------------------------
+
+.. literalinclude:: ../../examples/ex10_manual_datasets.py
+	:linenos:
+	:language: python

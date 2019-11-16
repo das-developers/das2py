@@ -1,0 +1,346 @@
+# Important "no-software" server idea, Files and Das2 query parameters
+# --------------------------------------------------------------------
+#
+#   For files only datasets, the datasource catalog entry has to provide
+#   aggregation rules that are tied into das2 query parameters and thier 
+#   types.
+#
+#   This is important so that the same selection dialog that is presented
+#   for reading a stream can be re-used for reading from a file set.
+#
+#   For example, if a dataset has the paramenter:
+#
+#     reader.x.min
+#
+#   and that parameter is of type longitude and files are stored in
+#   5 degree blocks, the aggregation should be something like:
+#
+#     path/file_prefix_${reader.x+5}_V${_int_max_}.CSV
+#
+#   (where ${_max_int_} is the match the highest integer pattern)
+#
+#   Second example, if a dataset has the parameter:
+#
+#     reader.x.min
+#
+#   and that parameter is of type time, it has sub components, the
+#   aggregation would be:
+#
+#     path/prefix_${reader.x:year}${reader.x:month}${reader.x:day+1}.CSV
+#
+#   in the case that daily files are in use.
+#
+#   Some files are stored by the start time but the end time coverage
+#   period is only known because the next file in the sequence has value.
+#   In these cases the +SIZE part is left out and the client will need
+#   to just assume that file N handles all the time up to file N+1
+#
+#   The sequence get's more confused when 2-D (squares) are in each file
+#   or for CFD work 3-D (cubes) are stored in each file block.  This needs
+#   to be handled, but not sure what the implications are at this point.
+#
+#   Since the end client takes on the role of parsing the file we might need to
+#   provide some help for that.  I'm not sure what it is at this point.  For
+#   known types (CDF+ISTP, JSON+CSV, Das2 Stream, QStream) it's not needed
+#   and maybe that is the solution.
+
+
+
+title = 'Survey Mode Electric or Magnetic Spectral Densities'
+
+server = 'http://jupiter.physics.uiowa.edu/das/server'
+
+[authorization]
+  access = ['GROUP:juno']
+  realm = 'Juno Magnetospheric Working Group'
+
+[contacts]
+  tech = 'Chris Piker <chris-piker@uiowa.edu>'
+  sci = 'Bill Kurth <william-kurth@uiowa.edu>'
+  
+##############################################################################
+# Reader Component Section
+
+[cmd.reader]
+  # This program is the first one in the chain (implicit), so after = nil
+  run = '''
+/opt/project/juno/etc/invoke.sh waves_pds_srvrdr -l error flight 
+  $(time.min) $(time.max) $(set) $(keepSpikes) $(ascii)
+'''
+  
+  [cmd.reader.out]
+    format = 'das2Stream'      # Implicit
+  
+  [cmd.reader.out.ind.time]    # This output implicitly added to any
+    desc='Spacraft Event Time' # unless noImplicitTime is true.   
+    constraintParam='time'        
+    rank = 1
+  
+  [cmd.reader.out.ind.frequency]        
+    desc='Channel Center Frequency'
+    rank = 1
+  
+  [cmd.reader.out.dep.LFRL]
+    desc='Low band of the low frequency receiver, 48 Hz to 20 kHz'
+    independent = ['time','frequency']
+    rank = 2
+  
+  [cmd.reader.out.dep.LFRH]
+    desc='High band of the low frequency receiver, 20 to 141 kHz'
+    independent = ['time','frequency']
+    rank = 2
+    
+  [cmd.reader.out.dep.HFRL]
+    desc='Baseband of the high frequency receivers, 141 kHz 3 MHz'
+    independent = ['time','frequency']
+    rank = 2
+  
+  [cmd.reader.out.dep.HFRH]
+    desc='Sweep frequency bands of the high-frequency receivers, 3 to 42 MHz'
+    independent = ['time','frequency']
+    rank = 2
+
+  ##############################################################################
+  # Implicit time parameter added to any program that is a reader component,
+  # which doesn't have 'noImplicitTime' sent as a program property.
+  # Given here for illustrative purposes 
+  [cmd.reader.param.time]
+    desc = "Constrain output to only include records with in the given even time"
+    type ='time', 
+    cmp  =['min', 'max'], 
+    range = ['2010-06-01','now']
+    required = true
+  
+  # End Implicit ###############################################################
+    
+  [cmd.reader.param.set]
+    desc = 'Select survey PDS product type'
+    type = 'enum'
+    values = [
+      {val='E', desc='Primary electric field PDS products'}, asnoetu
+      {val='B', desc='Primary magnetic field PDS products'},
+      {val='EINT', desc='Electric interference products'},
+      {val='EUNC', desc='Uncorrected electric field PDS products'},
+      {val='BINT', desc='Magnetic interference products'},
+      {val='BUNC', desc='Uncorrected magnetic field PDS products'}
+    ]
+    default="E"
+  
+  # Like many readers, this one wasn't designed to allow direct pass through of 
+  # key.cmp=val strings, so command line translations are used
+  [cmd.reader.param.keySpikes]
+    desc = 'Filter noise spikes caused by unnecessary pre-amp toggling'
+    type = 'boolean'
+    default = true
+    required = false
+    translate = [ {val=false, format=''}, {val=true, format='KEEP-SPIKES'} ]
+  
+  [cmd.reader.param.ascii]  # Another key without a value
+    desc = 'Output data in ascii format'
+    key  = 'ascii'
+    type = 'boolean'
+    default = false
+    required = false
+    translate = [{val=true, format='ascii'}, {val=false, format=''} ]
+
+
+##############################################################################
+# Coverage component, normally implicit but added here explicitly for
+# any reader that does not have an interval parameter of it's own. 
+
+[cmd.coverage]
+   desc = """
+     Produce a line plot of the output data rate in sweeps/minute instead of
+     the normal data stream
+   """
+   after = 'reader'
+   enabled = false
+   
+   autoEnable = {param='coverage', cmp='eq', val=true}
+   
+   run = '''das2_bin_ratesec -b %(reader.time.min) %(coverageInterval) 
+     -t "Sweeps/%(coverageInterval) s" -y "Juno Waves Survey Data Rate"
+   '''
+   
+   [cmd.coverage.in]
+     format = 'das2Stream'
+   
+   [cmd.coverage.out]
+     format = 'das2Stream'
+     ind = [ {name='time', desc='Spacraft Event Time', rank = 1}]
+     dep = [ {name='rate', desc='Sweeps/Time Bin', rank = 1}]
+       
+   [cmd.coverage.param.coverage]
+     type='boolean'
+     default='false'
+     
+   [cmd.coverage.param.coverageInterval]
+     type='float'
+     units='s'
+     range=[60, 8640000] # 1 minute to 100 day intervals
+     
+    
+# End Implicit ###############################################################
+
+##############################################################################
+# Reducer Component, normally implicit but added here explicitly for
+# illustrative purposes 
+
+[cmd.reducer]
+  desc = "Reduce data by averaging in the time dimension"
+  run = 'das2_bin_avgsec %(resolution)'
+  after = 'coverage'
+  enabled = false
+  
+  autoEnable = {param='resolution', cmp='gt', val=0}
+  
+  [cmd.reducer.param.resolution]
+    desc = """
+     Selects the time resolution desired for the dataset, by default data are
+     returned at the highest time resolution available.  If this parameter is
+     greater than zero and a reducer is defined for this dataset, values will
+     be average on the server prior to delivery across the network"""
+    type = 'float'
+    units = 's'
+    default = 0
+  
+  [cmd.reducer.in]
+    format = 'das2Stream'
+        
+  [cmd.reducer.out]
+    format = 'das2Stream'
+   
+# End Implicit ###############################################################
+
+
+    
+    
+#param_04 = 'LFRL - Only output data from the low-band of the Low Frequency Receiver'
+#param_05 = 'LFRH - Only output data from the high-band of the Low Frequency Receiver'
+#param_06 = 'HFRL - Only output data from the baseband of the High Frequency Receivers'
+#param_07 = 'HFRH - Only output data from the frequency down-mixed sections of the High Frequency Receivers'
+
+
+# And finally the examples.  These are just a sets of query parameters
+# with descriptions
+
+[[example]]
+desc = "Shock 1"
+params = [ 
+   {key="time", cmp="min", val='2012-069'},
+   {key="time", cmp="max", val='2012-070'},
+]
+
+[[example]]
+desc = "Shock 2"
+params = [
+   {key='time', cmp="min", val='2012-069'},
+   {key='time', cmp="max", val='2012-070'},
+]
+
+[[example]]
+desc = "Shock 3"
+params = [
+   {key='time', cmp="min", val='2012-091'},
+   {key='time', cmp="max", val='2012-093'},
+]
+
+[[example]]
+desc = "Shock 4"
+params = [
+   {key='time', cmp="min", val='2012-099'},
+   {key='time', cmp="max", val='2012-101'}
+]
+
+[[example]]
+desc = "Shock 5"
+params = [
+   {key='time', cmp="min", val='2013-105'},
+   {key='time', cmp="max", val='2013-108'}
+]
+
+[[example]]
+desc = "Shock 6"
+params = [
+   {key='time', cmp="min", val='2013-115'},
+   {key='time', cmp="max", val='2013-119'}
+]
+
+[[example]]
+desc = "Shock 7"
+params = [
+   {key='time', cmp="min", val='2013-140'},
+   {key='time', cmp="max", val='2013-141'}
+]
+
+[[example]]
+desc = "Shock 8"
+params = [
+   {key='time', cmp="min", val='2013-243'},
+   {key='time', cmp="max", val='2013-244'}
+]
+
+[[example]]
+desc = "Shock 9"
+params = [
+   {key='time', cmp="min", val='2014-055'},
+   {key='time', cmp="max", val='2014-066'}
+]
+
+[[example]]
+desc = "Shock 10"
+params = [
+   {key='time', cmp="min", val='2014-098'},
+   {key='time', cmp="max", val='2014-100'}
+]
+
+[[example]]
+desc = "Shock 11"
+params = [
+   {key='time', cmp="min", val='2015-086'},
+   {key='time', cmp="max", val='2015-089'}
+] 
+
+
+#exampleRange_10 = '2013-10-09 to 2013-10-10 | Earth Flyby'
+#exampleRange_11 = '2016-240T6:50 to 2016-240T18:50 | Perijove 1'
+
+# The following cache line list could be done using one liners except that
+# the cache lines that are tied to parameters start getting really long, so
+# we'll use the un-rolled list syntax
+[cache]
+0 = {storage = 'daily', resolution = 'intrinsic'}
+1 = {storage = 'daily', resolution = '60 s' }
+2 = {storage = 'monthly', resolution = '600 s'}
+3 = {storage = 'monthly', resolution = '3600 s'}
+
+[cache.10] 
+storage = 'daily'
+resoultion = 'intrinsic'
+params = [ {key='field', val = 'B'} ]
+
+[cache.11]
+storage = 'daily'
+resolution = '60 s'
+params = [ {name='field', val = 'B'} ]
+
+[cache.12]
+storage = 'monthly'
+resolution = '600 s'
+params = [ {name='field', val = 'B'} ]
+
+[cache.13]
+storage = 'monthly'
+resolution = '3600 s'
+params = [ {key='field', val = 'B'} ]
+
+#cacheLevel_20 = 'intrinsic | daily | LFRL'
+#cacheLevel_21 = 'intrinsic | daily | LFRH'
+#cacheLevel_22 = 'intrinsic | daily | HFRL'
+#cacheLevel_23 = 'intrinsic | daily | HFRH'
+
+# The following parameter changes the output so much that it should
+# be part of a different DSDF
+# param_03 = 'XMAS (If specified only output the Xmas flag)'
+
+
