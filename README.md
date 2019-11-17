@@ -15,17 +15,18 @@ If this works then test using:
 (base) $ wget https://raw.githubusercontent.com/das-developers/das2py/master/examples/ex05_mex_marsis_query_by_angle.py
 (base) $ python ex02_galileo_pws_spectra.py
 ```
-If this command produces a plot similar to the following:
+If this command produces a plot similar to the following\.\.\.
 
 <img src="https://raw.githubusercontent.com/das-developers/das2py/master/examples/ex05_mex_marsis_query_by_angle.png" width="660" height="379">
 
-Then das2py is installed and there is no need to follow the rest of these instructions.
+\.\.\.then das2py is installed, and you can skip building the software and
+head straight the example program below.
 
 ## Prerequistes
 Compilation and installation of das2py has been tested on Linux, Windows, MacOS using
 both Python 2 and Python 3.  The following packages are required to build das2py:
 
-  * [Das2C](https://github.com/das-developers/das2C) - Version 2.3 or above, need not be installed, but must be built
+  * [Das2C](https://github.com/das-developers/das2C) - Version 2.3 or above.  Need not be installed, but must be built
   * **NumPy** - Version 1.10.1 or above
   * **MatplotLib++** - For plotting data (optional, recommended)
   * **SpacePy** - For writing CDF files (optional)
