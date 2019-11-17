@@ -1,3 +1,5 @@
+export DAS2C_LIBDIR
+export DAS2C_INCDIR
 
 LIBDAS=das2.3
 
@@ -20,7 +22,7 @@ $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 
 .PHONY: test
 
-build: $(BD) $(BD)/_das2.so $(C_BUILD_DIR)/lib$(LIBDAS).a
+build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 
 $(BD):
 	@if [ ! -e "$(BD)" ]; then echo mkdir $(BD); \

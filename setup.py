@@ -4,12 +4,12 @@ import os.path
 from distutils.core import setup, Extension
 import numpy
 
-sCBuildDir = os.getenv("C_BUILD_DIR")
-sCHdrDir = os.getenv("C_HDR_DIR")
+sCLibDir = os.getenv("DAS2C_LIBDIR")
+sCHdrDir = os.getenv("DAS2C_INCDIR")
 	
 lDefs = []
 
-if sCBuildDir: lLibDirs = [sCBuildDir]
+if sCLibDir: lLibDirs = [sCLibDir]
 else: lLibDirs = []
 
 if sCHdrDir: lInc = [sCHdrDir, numpy.get_include()]
@@ -34,7 +34,7 @@ elif sys.platform == 'win32':
             "libdas2.3", "fftw3", "expat", "libssl", "libcrypto",
             "zlib", "pthreadVC3", "ws2_32"
 		]
-        ,extra_objects=['%s/libdas2.3.a'%sCBuildDir]
+        ,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
 
 else:
@@ -43,17 +43,17 @@ else:
 		,library_dirs=lLibDirs
         ,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-        ,extra_objects=['%s/libdas2.3.a'%sCBuildDir]
+        ,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
 
 
 setup(description="Das2 extensions for python",
 	name="das2py",
-	version="2.3",
+	version="2.3.2",
 	ext_modules=[ ext ],
 	packages=['das2'],
 	author="Chris Piker",
 	author_email="chris-piker@uiowa.edu",
-	url="https://saturn.physics.uiowa.edu/svn/das2/core/stable/libdas2_3"
+	url="https://das2.org/das2py"
 )
 
