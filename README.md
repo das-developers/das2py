@@ -1,5 +1,11 @@
 # das2py
-An efficient space physics data client for python.
+Das2 servers typically provide data relavent to space plasma and magnetospheric
+physics research. To retrieve data, an HTTP GET request is posted to a das2
+server by a client program and a self-describing stream of data values covering
+the requested time range, at the requested time resolution, is provided in the
+response body. This package, *das2py* provides an efficient space physics data
+client for python.  Streams are parsed and stored as NumPy arrays using a C
+extension, avoiding data copies and conversions.
 
 ## Anaconda Package
 [![Anaconda Package](https://anaconda.org/dasdevelopers/das2py/badges/version.svg)](https://anaconda.org/DasDevelopers/das2py)
