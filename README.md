@@ -17,7 +17,7 @@ If this works then test using:
 ```
 If this command produces a plot similar to the following:
 
-<img src="https://raw.githubusercontent.com/das-developers/das2py/master/examples/ex02_galileo_pws_spectra.png" width="644" height="446">
+<img src="https://raw.githubusercontent.com/das-developers/das2py/master/examples/ex05_mex_marsis_query_by_angle.png" width="660" height="379">
 
 Then das2py is installed and there is no need to follow the rest of these instructions.
 
