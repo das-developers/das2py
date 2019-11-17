@@ -61,7 +61,7 @@ $ make install
 The following small program demonstrates how to query for data and generate a plot 
 using das2py.
 
-### Load data by URI instead of a fixed location
+### Query a URI for reduced resolution data
 ```python
 import das2
 src = das2.get_source( 'tag:das2.org,2012:site:/uiowa/galileo/pws/survey_electric/das2' )
