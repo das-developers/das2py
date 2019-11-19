@@ -1,5 +1,5 @@
 # das2py
-Das2 servers typically provide data relavent to space plasma and magnetospheric
+Das2 servers typically provide data relevant to space plasma and magnetospheric
 physics research. To retrieve data, an HTTP GET request is posted to a das2
 server by a client program and a self-describing stream of data values covering
 the requested time range, at the requested time resolution, is provided in the
@@ -10,7 +10,7 @@ extension, avoiding data copies and conversions.
 ## Anaconda Package
 [![Anaconda Package](https://anaconda.org/dasdevelopers/das2py/badges/version.svg)](https://anaconda.org/DasDevelopers/das2py)
 
-Pre-build versions of das2py are available from Anoconda.  If you're working in an 
+Pre-build versions of das2py are available from Anaconda.  If you're working in an 
 Anoconda or Miniconda python 3 environment these are easier to install as no C 
 compiler is required.   To install the conda package run the command:
 ```bash
@@ -28,7 +28,7 @@ If this command produces a plot similar to the following\.\.\.
 \.\.\.then das2py is installed, and you can skip building the software and
 head straight the example program below.
 
-## Prerequistes
+## Prerequisite
 Compilation and installation of das2py has been tested on Linux, Windows, MacOS using
 both Python 2 and Python 3.  The following packages are required to build das2py:
 
