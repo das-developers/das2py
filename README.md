@@ -44,8 +44,8 @@ it is on the `PYTHONPATH` or you are willing to add it to your PYTHONPATH.
 
 ```bash
 # Where to find the das2C static library
-$ export DAS2C_INCDIR=$HOME/das2C
-$ export DAS2C_LIBDIR=$HOME/das2C/build.GNU_Linux.x86_64
+$ export DAS2C_INCDIR=$HOME/git/das2C
+$ export DAS2C_LIBDIR=$HOME/git/das2C/build.  #last dot is not a typo
 
 # Which python version to use
 $ export PYVER=3.7

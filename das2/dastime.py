@@ -86,9 +86,13 @@ class DasTime(object):
 				string.
 		"""
 		
-		# Initialize from a string
+		# Handle bytes to string conversion up front
+		if (sys.version_info[0] > 2) and isinstance(nYear, bytes):
+			nYear = nYear.decode('utf-8')
+		
+		# Initialize from any type of string
 		if isinstance(nYear, basestring):
-			try:
+			try:	
 				tTmp = _das2.parsetime(nYear)
 				(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
 			except ValueError as e:
