@@ -32,6 +32,15 @@ import math as M
 
 import _das2
 
+
+# Check to see if we're python 2 or 3
+g_nPyVer = 2
+try:
+	basestring
+except NameError:
+	g_nPyVer = 3
+	basestring = str
+	
 ##############################################################################
 # Wrapper class for libdas2 das_time structure
 
@@ -77,9 +86,13 @@ class DasTime(object):
 				string.
 		"""
 		
-		# Initialize from a string
-		if isinstance(nYear, str):
-			try:
+		# Handle bytes to string conversion up front
+		if (sys.version_info[0] > 2) and isinstance(nYear, bytes):
+			nYear = nYear.decode('utf-8')
+		
+		# Initialize from any type of string
+		if isinstance(nYear, basestring):
+			try:	
 				tTmp = _das2.parsetime(nYear)
 				(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
 			except ValueError as e:
