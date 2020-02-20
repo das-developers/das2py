@@ -303,6 +303,27 @@ static PyObject* pyd2_tnorm(PyObject* self, PyObject* args)
 /* ************************************************************************* */
 /* Unit conversions */
 
+static const char pyd2help_unit_norm [] = 
+"Normalize arbitrary unit strings to a standard compact form.\n"
+"The output of this function was inspired by the PDS3 Units rules\n"
+"\n"
+"Args:\n"
+"   long_units (str) : The given units\n"
+"Returns:\n"
+"   Compact unit representation string.  Note this string does *not*\n"
+"   follow the unconventional PDS4 unit representation rules\n"
+"\n";
+
+static PyObject* pyd2_unit_norm(PyObject* self, PyObject* args){
+	const char* sFrom = NULL;
+
+	if(!PyArg_ParseTuple(args, "s:unit_norm", &sFrom)) return NULL;
+	
+	das_units to = Units_fromStr(sFrom);
+	const char* sTo = Units_toStr(to);
+	return Py_BuildValue("s", sTo);
+}
+
 static const char pyd2help_convertible [] = 
 "Determine if units are interchangeable.\n"
 "\n"
@@ -394,7 +415,8 @@ static PyObject* pyd2_unit_mul(PyObject* self, PyObject* args)
 	}
 	
 	das_units ret = Units_multiply(left, right);
-	return Py_BuildValue("s", ret);
+	const char* sTo = Units_toStr(ret);
+	return Py_BuildValue("s", sTo);
 }
 
 static const char pyd2help_unit_div[] = 
@@ -424,7 +446,8 @@ static PyObject* pyd2_unit_div(PyObject* self, PyObject* args)
 	}
 	
 	das_units ret = Units_divide(num, denom);
-	return Py_BuildValue("s", ret);
+	const char* sTo = Units_toStr(ret);
+	return Py_BuildValue("s", sTo);
 }
 
 static const char pyd2help_unit_pow[] = 
@@ -449,7 +472,8 @@ static PyObject* pyd2_unit_pow(PyObject* self, PyObject* args)
 	}
 
 	das_units ret = Units_power(units, nPow);
-	return Py_BuildValue("s", ret);
+	const char* sTo = Units_toStr(ret);
+	return Py_BuildValue("s", sTo);
 }
 
 static const char pyd2help_unit_root[] = 
@@ -474,7 +498,8 @@ static PyObject* pyd2_unit_root(PyObject* self, PyObject* args)
 	}
 
 	das_units ret = Units_root(units, nRoot);
-	return Py_BuildValue("s", ret);
+	const char* sTo = Units_toStr(ret);
+	return Py_BuildValue("s", sTo);
 }
 
 static const char pyd2help_unit_invert[] = 
@@ -497,7 +522,8 @@ static PyObject* pyd2_unit_invert(PyObject* self, PyObject* args)
 	}
 
 	das_units ret = Units_invert(units);
-	return Py_BuildValue("s", ret);
+	const char* sTo = Units_toStr(ret);
+	return Py_BuildValue("s", sTo);
 }
 
 
@@ -561,6 +587,7 @@ static PyMethodDef pyd2_methods[] = {
 	{"emitt",       pyd2_emitt,       METH_VARARGS, pyd2help_emitt       },
 	{"tnorm",       pyd2_tnorm,       METH_VARARGS, pyd2help_tnorm       },
 	{"convertible", pyd2_convertible, METH_VARARGS, pyd2help_convertible },
+	{"unit_norm",   pyd2_unit_norm,   METH_VARARGS, pyd2help_unit_norm   },
 	{"unit_mul",    pyd2_unit_mul,    METH_VARARGS, pyd2help_unit_mul    },
 	{"unit_div",    pyd2_unit_div,    METH_VARARGS, pyd2help_unit_div    },
 	{"unit_pow",    pyd2_unit_pow,    METH_VARARGS, pyd2help_unit_pow    },
