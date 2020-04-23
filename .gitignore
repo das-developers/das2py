@@ -1,3 +1,4 @@
 build.*
 das2/__pycache__
+das2/*.pyc
 
