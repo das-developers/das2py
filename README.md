@@ -37,6 +37,11 @@ both Python 2 and Python 3.  The following packages are required to build das2py
   * **MatplotLib++** - For plotting data (optional, recommended)
   * **SpacePy** - For writing CDF files (optional)
 
+Pre-requisite package install commands are give below.
+```bash
+$ sudo apt install python3-setuptools python3-dev python3-numpy # debian
+```
+
 ## Build and Install
 Decide where you want to install das2py.  In the example below I've selected 
 `/usr/local/lib/python3.6/site-packages` but any location is fine so long as
