@@ -206,7 +206,7 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 		return NULL;
 	}
 
-	// Reshape the array (hopefully IN PLACE, don't know how to insure this)
+	/* Reshape the array (hopefully IN PLACE, don't know how to insure this) */
 	npy_intp np_shape[16] = {0};
 	PyArray_Dims np_dims = {np_shape, 0};
 	_npdims_from_shape(pAry, &np_dims);
@@ -317,7 +317,7 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 		return NULL;
 	}
 
-	// Reshape the array (hopefully IN PLACE, don't know how to insure this)
+	/* Reshape the array (hopefully IN PLACE, don't know how to insure this) */
 	npy_intp np_shape[16] = {0};
 	PyArray_Dims np_dims = {np_shape, 0};
 	_npdims_from_shape(pAry, &np_dims);
