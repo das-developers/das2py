@@ -9,12 +9,12 @@ PREFIX=$(HOME)
 endif
 endif
 
-ifeq ($(DAS2C_INCDIR),)
-DAS2C_INCDIR=$(PREFIX)/include
-endif
-
 ifeq ($(N_ARCH),)
 N_ARCH=$(shell uname -s).$(shell uname -p)
+endif
+
+ifeq ($(DAS2C_INCDIR),)
+DAS2C_INCDIR=$(PREFIX)/include/$(N_ARCH)
 endif
 
 ifeq ($(DAS2C_LIBDIR),)
