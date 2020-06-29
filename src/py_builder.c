@@ -206,7 +206,7 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 		return NULL;
 	}
 
-	// Reshape the array (hopefully IN PLACE, don't know how to insure this)
+	/* Reshape the array (hopefully IN PLACE, don't know how to insure this) */
 	npy_intp np_shape[16] = {0};
 	PyArray_Dims np_dims = {np_shape, 0};
 	_npdims_from_shape(pAry, &np_dims);
@@ -317,7 +317,7 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 		return NULL;
 	}
 
-	// Reshape the array (hopefully IN PLACE, don't know how to insure this)
+	/* Reshape the array (hopefully IN PLACE, don't know how to insure this) */
 	npy_intp np_shape[16] = {0};
 	PyArray_Dims np_dims = {np_shape, 0};
 	_npdims_from_shape(pAry, &np_dims);
@@ -462,12 +462,18 @@ static PyObject* _DasGenericAryToNumpyAry(DasAry* pAry)
 
 	/* Make sure das2 arrays don't delete their data when free'ed */
 	size_t uLen = 0;
-	byte* pMem = DasAry_disownElements(pAry, &uLen);
+	size_t uOffset = 0;
+	byte* pMem = DasAry_disownElements(pAry, &uLen, &uOffset);
 	PyObject* pNdAry = NULL;
 	
 	if(uLen != 0){
 		if(pMem == NULL){
 			PyErr_Format(g_pPyD2Error, "Array %s does not own it's elements",sInfo);
+			return NULL;
+		}
+		if(uOffset > 0){
+			PyErr_Format(g_pPyD2Error, "Array %s has head trim, update das2py",sInfo);
+			free(pMem);  /* You owned it, so clean it up */
 			return NULL;
 		}
 
