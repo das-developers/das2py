@@ -1,6 +1,19 @@
 Installing das2py, the python extension for libdas2
 ---------------------------------------------------
 
+Legacy Support Note
+===================
+Regardless of the python development team's ideology, it is a fact of
+life in the scientific software world that many old programs exist
+which are useful but for which there are no maintenence resources (i.e. 
+time/money/talent).  This library depends on numpy 1.11 or higher, but
+does not need python 3.  If you have to run older, unported software
+that requires python 2, see the doc/legacy_notes.txt for manual python
+2 build instructions on various platforms.  It's rather straighforward
+to build the interpreter on Linux and MacOS.
+
+Pre-build binaries
+==================
 There are many, many python environments these days.  And there are heated 
 debates about how to best install and maintain python environments.  If you
 are running an Anaconda distribution of python, installing libdas2 and das2py
@@ -34,7 +47,11 @@ In this step we make sure you have python.  Run the command:
    
 If you get the response "bash: python3: command not found..." then run:
 
-   $ sudo yum install python3
+   $ sudo yum install python3   # CentOS 7
+	$ sudo dnf install python3   # CentOS 8
+	$ sudo apt install python3   # Ubuntu
+	$ sudo pkcon install python3 # Neon
+	$ brew install python3       # MacOS
 
 
 2. Install numpy and matplotlib
