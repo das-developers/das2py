@@ -120,7 +120,7 @@ class PktBuf(object):
 		if g_nPyVer == 2:
 			self.lBytes.append(sTxt)
 		else:
-			# For python3 we have to treat strings an bytes differently.  Seems
+			# For python3 we have to treat strings and bytes differently.  Seems
 			# the python way is to use exceptions for normal branch control.  
 			# this seems wrong, but a lot of python code does it.  Not sure why.
 			try:
@@ -195,8 +195,14 @@ class PktBuf(object):
 		fwrite(fOut, self.xOut)	
 		fOut.flush()
 		
-		self.lBytes = [':%02d:'%self.nPktId]
+		if g_nPyVer == 2:
+			self.lBytes = [':%02d:'%self.nPktId]
+		else:
+			self.lBytes = [bytes(':%02d:'%self.nPktId, 'utf-8')]
+		
 		self.xOut = None
+
+		
 
 ##############################################################################
 def sendComment(fOut, sType, sValue, sSource=""):

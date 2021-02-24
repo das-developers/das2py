@@ -1,3 +1,5 @@
+export DAS2C_LIBDIR
+export DAS2C_INCDIR
 
 LIBDAS=das2.3
 
@@ -21,14 +23,14 @@ $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 
 .PHONY: test
 
-build: $(BD) $(BD)/_das2.so $(C_BUILD_DIR)/lib$(LIBDAS).a
+build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 
 $(BD):
 	@if [ ! -e "$(BD)" ]; then echo mkdir $(BD); \
         mkdir $(BD); chmod g+w $(BD); fi
 
 $(BD)/_das2.so:src/_das2.c
-	python$(PYVER) setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
+	env ARCHFLAGS="-arch x86_64" python$(PYVER) setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 
 # Run tests
