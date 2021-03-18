@@ -36,6 +36,9 @@ try:
 except ImportError:
 	# Some groups use a stand-alone version of pycdf
 	import pycdf
+	except ImportError:
+		# If all else fails, use the embedded copy
+		import das2.pycdf as pycdf	
 
 perr = sys.stderr.write
 
