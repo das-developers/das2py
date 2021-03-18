@@ -29,10 +29,11 @@ ifeq ($(INST_DOC),)
 INST_DOC=$(INST_SHARE)/doc
 endif
 
-ifeq ($(H_ARCH),)
 ifeq ($(PYVER),)
 PYVER=$(shell python -c "import sys; print('.'.join( sys.version.split()[0].split('.')[:2] ))")
 endif
+
+ifeq ($(H_ARCH),)
 H_ARCH=python$(PYVER)
 endif
 

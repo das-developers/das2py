@@ -6,6 +6,9 @@ import numpy
 
 sCLibDir = os.getenv("DAS2C_LIBDIR")
 sCHdrDir = os.getenv("DAS2C_INCDIR")
+
+print('(setup.py) DAS2C_LIBDIR = %s'%sCLibDir)
+print('(setup.py) DAS2C_INCDIR = %s'%sCHdrDir)
 	
 lDefs = []
 
@@ -36,14 +39,33 @@ elif sys.platform == 'win32':
 		]
         ,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
+elif sys.platform == 'darwin':
 
-else:
+	# Hack in static locations for homebrew stuff, will probably break
+	# in the future
+	lExObjs = [
+		'%s/libdas2.3.a'%sCLibDir,
+		'/usr/local/opt/openssl/lib/libssl.a',
+		'/usr/local/opt/openssl/lib/libcrypto.a',
+		'/usr/local/lib/libfftw3.a'
+	]
+
 	ext = Extension(
 		"_das2", sources=lSrc, include_dirs=lInc, define_macros=lDefs
 		,library_dirs=lLibDirs
-        ,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
+		,libraries=["expat", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-        ,extra_objects=['%s/libdas2.3.a'%sCLibDir]
+		,extra_objects=lExObjs
+		,extra_link_args=['-Wl,-no_compact_unwind']
+	)	
+else:
+	# Linux, also works for anaconda on macos
+	ext = Extension(
+		"_das2", sources=lSrc, include_dirs=lInc, define_macros=lDefs
+		,library_dirs=lLibDirs
+		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
+		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
+		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
 
 

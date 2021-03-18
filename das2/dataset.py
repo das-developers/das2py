@@ -37,9 +37,16 @@ from . util import *
 
 g_sIdxNames = "ijklmnpqrstuvwxyz" # Printing aid
 
-num_ver = [int(s) for s in numpy.__version__.split('.')]
-g_bNumpy10Hacks = ((num_ver[0] == 1) and (num_ver[1] < 11))
-
+lVer = numpy.__version__.split('.')
+for i in range(len(lVer)):
+	sInt = ''
+	for j in range(len(lVer[i])):
+		if lVer[i][j].isdigit(): sInt += lVer[i][j]
+		else: break
+	
+	lVer[i] = int(sInt, 10)
+	
+g_bNumpy10Hacks = ((lVer[0] == 1) and (lVer[1] < 11))
 
 if g_bNumpy10Hacks:
 	import os, time
