@@ -10,13 +10,21 @@ SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
  container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py
 
+CDFSRC=__init__.py const.py
+
 BUILT_PYSRC=$(patsubst %,$(BD)/das2/%,$(PYSRC))
 INSTALLED_PYSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/%.py,$(PYSRC))
+
+INSTALLED_CDFSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/pycdf/%.py,$(CDFSRC))
 
 # Pattern Rules #############################################################
 
 $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 	install -D -m 664 $< $@
+	
+$(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
+	install -D -m 664 $< $@
+
 
 # Explicit Rules #############################################################
 
@@ -43,7 +51,7 @@ test:
 
 # Install purelib and extensions (python setup.py is so annoyingly
 # restrictive that we'll just do this ourselves)
-install:$(INST_EXT_LIB)/_das2.so  $(INSTALLED_PYSRC)
+install:$(INST_EXT_LIB)/_das2.so  $(INSTALLED_PYSRC) $(INSTALLED_CDFSRC)
 
 doc:
 	cd sphinx_doc && $(MAKE) html

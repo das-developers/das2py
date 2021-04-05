@@ -38,6 +38,10 @@ from das2.dataset   import *
 from das2.auth      import *
 from das2.util      import *
 
+# Pull up a function or two from the C module:
+from _das2 import convert
+from _das2 import convertible
+
 import das2.toml as toml
 import das2.pkt as pkt
 
@@ -381,4 +385,4 @@ def get_catalog(sPathId=None, sUrl=None):
 #	return sSD
 	
 	
-	
+
