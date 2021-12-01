@@ -85,4 +85,4 @@ cbar.set_label(das2.mpl.label(specDens.props['label']) )
 
 ax0.set_title(das2.mpl.label(ds.props['title']) )
 
-pyplot.show()
+pyplot.savefig('ex02_galileo_pws_spectra.png')
