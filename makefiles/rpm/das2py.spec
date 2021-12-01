@@ -2,7 +2,7 @@
 # (and it really prefers 1.11 or better), but the python2 version of numpy installed
 # on CentOS is 1.7.  
 
-# Thus python2 is not intrinsically a problem if you happen to have an RPM for a python2
+# Thus python2 is not intrinsically a problem, so long as you happen to have a version of
 # numpy that's not ancient.
 
 %global         srcname das2py
@@ -20,7 +20,7 @@ URL:            https://github.com/das-developers/%{name}
 # Download the source from github automatically, normally distro maintainers
 # can't do this because they have to verify source integrety.  For custom
 # build RPMs of local projects this is probably okay.
-%undefine _disable_source_fetch
+#%undefine _disable_source_fetch
 Source0:        https://github.com/das-developers/%{name}/archive/refs/tags/v%{tagver}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -31,7 +31,7 @@ BuildRequires:  gcc
 
 Requires: das2C
 
-%description \
+%description 
 The das2py package supports downloading and parsing das2 data streams.
 It is also the most full-featured das2 catalog client.  This package contains
 userspace libraries and example programs. 
@@ -48,13 +48,26 @@ rm -rf $RPM_BUILD_ROOT
 %{__install} -d -m 755 %{buildroot}%{python3_sitearch}/das2/pycdf
 %{__install} -d -m 755 %{buildroot}%{python3_sitearch}/das2/examples
 
-%{__install} -p -m 755 __das2.so %{buildroot}%{python3_sitearch}
+%{__install} -p -m 755 build./_das2.so %{buildroot}%{python3_sitearch}
 %{__install} -p -m 644 das2/*.py %{buildroot}%{python3_sitearch}/das2
 %{__install} -p -m 644 das2/pycdf/*.py %{buildroot}%{python3_sitearch}/das2/pycdf
-%{__install} -p -m 
+%{__install} -p -m 644 das2/pycdf/LICENSE.md %{buildroot}%{python3_sitearch}/das2/pycdf
+%{__install} -p -m 644 examples/ex*.py %{buildroot}%{python3_sitearch}/das2/examples
+%{__install} -p -m 644 examples/ex*.png %{buildroot}%{python3_sitearch}/das2/examples
+
+%clean
+rm -rf $RPM_BUILD_ROOT
 
 %files
-
+%{python3_sitearch}/das2/examples/*.py
+%{python3_sitearch}/das2/examples/*.png
+%exclude %{python3_sitearch}/das2/examples/__pycache__/*
+%{python3_sitearch}/_das2.so
+%{python3_sitearch}/das2/*.py
+%{python3_sitearch}/das2/pycdf/*.py
+%{python3_sitearch}/das2/pycdf/LICENSE.md
+%{python3_sitearch}/das2/__pycache__/*.pyc
+%{python3_sitearch}/das2/pycdf/__pycache__/*.pyc
 
 %changelog
 * Sun Nov 28 2021 Das Developers <das-developers@uiowa.edu> - 2.3-pre4

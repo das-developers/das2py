@@ -31,16 +31,16 @@ das2.auth_load()
 
 def test_load_data(tBeg, tEnd, SrcId):
    """tests whether data exists for the given time range to avoid IndexError issue."""
-	try:
-		src = das2.get_source(SrcId)
-		dQuery = {'time':(tBeg, tEnd), 'hfr_i':True}
-		dsReal = src.get(dQuery)[0]
+   try:
+      src = das2.get_source(SrcId)
+      dQuery = {'time':(tBeg, tEnd), 'hfr_i':True}
+      dsReal = src.get(dQuery)[0]
 	
-	except (IndexError):
-		return False
+   except (IndexError):
+      return False
 	
-	else:
-		return True
+   else:
+      return True
 
 # ########################################################################## #
 
