@@ -20,7 +20,7 @@ URL:            https://github.com/das-developers/%{name}
 # Download the source from github automatically, normally distro maintainers
 # can't do this because they have to verify source integrety.  For custom
 # build RPMs of local projects this is probably okay.
-#%undefine _disable_source_fetch
+%undefine _disable_source_fetch
 Source0:        https://github.com/das-developers/%{name}/archive/refs/tags/v%{tagver}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 

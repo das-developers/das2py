@@ -11,8 +11,7 @@ Copy the included spec and patch files to locations within your rpmbuild tree.  
 destdir patch is needed because version `v2.3-pre4` did not have the DESTDIR macro
 and thus the install targets were not relocatable for two-stage installs.  Future releases (aka v2.3-pre5, etc.) will not need this file.
 ```bash
-cp makefiles/rpm/das2C.spec $HOME/rpmbuild/SPECS/
-cp makefiles/rpm/das2C-destdir.patch $HOME/rpmbuild/SOURCES/
+cp makefiles/rpm/das2py.spec $HOME/rpmbuild/SPECS/
 ```
 
 Install dependencies as usual, but also include the das2C rpms:
