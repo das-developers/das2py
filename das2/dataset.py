@@ -86,7 +86,7 @@ class Datum(object):
 
 	__slots__ = ('value','unit')
 
-	def __init__(self, value, unit=None):
+	def __init__(self, value, unit=None, valtype=None):
 		"""Create a datum
 		For string values, if no units are specified the string is parsed into 
 		a value and units.  To avoid parsing for string data explicity provide
@@ -101,6 +101,30 @@ class Datum(object):
 
 		"""
 
+		# If they gave me an explicit type, don't try to figure anything out
+		# just do what they said
+		if valtype != None:
+			if valtype == str:
+				super(Datum,self).__setattr__('value', value.strip())
+			elif valtype == int:
+				super(Datum,self).__setattr__('value', int(value.strip()) )
+			elif valtype == float:
+				super(Datum,self).__setattr__('value', float(value.strip()) )
+			elif valtype == dastime.DasTime:
+				super(Datum,self).__setattr__('value', dastime.DasTime(value.strip()) )
+			else:
+				raise TypeError("Unknown value type %s"%valtype)
+
+			if unit is None:
+				if valtype == dastime.DasTime:
+					super(Datum,self).__setattr__('unit', "UTC")  # UTC
+				else:
+					super(Datum,self).__setattr__('unit', "")  # dimensionless
+			else:
+				super(Datum,self).__setattr__('unit', unit)
+			return
+
+		# Okay switch to guess work...
 		if isinstance(value, Datum):
 			super(Datum,self).__setattr__('value', value.value)  # Copy construction
 			super(Datum,self).__setattr__('unit', value.unit)
