@@ -86,20 +86,45 @@ class Datum(object):
 
 	__slots__ = ('value','unit')
 
-	def __init__(self, value, unit=None, valtype=None):
+	def __init__(self, value, unit=None, valtype=None, dimless=None):
 		"""Create a datum
-		For string values, if no units are specified the string is parsed into 
-		a value and units.  To avoid parsing for string data explicity provide
-		the units.  Note unit="" = dimensionless units, while units=None means
-		'go figure it out'
 
-		Datum("-123Volts")  => value:-123  units:"V"
-		Datum("1.456 micrometers") => value: 1.456  units:"μm"
-		Datum("New Mexico")     => value:"New" units:"Mexico" (probably not what you want)
-		Datum("New Mexico", "") => value:"New Mexico" units:""
-		Datum("New Mexico", "State") => value:"New Mexico", units:"State"
+		A datum is an immutable value and it's units.  The value may be a int, 
+		float, DasTime, or str.  The unit is always a string.
 
+		Args:
+			value (int,float,DasTime,str,Datum): This is the value, or if no
+				unit is specified in the second argument, this is a thing that
+				will be parsed to get a value and a unit.
+
+			unit (str): The units of this value.  These follow all the rules
+				for das2C units and may be transformed by using the convert
+				function. 
+
+				If unit == None, then value will be parsed to find the units.
+				Thus to avoid value parsing, exlicitly provide units.
+			
+			valtype (type): Explicitly set the data type for the value
+				after it's parsed.  If valtype == None, then the value parser
+				will define the type choosing the first one of: int, float,
+				DasTime, str
+			
+			dimless (str): The unit type to assign if the value turns out to
+				be unitless, a.k.a. Datum.unit == ''.
+
+		Examples:
+			Datum("-123Volts")  => value:-123  units:"V"
+			Datum("1.456 micrometers") => value: 1.456  units:"μm"
+			Datum("New Mexico")     => value:"New" units:"Mexico" (probably not what you want)
+			Datum("New Mexico", "") => value:"New Mexico" units:""
+			Datum("New Mexico", "State") => value:"New Mexico", units:"State"
 		"""
+
+		# Copy construction
+		if isinstance(value, Datum):
+			super(Datum,self).__setattr__('value', value.value)
+			super(Datum,self).__setattr__('unit', value.unit)
+			return 
 
 		# If they gave me an explicit type, don't try to figure anything out
 		# just do what they said
@@ -122,19 +147,17 @@ class Datum(object):
 					super(Datum,self).__setattr__('unit', "")  # dimensionless
 			else:
 				super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
 			return
 
 		# Okay switch to guess work...
-		if isinstance(value, Datum):
-			super(Datum,self).__setattr__('value', value.value)  # Copy construction
-			super(Datum,self).__setattr__('unit', value.unit)
-
 		if isinstance(value, (int,float,dastime.DasTime)):      # numerics
 			super(Datum,self).__setattr__('value', value)
 			if unit is None:
 				super(Datum,self).__setattr__('unit', "")  # dimensionless
 			else:
 				super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
 			return
 
 		if not isinstance(value, str):
@@ -147,6 +170,7 @@ class Datum(object):
 		if unit is not None:
 			super(Datum,self).__setattr__('value', value.strip())
 			super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
 			return
 
 		# Parsing value + units, this is the likely bug nest, add unittests
@@ -183,7 +207,9 @@ class Datum(object):
 						super(Datum,self).__setattr__('value', value)
 					except:
 						# Okay, just a string
-						super(Datum,self).__setattr__('value', value)			
+						super(Datum,self).__setattr__('value', value)	
+
+			self._subDimLess(dimless)		
 			return
 	
 		# Alright, no spaces.  Try to handle stuff like:
@@ -208,6 +234,7 @@ class Datum(object):
 		if n == 0:
 			super(Datum,self).__setattr__('value', value)
 			super(Datum,self).__setattr__('unit', "")
+			self._subDimLess(dimless)
 			return
 
 		# Found numbers, try to convert value 
@@ -231,6 +258,13 @@ class Datum(object):
 				super(Datum,self).__setattr__('value', value[:n])
 				super(Datum,self).__setattr__('unit', value[n:])
 
+		self._subDimLess(dimless)
+
+
+	def _subDimLess(self, dimless):
+		"""If unit happens to be dimensionless, sub in this value"""
+		if dimless and (self.unit == ''):
+			super(Datum,self).__setattr__('unit',dimless)
 
 	def __str__(self):
 		if self.unit != "":
