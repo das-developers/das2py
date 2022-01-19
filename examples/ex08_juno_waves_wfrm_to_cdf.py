@@ -29,6 +29,21 @@ das2.auth_load()
 
 # ########################################################################## #
 
+def test_load_data(tBeg, tEnd, SrcId):
+   """tests whether data exists for the given time range to avoid IndexError issue."""
+   try:
+      src = das2.get_source(SrcId)
+      dQuery = {'time':(tBeg, tEnd), 'hfr_i':True}
+      dsReal = src.get(dQuery)[0]
+	
+   except (IndexError):
+      return False
+	
+   else:
+      return True
+
+# ########################################################################## #
+
 def getIQ(sSrcId, sBeg, sEnd):
    "Returns the tuple (dataset I, dataset Q)"""
 
@@ -166,9 +181,14 @@ def main(lArgs):
    sEnd = '2016-12-11T16:29'
    nDFT = 512
    nSlide = 128
-
-   # Reading Das2 streams
    sSrcId = 'site:/uiowa/juno/wav/uncalibrated/hrs/das2'
+   
+   # Testing Das2 streams answer (dataset or not for the wanted date)
+   if test_load_data(sBeg, sEnd, sSrcId) == False:
+      print("### There is no HFR-High subreceiver data in burst mode for the selected time range ###")
+      return
+   
+   # Reading Das2 streams
    (dsReal, dsImg, src) = getIQ(sSrcId, sBeg, sEnd)
 
    # Calculating power spectral densities

@@ -77,6 +77,207 @@ def _np_td_cast(value):
 
 	return value
 
+# ########################################################################### #
+# Datums added to support the vangse project, needs cleanup 
+
+class Datum(object):
+	"""A single immutable value and it's units. Numpy arrays are not use
+	for the backing store"""
+
+	__slots__ = ('value','unit')
+
+	def __init__(self, value, unit=None, valtype=None, dimless=None):
+		"""Create a datum
+
+		A datum is an immutable value and it's units.  The value may be a int, 
+		float, DasTime, or str.  The unit is always a string.
+
+		Args:
+			value (int,float,DasTime,str,Datum): This is the value, or if no
+				unit is specified in the second argument, this is a thing that
+				will be parsed to get a value and a unit.
+
+			unit (str): The units of this value.  These follow all the rules
+				for das2C units and may be transformed by using the convert
+				function. 
+
+				If unit == None, then value will be parsed to find the units.
+				Thus to avoid value parsing, exlicitly provide units.
+			
+			valtype (type): Explicitly set the data type for the value
+				after it's parsed.  If valtype == None, then the value parser
+				will define the type choosing the first one of: int, float,
+				DasTime, str
+			
+			dimless (str): The unit type to assign if the value turns out to
+				be unitless, a.k.a. Datum.unit == ''.
+
+		Examples:
+			Datum("-123Volts")  => value:-123  units:"V"
+			Datum("1.456 micrometers") => value: 1.456  units:"μm"
+			Datum("New Mexico")     => value:"New" units:"Mexico" (probably not what you want)
+			Datum("New Mexico", "") => value:"New Mexico" units:""
+			Datum("New Mexico", "State") => value:"New Mexico", units:"State"
+		"""
+
+		# Copy construction
+		if isinstance(value, Datum):
+			super(Datum,self).__setattr__('value', value.value)
+			super(Datum,self).__setattr__('unit', value.unit)
+			return 
+
+		# If they gave me an explicit type, don't try to figure anything out
+		# just do what they said
+		if valtype != None:
+			if valtype == str:
+				super(Datum,self).__setattr__('value', value.strip())
+			elif valtype == int:
+				super(Datum,self).__setattr__('value', int(value.strip()) )
+			elif valtype == float:
+				super(Datum,self).__setattr__('value', float(value.strip()) )
+			elif valtype == dastime.DasTime:
+				super(Datum,self).__setattr__('value', dastime.DasTime(value.strip()) )
+			else:
+				raise TypeError("Unknown value type %s"%valtype)
+
+			if unit is None:
+				if valtype == dastime.DasTime:
+					super(Datum,self).__setattr__('unit', "UTC")  # UTC
+				else:
+					super(Datum,self).__setattr__('unit', "")  # dimensionless
+			else:
+				super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
+			return
+
+		# Okay switch to guess work...
+		if isinstance(value, (int,float,dastime.DasTime)):      # numerics
+			super(Datum,self).__setattr__('value', value)
+			if unit is None:
+				super(Datum,self).__setattr__('unit', "")  # dimensionless
+			else:
+				super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
+			return
+
+		if not isinstance(value, str):
+			raise TypeError("Can not create a Datum from a %s"%type(str).__name__)
+
+		value = value.strip()
+		if len(value) == 0:
+			raise ValueError("Empty value string")
+
+		if unit is not None:
+			super(Datum,self).__setattr__('value', value.strip())
+			super(Datum,self).__setattr__('unit', unit)
+			self._subDimLess(dimless)
+			return
+
+		# Parsing value + units, this is the likely bug nest, add unittests
+
+		# if the string can be split on spaces take the first chunk and 
+		# assume its the value, everything else is the units.  This gets:
+		#
+		#    1.45e-14 V**2 m**-2 Hz**-1
+		#    23 counts
+		#
+		# But not
+		#
+		#    New Mexico State
+		#
+
+		lValue = value.split()
+		if len(lValue) > 1:
+			value = lValue[0]
+			unit = ' '.join(lValue[1:])
+			super(Datum,self).__setattr__('unit', unit)
+			try:
+				# attempt int conversion first
+				value = int(value, 10)
+				super(Datum,self).__setattr__('value', value)
+			except ValueError:
+				try:
+					# Attempt float conversion 2nd
+					value = float(value)
+					super(Datum,self).__setattr__('value', value)
+				except:
+					try:
+						# Time conversion 3rd
+						value = dastime.DasTime(value)
+						super(Datum,self).__setattr__('value', value)
+					except:
+						# Okay, just a string
+						super(Datum,self).__setattr__('value', value)	
+
+			self._subDimLess(dimless)		
+			return
+	
+		# Alright, no spaces.  Try to handle stuff like:
+		#
+		# 124mV
+		# 10dB/div
+		# 2005-01-01
+		#
+		# by reading until a non-digit (other than an 'e' or 'E' preceeded by
+		# a '+' or '-') or non-dot is found.  This should be a regular expression
+		n = 0
+		cPrev = ""
+		while n < len(value):
+			if n > 0: cPrev = value[n-1]
+			if value[n].isdigit() or (value[n] in  ('.','-','+')) or \
+			   ( (cPrev.isdigit() or cPrev=='.') and (value[n] in ('e','E')) ):
+			   n += 1
+			else:
+				break
+
+		# Didn't find recognizable number, just save as a string
+		if n == 0:
+			super(Datum,self).__setattr__('value', value)
+			super(Datum,self).__setattr__('unit', "")
+			self._subDimLess(dimless)
+			return
+
+		# Found numbers, try to convert value 
+		try:
+			rVal = float(value[:n])
+			super(Datum,self).__setattr__('value', rVal)
+			super(Datum,self).__setattr__('unit', value[n:])
+		except ValueError:
+			# Okay can't find numeric part, try for a time
+			try:
+				dt = dastime.DasTime(value[:n])
+				super(Datum,self).__setattr__('value', dt)
+				if n < len(value) and (value[n:].lower() != 'z'):
+					super(Datum,self).__setattr__('unit', value[n:])
+				else:
+					super(Datum,self).__setattr__('unit', "UTC")
+			except ValueError as e:
+				# Won't convert to dastime, well just save as as string, if they wanted
+				# to skip the chance at mistaken autoconvert, should have specified the
+				# units explicitly
+				super(Datum,self).__setattr__('value', value[:n])
+				super(Datum,self).__setattr__('unit', value[n:])
+
+		self._subDimLess(dimless)
+
+
+	def _subDimLess(self, dimless):
+		"""If unit happens to be dimensionless, sub in this value"""
+		if dimless and (self.unit == ''):
+			super(Datum,self).__setattr__('unit',dimless)
+
+	def __str__(self):
+		if self.unit != "":
+			return ("%s"%(self.value))
+		else:
+			return ("%s %s"%(self.value, self.unit))
+
+	def __repr__(self):
+		if isinstance(self.value, str):
+			return "<das2.Datum: value='%s' units='%s'>"%(self.value, self.unit)
+		else:
+			return "<das2.Datum: value=%s units='%s'>"%(self.value, self.unit)
+
 
 # ########################################################################### #
 
