@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<!-- 
+  This is a multi-root schema definition.  It will validate any one of the
+  top-level das2.2 stream root elements, <stream>, <packet>, <comment> or
+  <exception>, *after* the element tree has been modified to fix very 
+  non-standard syntax used for the das2.2 properties elements.
+-->   
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" >
+
+<!-- Stream headers ======================================================= -->
+
+<!-- The data types or stream version attribute -->
+<xs:simpleType name="StreamVersion">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="2.2" />
+  </xs:restriction>  
+</xs:simpleType>
+
+<!-- The data types for properties -->
+<xs:simpleType name="PropType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="String" />
+    <xs:enumeration value="Datum" />
+    <xs:enumeration value="boolean" />
+    <xs:enumeration value="int" />
+    <xs:enumeration value="double" />
+    <xs:enumeration value="DatumRange" />
+   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="CompressVal">
+  <xs:restriction base="xs:string">
+     <xs:enumeration value="none" />
+     <xs:enumeration value="zlib" />
+   </xs:restriction>
+</xs:simpleType>
+
+<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
+<xs:simpleType name="PropName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.-,:]+"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Properties grouping, these aren't in the actual stream, the parser
+     has to transform what's in the stream to standard XML first -->
+<xs:complexType name="Property" mixed="true">
+  <xs:simpleContent>
+    <xs:extension base="xs:string">
+       <xs:attribute name="name" type="PropName" use="required" />
+       <xs:attribute name="type" type="PropType" default="String" />
+    </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<xs:complexType name="Properties">
+  <xs:sequence>
+    <xs:element name="p" type="Property" minOccurs="1" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+<!-- There may be at most one properies child.  Other elements can occur as often as they
+     like.  Note that this does not cach a misspelled properites tag. -->
+<xs:element name="stream">
+  <xs:complexType>
+    <xs:sequence>
+       <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="version" type="StreamVersion" default="2.2" />
+    <xs:attribute name="compression" type="CompressVal" default="none"/>
+  </xs:complexType>
+</xs:element>
+
+<!-- Packet Headers ======================================================= -->
+
+<!-- Array Names -->
+<xs:simpleType name="PhysDimName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.]+"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+   </xs:restriction>
+</xs:simpleType>
+
+<!-- Array names that can be empty -->
+<xs:simpleType name="PhysDimNameEmpty">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[*]{0}|[a-zA-Z][a-zA-Z0-9_\.]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+   </xs:restriction>
+</xs:simpleType>
+
+
+<!-- Single value per packet physical dimensions -->
+<xs:complexType name="CoordPoint">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimNameEmpty" />
+  <xs:attribute name="type" type="StorageType"  use="required" />
+  <xs:attribute name="units" type="xs:token" use="required" />
+</xs:complexType>
+
+<xs:simpleType name="StorageType">
+  <xs:restriction base="xs:string">
+      <xs:pattern 
+value="big_endian_real[48]|little_endian_real[48]|big_endian_int8|little_endian_int8|ascii[1-9][0-9]*|time[1-9][0-9]*|char[1-9][0-9]*" />
+   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Values">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9\+\-,\.eE\s]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Value">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9\+-\.eE\s]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+
+<xs:simpleType name="Items1">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[1-9][0-9]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="DataPoint">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" />
+  <xs:attribute name="type" type="StorageType"  use="required" />
+  <xs:attribute name="units" type="xs:token" use="required" />
+</xs:complexType>
+
+<!-- Multi Value per packet physical dimenions, spanning 2 coordinates -->
+<xs:complexType name="DataRow">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" use="required" />
+  <xs:attribute name="type" type="StorageType"  use="required" />
+  <xs:attribute name="zUnits" type="xs:token" use="required" />
+  <xs:attribute name="nitems" type="Items1" use="required" />
+  <xs:attribute name="yUnits" type="xs:token" use="required" />
+  <xs:attribute name="yTags" type="Values" />
+  <xs:attribute name="yTagMin" type="Value" />
+  <xs:attribute name="yTagInterval" type="Value" />
+</xs:complexType>
+
+<xs:complexType name="Dataset">
+    <xs:sequence>
+      <xs:element name="x"    type="CoordPoint" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="y"    type="CoordPoint" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="z"    type="DataPoint" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="yscan" type="DataRow"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+      </xs:choice>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- A packet may have one of these as the top level element -->
+<xs:element name="packet" type="Dataset" />
+
+<!-- Exceptions =========================================================== -->
+
+<xs:element name="exception">
+  <xs:complexType>
+    <xs:simpleContent>
+      <xs:extension base="xs:string" >
+        <xs:attribute name="type" type="xs:token" use="required"/>        
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:element>
+
+<!-- Comments ============================================================= -->
+
+<xs:element name="comment">
+  <xs:complexType>
+    <xs:simpleContent>
+      <xs:extension base="xs:string" >
+        <xs:attribute name="type" type="xs:token" use="required"/>
+        <xs:attribute name="source" type="xs:normalizedString"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>

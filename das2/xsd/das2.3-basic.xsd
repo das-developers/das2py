@@ -1,0 +1,346 @@
+<?xml version="1.0"?>
+<!-- 
+  This is a multi-root schema definition.  It will validate any one of the
+  top-level das2.3 stream root elements, <stream>, <packet>, <comment> or
+  <exception>.  Of course to be well-formed only *one* of the elements above
+  may form a header packet.
+-->   
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" >
+
+<!-- Stream headers ======================================================= -->
+
+<!-- The data types or stream version attribute -->
+<xs:simpleType name="StreamVersion">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="2.3/basic" />
+  </xs:restriction>  
+</xs:simpleType>
+
+<!-- The data types for properties -->
+<xs:simpleType name="PropType">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="string" />
+    <xs:enumeration value="Datum" />
+    <xs:enumeration value="boolean" />
+    <xs:enumeration value="integer" />
+    <xs:enumeration value="real" />
+    <xs:enumeration value="DatumRange" />
+    <xs:enumeration value="doubleRange" />
+   </xs:restriction>
+</xs:simpleType>
+
+<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
+<xs:simpleType name="PropName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.-,:]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Array Names -->
+<xs:simpleType name="PhysDimName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+   </xs:restriction>
+</xs:simpleType>
+
+<!-- Alt prop by language -->
+<xs:simpleType name="ISO639_1">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_-]+"/>
+    <xs:maxLength value="8"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:complexType name="AltProp">
+  <xs:simpleContent>
+    <xs:extension base="xs:string" >
+      <xs:attribute name="lang" type="ISO639_1" use="required" />
+    </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<!-- Single property -->
+<xs:complexType name="Property" mixed="true">
+   <xs:sequence>
+     <xs:element name="alt" type="AltProp" minOccurs="0" maxOccurs="unbounded" />
+   </xs:sequence>
+   <xs:attribute name="name" type="PropName" use="required" />
+   <xs:attribute name="type" type="PropType" default="String" />
+</xs:complexType>
+
+<!-- Properties grouping -->
+<xs:complexType name="Properties">
+  <xs:sequence>
+    <xs:element name="p" type="Property" minOccurs="1" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+
+<!-- There may be at most one properies child.  Other elements can occur as often as they
+     like.  Note that this does not cach a misspelled properites tag. -->
+<xs:element name="stream">
+<xs:complexType>
+    <xs:sequence>
+      <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <!-- You can add other tags here, but they can't be from the das2 namespace -->
+          <xs:any namespace="##other" processContents="skip" />
+          <xs:any namespace="##local" processContents="skip" />
+        </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="version" type="StreamVersion" use="required" />
+    <xs:attribute name="primaryGroup" type="PhysDimName" />
+    <xs:attribute name="lang" type="ISO639_1" default="en"/>
+    <xs:anyAttribute processContents="skip" />
+  </xs:complexType>
+</xs:element>
+
+
+<!-- Packet Headers ======================================================= -->
+
+<!-- Each packet header defines a das2 dataset and how it appears in the data
+     stream.  The object containment hirearchy is depected in the middle of
+     the reference poster, 
+     
+        https://das2.org/das2_AGU2019.pdf 
+         
+     and summarized below:
+     
+       Stream
+         |
+         |- Dataset 1
+         |- Dataset 2
+         |- Dataset 3
+         |- .....
+       
+       Dataset  <packet>
+         |
+         |- Physical Dimension   <x> <yset> <y> <zset> <z> <wset> <w>
+             |                   <xheader> <yheader> <zheader>
+             |
+             |- Variable         <plane>, <headerplane>
+                 |
+                 |- Quantities   specified by attributes                 
+-->
+
+<!-- The purposes for values of a plane -->
+<xs:simpleType name="VarRole">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="center" />
+    <xs:enumeration value="offset" />
+    <xs:enumeration value="average" />
+    <xs:enumeration value="count" />
+    <xs:enumeration value="min" />
+    <xs:enumeration value="max" />
+    <xs:enumeration value="width" />
+    <xs:enumeration value="std_dev" />
+    <xs:enumeration value="min_error" />
+    <xs:enumeration value="max_error" />    
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Data value types, sizes and formats -->
+<xs:simpleType name="EncodeType">
+  <xs:restriction base="xs:string">
+      <xs:pattern 
+value="real[48]|int[1248]|text[0-9]*|text\*" />
+   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ValueType">
+  <xs:restriction base="xs:string">
+      <xs:pattern 
+value="isotime|integer|real|string" />
+   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Values">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9\+\-,\.eE\s]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Items">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[1-9][0-9]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- A variable in a physical dimension with data in the packets -->
+<xs:complexType name="PktVariable">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="type" type="ValueType" default="real" />
+  <xs:attribute name="encode" type="EncodeType" />
+  <xs:attribute name="units" type="xs:token"  use="required" />
+  <xs:attribute name="use" type="VarRole" default="center" />
+</xs:complexType>
+
+
+<!-- Single value per packet physical dimensions -->
+<xs:complexType name="PointPhysDim">
+  <xs:sequence>
+    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="8"/>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" />  
+  <xs:attribute name="pdim" type="PhysDimName" use="required" />
+</xs:complexType>
+
+<!-- An array variable in the header -->
+<xs:complexType name="HdrVarVals">
+  <xs:simpleContent>
+     <xs:extension base="Values" >
+	    <xs:attribute name="use"     type="VarRole"  default="center" />
+	    <xs:attribute name="units"    type="xs:token" use="required" />
+       <xs:attribute name="repeat"   type="xs:positiveInteger" />
+	  </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<!-- A sequence variable in the header -->
+<xs:complexType name="HdrVarSeq">
+  <xs:attribute name="use"      type="VarRole"  default="center" />
+  <xs:attribute name="units"    type="xs:token" use="required" />
+  <xs:attribute name="minval"   type="xs:double" use="required"/>
+  <xs:attribute name="interval" type="xs:double" use="required"/>
+  <xs:attribute name="repeat"   type="xs:positiveInteger" default="1"/>
+</xs:complexType>
+
+<!-- A physical dimension with data included right in the header -->
+<xs:complexType name="HdrPhysDim">
+  <xs:sequence>
+    <xs:choice minOccurs="1" maxOccurs="9">
+      <xs:element name="values" type="HdrVarVals"/>
+      <xs:element name="sequence" type="HdrVarSeq"/> 
+    </xs:choice>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="pdim"   type="PhysDimName" use="required" />
+</xs:complexType>
+
+<!-- Multi Value per packet physical dimenions, spanning 1 coordinate -->
+<xs:complexType name="YSetPhysDim">
+  <xs:sequence>
+    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>  
+    <xs:element name="xcoord" type="HdrPhysDim" minOccurs="1" maxOccurs="1"/>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" />
+  <xs:attribute name="pdim" type="PhysDimName" use="required" />
+  <xs:attribute name="nitems" type="Items" use="required" />
+</xs:complexType>
+
+<!-- Multi Value per packet physical dimenions, spanning 2 coordinates -->
+<xs:complexType name="ZSetPhysDim">
+  <xs:sequence>
+    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>
+    <xs:element name="xcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="ycoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" />
+  <xs:attribute name="pdim" type="PhysDimName" use="required" />
+  <xs:attribute name="nitems" type="Items" use="required" />
+</xs:complexType>
+
+<!-- Multi Value per packet physical dimenions, spanning 3 coordinate -->
+<xs:complexType name="WSetPhysDim">
+  <xs:sequence>
+    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>
+    <xs:element name="xcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="ycoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1" />
+    <xs:element name="zcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <!-- Can extend with other elements here, but they can't be from this namespace -->
+    <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+    <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+  </xs:sequence>
+  <xs:attribute name="name" type="PhysDimName" />
+  <xs:attribute name="pdim" type="PhysDimName" use="required" />
+  <xs:attribute name="nitems" type="Items" use="required" />
+</xs:complexType>
+
+
+<xs:complexType name="Dataset">
+    <xs:sequence>
+      <xs:element name="x"    type="PointPhysDim" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="yset" type="YSetPhysDim"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="y"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="zset" type="ZSetPhysDim"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="z"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="wset" type="WSetPhysDim"  minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="w"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="properties" type="Properties" minOccurs="0"/>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <!-- Can extend with other elements here, but they can't be from this namespace -->
+      <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
+      <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+      </xs:choice>
+    </xs:sequence>
+    
+    <xs:attribute name="delim" type="xs:string" minOccurs="0"/>
+
+    <!-- Can extend with other attributes, will be skipped by schema -->
+    <xs:anyAttribute processContents="skip" />
+</xs:complexType>
+
+<!-- A packet may have one of these as the top level element -->
+<xs:element name="packet" type="Dataset" />
+
+<!-- Exceptions =========================================================== -->
+
+<xs:element name="exception">
+  <xs:complexType>
+    <xs:simpleContent>
+      <xs:extension base="xs:string" >
+        <xs:attribute name="type" type="xs:token" use="required"/>
+        
+        <!-- Can extend with other attributes, will be skipped by schema -->
+        <xs:anyAttribute processContents="skip" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:element>
+
+<!-- Comments ============================================================= -->
+
+<xs:element name="comment">
+  <xs:complexType>
+    <xs:simpleContent>
+      <xs:extension base="xs:string" >
+        <xs:attribute name="type" type="xs:token" use="required"/>
+        <xs:attribute name="source" type="xs:normalizedString"/>
+       
+        <!-- Can extend with other attributes, will be skipped by schema -->
+        <xs:anyAttribute processContents="skip" />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>

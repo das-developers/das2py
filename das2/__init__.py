@@ -37,6 +37,7 @@ from das2.container import *
 from das2.dataset   import *
 from das2.auth      import *
 from das2.util      import *
+from das2.reader    import *
 
 # Pull up a function or two from the C module:
 from _das2 import convert

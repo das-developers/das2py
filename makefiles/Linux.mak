@@ -12,10 +12,16 @@ PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
 
 CDFSRC=__init__.py const.py
 
+SCHEMA=das2.2-mostly-strict.xsd das2.2-mostly.xsd das2.3-basic-strict.xsd \
+ das2.3-basic.xsd
+
 BUILT_PYSRC=$(patsubst %,$(BD)/das2/%,$(PYSRC))
 INSTALLED_PYSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/%.py,$(PYSRC))
 
 INSTALLED_CDFSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/pycdf/%.py,$(CDFSRC))
+
+# Treat schemas as package data
+INSTALLED_SCHEMA=$(patsubst %.xsd,$(INST_HOST_LIB)/das2/xsd/%.xsd,$(SCHEMA))
 
 # Pattern Rules #############################################################
 
@@ -23,6 +29,9 @@ $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 	install -D -m 664 $< $@
 	
 $(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
+	install -D -m 664 $< $@
+	
+$(INST_HOST_LIB)/das2/xsd/%.xsd:$(BD)/das2/xsd/%.xsd
 	install -D -m 664 $< $@
 
 
@@ -42,6 +51,7 @@ $(BD)/_das2.so:src/_das2.c
 
 # Run tests
 test:
+	#env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_verify_test.sh $(BD)
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestRead.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestDasTime.py
 	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_dastime_test1.sh $(BD)
@@ -51,7 +61,8 @@ test:
 
 # Install purelib and extensions (python setup.py is so annoyingly
 # restrictive that we'll just do this ourselves)
-install:$(INST_EXT_LIB)/_das2.so  $(INSTALLED_PYSRC) $(INSTALLED_CDFSRC)
+install:$(INST_EXT_LIB)/_das2.so  $(INSTALLED_PYSRC) $(INSTALLED_CDFSRC) \
+ $(INSTALLED_SCHEMA)
 
 doc:
 	cd sphinx_doc && $(MAKE) html

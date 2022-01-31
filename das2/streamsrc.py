@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 
-"""This module provides functions for interacting with HTTP GET servinces
+"""This module provides functions for interacting with HTTP GET services
 that provide a data stream.
 """
 import sys

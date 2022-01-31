@@ -1,0 +1,215 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+from os.path import basename as bname
+
+# Stuff that might not work if server is mis-configured
+import xml.parsers.expat
+from lxml import etree
+
+import das2
+
+# ########################################################################## #
+
+def pout(item):
+	"""Encode strings if needed, send binary stuff out the door as is"""
+	if isinstance(item, str):
+		sys.stdout.buffer.write(item.encode('utf-8'))
+		sys.stdout.buffer.write(b'\n')
+	else:
+		sys.stdout.buffer.write(item)
+
+
+def errorExit(sOut):
+	pout(sOut)
+	sys.exit(5)
+
+# ########################################################################### #
+
+def prnErrorContext(curPkt, nLine):
+	sHdr = curPkt.content.decode('utf-8')
+	lLines = sHdr.split('\n')
+
+	for i in range(len(lLines)):
+		# Trim long lines at 80 characters
+		if len(lLines[i]) > 80:
+			sLine = lLines[i][:76] + " ..."
+		else:
+			sLine = lLines[i]
+			
+		# If we have a valid line number only print within 6 lines each 
+		# way of the header
+		if (nLine > 0) and abs(nLine - (i+1)) > 6: continue
+		
+		if i + 1 == nLine:
+			pout("    %3d---> %s"%(i+1, sLine))
+		else:
+			pout("    %3d     %s"%(i+1, sLine))
+
+
+# ########################################################################### #
+def main(argv):
+
+	# Ignore confusing help formatting for now.  (I think newline character
+	# insertion in help output is the most requested feature of argparse.)
+		
+	psr = argparse.ArgumentParser(
+		description="das2 stream identifier and validator"
+	)
+	
+	psr.add_argument(
+		'-s','--schema', default=None, help="Full path to a specific XSD "+\
+		"schema file to load instead of autoloading a schema from internal "+\
+		"package data.", dest='sSchema', metavar='schema'
+	)
+	
+	psr.add_argument(
+		'-e','--expect', default=None, dest="sExpect", metavar="version",
+		help="Don't auto-detect the stream version.  Only streams that match "+\
+		"VERSION are validated.  Use one of '2.3/basic', '2.2'."
+	)
+	
+	psr.add_argument(
+		'-S','--strict', default=False, action="store_true", dest="bStrict",
+		help="Typically das2 client programs should accept and ignore any "+\
+		"extra elements or attributes in headers.  Use this option to flag "+\
+		"any extra attributes, elements, or data as an error"
+	)
+	
+	psr.add_argument(
+		'-p', '--prn-hdrs', default=False, action="store_true",
+		help="Print each das2 header encountered in the stream prior to "+\
+		"schema validation.", dest='bPrnHdr'
+	)
+	
+	# End command line with list of files to validate...
+	psr.add_argument(
+		'lFiles', help='The file(s) to validate', nargs='+', metavar='file'
+	)
+	
+	opts = psr.parse_args()	
+	
+	for sFile in opts.lFiles:
+		fIn = open(sFile, 'rb')
+
+		pout("Validating: %s\n\n"%sFile)
+	
+		# Same parsing state info to help with exception output
+		curPkt = None
+		sCurType = None
+		dDataPktCount = {}
+	
+		try:
+			reader = das2.PacketReader(fIn, opts.bStrict)
+			
+			sStreamContent, sStreamVer, bVarTags = reader.streamType()
+			
+			if sStreamContent != 'das2':
+				pout("This is a %s stream, expected a das2 stream"%sStreamContent)
+				return 5
+			
+			if opts.sExpect and (opts.sExpect != sStreamVer):
+				pout("%s: is a %s stream, but %s was expected"%(
+					sFile, sStreamVer, opts.sExpect
+				))
+				return 5
+			
+			if opts.sSchema:
+				fSchema = open(opts.sSchema)
+				schema_doc = etree.parse(fSchema)
+				schema = etree.XMLSchema(schema_doc)
+			else:
+				(schema, opts.sSchema) = das2.loadStreamSchema(sStreamVer, opts.bStrict)
+			pout("Loaded XSD: %s"%bname(opts.sSchema))
+			
+			
+			for pkt in reader:
+				curPkt = pkt
+				
+				if isinstance(pkt, das2.DataPkt):
+					dDataPktCount[pkt.id] += 1
+					continue
+		
+				if (not isinstance(pkt, das2.HdrPkt) ):
+					if not opts.bStrict:
+						continue
+					else:
+						raise ValueError("Unknown packet type '%s' encountered in strict mode"%pkt.tag)
+
+				if opts.bPrnHdr:
+					pout(pkt.content)
+								
+				docTree = pkt.docTree()
+				elRoot = docTree.getroot()
+				sCurType = elRoot.tag
+				
+				schema.assertValid(docTree)
+			
+				if isinstance(pkt, das2.DataHdrPkt):
+					dDataPktCount[pkt.id] = 0
+					pout("|%s| ID %s %s header [OKAY] (data size %d bytes)"%(
+						pkt.tag, pkt.id, sCurType, pkt.baseDataLen()
+					))
+				else:
+					pout("|%s| ID %s %s header [OKAY]"%(pkt.tag, pkt.id, sCurType))
+					
+				curPkt = None
+				sCurType = None
+			
+		except(
+			ValueError, etree.XMLSyntaxError, etree.DocumentInvalid, 
+			xml.parsers.expat.ExpatError
+		) as e:
+			if curPkt:
+				if sCurType:
+					pout("|%s| ID %s %s header [ERROR] (context follows)"%(curPkt.tag, curPkt.id, sCurType))
+				else:
+					pout("|%s| ID %s data [ERROR]"%(pkt.tag, pkt.id))
+
+			
+			# Try to get last line with an error
+			nLine = -1
+			if isinstance(e, (etree.XMLSyntaxError, etree.DocumentInvalid)):
+				#pout(e.error_log)
+				nLine = e.error_log[-1].line
+			elif isinstance(e, xml.parsers.expat.ExpatError):
+				nLine = e.lineno
+			
+			# Print context if we can get it
+			if curPkt and isinstance(curPkt, das2.HdrPkt):
+				try:
+					prnErrorContext(curPkt, nLine)
+				except:
+					# Assumption here
+					pout("Header packet %s%d is not valid UTF-8 text"%(
+						curPkt.tag, curPkt.id))
+		
+			# Hack the non-existent 'p' element back out of any das2.2 error messages
+			sErr = str(e)
+			if sStreamVer == '2.2' and sErr.startswith("Element 'p',"):
+				sFind ="Element 'p', attribute 'type': [facet 'enumeration'] The value"
+				sRep = "Element 'properties', the attribute qualifier"
+				sErr = sErr.replace(sFind, sRep)
+			pout(sErr)
+		
+			#pout(type(e), "\n   dir:", dir(e.error_log[-1]), '\n   msg:', e.error_log[-1].message)
+			#pout("Error in %s:\n%s"%(sFile, str(e)))
+			return 5
+				
+		for nId in dDataPktCount:
+			pout("|Dx| ID %d %d data packets [OKAY]"%(nId, dDataPktCount[nId]))
+	
+		if bStrict:
+			pout('Stream validates as a strict %s version %s stream without extensions\n'%(
+				sStreamContent, sStreamVer))
+		else:	
+			pout('Stream validates as a %s version %s stream\n'%(
+				sStreamContent, sStreamVer))
+
+	return 0	
+
+# ########################################################################## #
+if __name__ == "__main__":
+	sys.exit(main(sys.argv))
+

@@ -71,11 +71,13 @@ else:
 
 setup(description="Das2 extensions for python",
 	name="das2py",
-	version="2.3.pre4",
+	version="2.3.pre5",
 	ext_modules=[ ext ],
 	packages=['das2', 'das2.pycdf'],
 	author="Chris Piker",
 	author_email="das-developers@uiowa.edu",
-	url="https://das2.org/das2py"
+	url="https://das2.org/das2py",
+	scripts=['scripts/das2_verify'],
+	package_data={'das2':['xsd/*.xsd']}
 )
 
