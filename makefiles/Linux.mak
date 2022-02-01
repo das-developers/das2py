@@ -8,7 +8,9 @@ BD=build.$(N_ARCH)
 
 SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
- container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py
+ container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py 
+
+SCRIPTS=das2_verify
 
 CDFSRC=__init__.py const.py
 
@@ -23,6 +25,8 @@ INSTALLED_CDFSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/pycdf/%.py,$(CDFSRC))
 # Treat schemas as package data
 INSTALLED_SCHEMA=$(patsubst %.xsd,$(INST_HOST_LIB)/das2/xsd/%.xsd,$(SCHEMA))
 
+INSTALLED_SCRIPTS=$(patsubst %,$(INST_BIN)/%, $(SCRIPTS))
+
 # Pattern Rules #############################################################
 
 $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
@@ -34,6 +38,8 @@ $(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
 $(INST_HOST_LIB)/das2/xsd/%.xsd:$(BD)/das2/xsd/%.xsd
 	install -D -m 664 $< $@
 
+$(INST_BIN)/%:$(BD)/scripts-$(PYVER)/%
+	install -D -m 775 $< $@	
 
 # Explicit Rules #############################################################
 
@@ -62,7 +68,7 @@ test:
 # Install purelib and extensions (python setup.py is so annoyingly
 # restrictive that we'll just do this ourselves)
 install:$(INST_EXT_LIB)/_das2.so  $(INSTALLED_PYSRC) $(INSTALLED_CDFSRC) \
- $(INSTALLED_SCHEMA)
+ $(INSTALLED_SCHEMA) $(INSTALLED_SCRIPTS)
 
 doc:
 	cd sphinx_doc && $(MAKE) html

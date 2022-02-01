@@ -9,6 +9,10 @@ PREFIX=$(HOME)
 endif
 endif
 
+ifeq ($(INST_BIN),)
+INST_BIN=$(PREFIX)/bin/$(N_ARCH)
+endif
+
 ifeq ($(N_ARCH),)
 N_ARCH=$(shell uname -s).$(shell uname -p)
 endif
@@ -44,6 +48,7 @@ endif
 ifeq ($(INST_EXT_LIB),)
 INST_EXT_LIB=$(PREFIX)/lib/$(N_ARCH)/$(H_ARCH)
 endif
+
 
 BUILD_DIR:=build.$(N_ARCH)
 

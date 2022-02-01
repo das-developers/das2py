@@ -16,16 +16,17 @@
   </xs:restriction>  
 </xs:simpleType>
 
-<!-- The data types for properties -->
+<!-- The data types for properties. Same as ValueType below with ranges -->
 <xs:simpleType name="PropType">
   <xs:restriction base="xs:string">
-    <xs:enumeration value="string" />
-    <xs:enumeration value="Datum" />
     <xs:enumeration value="boolean" />
+    <xs:enumeration value="isotime" />
+    <xs:enumeration value="isotimeRange" />
     <xs:enumeration value="integer" />
+    <xs:enumeration value="integerRange" />
     <xs:enumeration value="real" />
-    <xs:enumeration value="DatumRange" />
-    <xs:enumeration value="doubleRange" />
+    <xs:enumeration value="realRange" />
+    <xs:enumeration value="string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -66,8 +67,9 @@
    <xs:sequence>
      <xs:element name="alt" type="AltProp" minOccurs="0" maxOccurs="unbounded" />
    </xs:sequence>
-   <xs:attribute name="name" type="PropName" use="required" />
-   <xs:attribute name="type" type="PropType" default="String" />
+   <xs:attribute name="name"  type="PropName" use="required" />
+   <xs:attribute name="type"  type="PropType" default="string" />
+   <xs:attribute name="units" type="xs:token" />
 </xs:complexType>
 
 <!-- Properties grouping -->
@@ -84,11 +86,11 @@
 <xs:complexType>
     <xs:sequence>
       <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
-        <xs:choice minOccurs="0" maxOccurs="unbounded">
-          <!-- You can add other tags here, but they can't be from the das2 namespace -->
-          <xs:any namespace="##other" processContents="skip" />
-          <xs:any namespace="##local" processContents="skip" />
-        </xs:choice>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <!-- You can add other tags here, but they can't be from the das2 namespace -->
+        <xs:any namespace="##other" processContents="skip" />
+        <xs:any namespace="##local" processContents="skip" />
+      </xs:choice>
     </xs:sequence>
     <xs:attribute name="version" type="StreamVersion" use="required" />
     <xs:attribute name="primaryGroup" type="PhysDimName" />
@@ -303,7 +305,7 @@ value="isotime|integer|real|string" />
       </xs:choice>
     </xs:sequence>
     
-    <xs:attribute name="delim" type="xs:string" minOccurs="0"/>
+    <xs:attribute name="arraysep" type="xs:string" />
 
     <!-- Can extend with other attributes, will be skipped by schema -->
     <xs:anyAttribute processContents="skip" />

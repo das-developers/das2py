@@ -2,6 +2,7 @@
 das2.3/basic+xml type supported by the D reader yet.
 """
 
+import sys
 import os.path
 from os.path import join as pjoin
 from os.path import dirname as dname
@@ -10,6 +11,12 @@ from io import BytesIO
 import xml.parsers.expat  # Switch das2C to use libxml2 as well?
 from lxml import etree
 
+
+class ReaderError(Exception):
+	def __init__(self, line, message):
+		self.line = line
+		self.message = message
+		super().__init__(self.message)
 
 # ########################################################################### #
 
@@ -50,7 +57,7 @@ def loadStreamSchema(sStreamVer, bStrict=False):
 	return (schema,sFile)
 
 # ########################################################################### #
-def _getValSz(sType):
+def _getValSz(sType, nLine):
 	"""das2 type names always end in the size, just count backwards and 
 	pull off the digits.  You have to get at least one digit
 	"""
@@ -59,6 +66,9 @@ def _getValSz(sType):
 		if c.isdigit(): sSz += c
 		else: break
 	
+	if len(sSz) == 0:
+		raise ReaderError(nLine, "Encoding length not defined in value '%s'"%sType)
+
 	sSz = ''.join(reversed(sSz))
 	return int(sSz, 10)
 
@@ -69,6 +79,10 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 	out the data length.  Works for das2.2 and das2.3
 	"""
 	nSize = 0
+
+	# Das2.3 data can variable length array values in each packet.
+	bArySep = ('arraysep' in elPkt.attrib)
+
 	for child in elPkt:
 		nItems = 1
 		
@@ -80,7 +94,7 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 					"Attribute 'type' missing for element %s in packet ID %d"%(
 					child.tag, nPktId
 				))
-			nSzEa = _getValSz(child.attrib['type'])
+			nSzEa = _getValSz(child.attrib['type'], child.sourceline)
 		
 			if child.tag == 'yscan':
 				if 'nitems' in child.attrib:
@@ -99,7 +113,11 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 				if 'nitems' in child.attrib:
 					lItems = [s.strip() for s in child.attrib['nitems'].split(',')]
 					for sItem in lItems:
-						nItems *= int(sItem, 10)
+
+						# Allow for variable length number of items in das2.3 so
+						# long as the packet has an array seperator defined.
+						if sItem != "*":
+							nItems *= int(sItem, 10)
 					
 			# Add sizes for all the planes, they all have the same number of items
 			# but may have different value sizes
@@ -107,13 +125,14 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 				if subChild.tag == 'array':
 			
 					# Get the value type
-					if 'type' not in subChild.attrib:
-						raise ValueError(
-							"Attribute 'type' missing for element %s in packet ID %d"%(
+					if 'encode' not in subChild.attrib:
+						raise ReaderError(nLine, 
+							"Attribute 'encode' missing for element %s in packet ID %d"%(
 							subChild.tag, nPktId
 						))
+
 				
-					nSzEa = getValSz(subChild.attrib['type'])
+					nSzEa = _getValSz(subChild.attrib['encode'], subChild.sourceline)
 					nSize += nSzEa * nItems		
 		
 		else:
@@ -295,7 +314,7 @@ class DataHdrPkt(HdrPkt):
 		super().__init__(sver, tag, id, length, content)
 		self.nDatLen = None
 
-	def baseDataLen():
+	def baseDataLen(self):
 		"""The das2 parsable data length of each packet.  For das2.3 streams
 		extra information may reside in each packet after known das2 data.
 		This function does not return the size of any extra items.
@@ -409,6 +428,14 @@ class PacketReader:
 			return self._nextVarTag(x4)
 			
 		elif (x4[0:1] == b'[') or (x4[0:1] == b':'):
+
+			# In strict das2.3 mode, don't allow static tags
+			if (self.sVersion != "2.2") and (self.bStrict):
+				raise ValueError(
+					"Das2.2 packet tag '%s' detected in strict das2.3/basic stream"%(
+					x4
+				))
+
 			return self._nextStaticTag(x4)
 			
 		raise ValueError(
@@ -491,7 +518,7 @@ class PacketReader:
 				fPkt = BytesIO(xDoc)
 				docTree = parser.parse()
 				elRoot = docTree.getroot()
-				self.lPktSize[nPktId] = getDataLen(elRoot, self.sVersion, nPktId)
+				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId)
 
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 
@@ -612,24 +639,32 @@ class PacketReader:
 			# Have to differentiate between general header packet and data 
 			# header packet here
 			if sTag == 'Hx':
+
+				# Sanity check, make sure packet is big enough to hold minimum
+				# size das2.3/basic data.
+				fPkt = BytesIO(xDoc)
+				docTree = etree.parse()
+				elRoot = docTree.getroot()
+				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId)
+
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 			else:
 				return HdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 		else:
-			# If this packet is too short, complain
+			# If this packet is below minimum necessary size fail it
 			if nLen < self.lPktSize[nPktId]:
 				raise ValueError(
 					"Short data packet expected %d bytes found %d for |%s|%d| at offset %d"%(
 					self.lPktSize[nPktId], nLen, sTag, nPktId, self.nOffset
 				))
 				
-			# If this data packet has extra content and we are in strict mode
-			# then complain
-			if self.bStrict and (nLen > self.lPktSize[nPktId]):
-				raise ValueError("Strict checking requested, extra content "+\
-				  "(%d bytes) not allowed for %s|%d at offset %d"%(
-				  nLen - self.lPktSize[nPktId], sTag, nPktId, self.nOffset
-				)) 
+			# Even instrict mode, variable length packets are allowed, don't
+			# complain about extra stuff in the packet
+			#if self.bStrict and (nLen > self.lPktSize[nPktId]):
+			#	raise ValueError("Strict checking requested, extra content "+\
+			#	  "(%d bytes) not allowed for %s|%d at offset %d"%(
+			#	  nLen - self.lPktSize[nPktId], sTag, nPktId, self.nOffset
+			#	)) 
 
 			# Return the bytes
 			return DataPkt(self.sVersion, 'Dx', nPktId, nLen, xDoc)

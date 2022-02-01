@@ -6,7 +6,7 @@
   may form a header packet.
   
   This is an alternate version of the main schema, all extension (i.e. 
-  xsd:any) have been removed.  Only defined das2.3elements and attributes
+  xsd:any) have been removed.  Only defined das2.3 elements and attributes
   are allowed. Though clients should not use this schema for standard
   operations it is useful when debugging new streams.
 -->
@@ -21,16 +21,17 @@
   </xs:restriction>  
 </xs:simpleType>
 
-<!-- The data types for properties -->
+<!-- The data types for properties. Same as ValueType below with ranges -->
 <xs:simpleType name="PropType">
   <xs:restriction base="xs:string">
-    <xs:enumeration value="String" />
-    <xs:enumeration value="Datum" />
     <xs:enumeration value="boolean" />
-    <xs:enumeration value="int" />
+    <xs:enumeration value="isotime" />
+    <xs:enumeration value="isotimeRange" />
+    <xs:enumeration value="integer" />
+    <xs:enumeration value="integerRange" />
     <xs:enumeration value="real" />
-    <xs:enumeration value="DatumRange" />
-    <xs:enumeration value="doubleRange" />
+    <xs:enumeration value="realRange" />
+    <xs:enumeration value="string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -71,8 +72,9 @@
    <xs:sequence>
      <xs:element name="alt" type="AltProp" minOccurs="0" maxOccurs="unbounded" />
    </xs:sequence>
-   <xs:attribute name="name" type="PropName" use="required" />
-   <xs:attribute name="type" type="PropType" default="String" />
+   <xs:attribute name="name"  type="PropName" use="required" />
+   <xs:attribute name="type"  type="PropType" default="string" />
+   <xs:attribute name="units" type="xs:token" />
 </xs:complexType>
 
 <!-- Properties grouping -->
@@ -141,10 +143,17 @@
 </xs:simpleType>
 
 <!-- Data value types, sizes and formats -->
-<xs:simpleType name="StorageType">
+<xs:simpleType name="EncodeType">
   <xs:restriction base="xs:string">
       <xs:pattern 
-value="big_endian_real[48]|little_endian_real[48]|big_endian_int8|little_endian_int8|ascii[1-9][0-9]*|time[1-9][0-9]*|char[1-9][0-9]*" />
+value="real[48]|int[1248]|text[0-9]*|text\*" />
+   </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ValueType">
+  <xs:restriction base="xs:string">
+      <xs:pattern 
+value="isotime|integer|real|string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -171,7 +180,8 @@ value="big_endian_real[48]|little_endian_real[48]|big_endian_int8|little_endian_
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
   </xs:sequence>
-  <xs:attribute name="type" type="StorageType"  use="required" />
+  <xs:attribute name="type" type="ValueType" default="real" />
+  <xs:attribute name="encode" type="EncodeType" />
   <xs:attribute name="units" type="xs:token"  use="required" />
   <xs:attribute name="use" type="VarRole" default="center" />
 </xs:complexType>
@@ -272,7 +282,9 @@ value="big_endian_real[48]|little_endian_real[48]|big_endian_int8|little_endian_
       <xs:choice minOccurs="0" maxOccurs="unbounded">
       </xs:choice>
     </xs:sequence>
-  
+    
+    <xs:attribute name="delim" type="xs:string" />
+
 </xs:complexType>
 
 <!-- A packet may have one of these as the top level element -->

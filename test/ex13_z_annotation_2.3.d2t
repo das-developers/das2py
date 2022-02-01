@@ -1,0 +1,26 @@
+<packet>
+
+  <!-- The time center of the event drawing -->
+  <x pdim="time">
+    <array type="isotime" encode="text*" use="center" />
+  </x>
+  
+  <!-- The point is the drawing, forms a closed surface -->
+  <yset pdim="frequency" nitems="*" lenencode="text3">
+    <array encode="text11" units="Hz" use="center" />
+    <xcoord pdim="time">
+      <array encode="text3" units="s" use="offset" >
+    </xcoord>
+  </yset>
+  
+  <!-- The integrated energy in the enclosed region divided by
+       the area -->
+  <z pdim="spec_dens">
+    <array encode="text11" units="V**2 m**-2 Hz**-1" />
+  </z>
+  <z pdim="annotation">
+    <array enoced="text1" nitems="*" lenencode="text3" >
+  </z>
+</packet>
+|Dx|1|142|2012-12-21T15:06:40.596  8  400 1000 1600 2400 3600 2400 1600 1000  0  1  2  2  1  0 -1 -2 -2 -1  1.476e-14  11 I think this is a type 3 burst
+
