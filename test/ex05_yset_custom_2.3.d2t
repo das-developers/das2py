@@ -1,13 +1,13 @@
-|Hs||1071|
+|Hs||1088|
 <stream version="2.3/basic" custom_attrib1="test_extensibility">
   <properties>
     <p name="title">Waves: 50 kHz Electric Waveforms%{xCacheResInfo}</p>
-    <p name="xTagWidth" type="Datum">2.0 s</p>
+    <p name="xTagWidth" type="real" units="s">2.0</p>
     <p name="xLabel">SCET %{RANGE}</p>
     <p name="yLabel">E!dy!n Component (V/m)</p>
     <p name="yScaleType">linear</p>
     <p name="yFill" type="real">-1e31</p>
-    <p name="xCacheRange" type="DatumRange">2013-10-09T15:30:59.875 to 2013-10-09T15:33:00.124 UTC</p>
+    <p name="xCacheRange" type="isotimeRange" units="UTC">2013-10-09T15:30:59.875 to 2013-10-09T15:33:00.124</p>
     <p name="xCacheResInfo"> </p>
     <p name="sourceId">das2_ascii</p>
   </properties>

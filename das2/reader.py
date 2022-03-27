@@ -74,9 +74,13 @@ def _getValSz(sType, nLine):
 
 # ########################################################################### #
 
-def _getDataLen(elPkt, sStreamVer, nPktId):
+def _getDataLen(elPkt, sStreamVer, nPktId, bThrow=True):
 	"""Given a <packet> element, recurse through top children and figure 
 	out the data length.  Works for das2.2 and das2.3
+
+	bThrow:  In general this should throw, but if we're doing validation
+		There is no need to throw an exception for simple things that the
+		schema checker will get anyway.
 	"""
 	nSize = 0
 
@@ -90,10 +94,15 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 			# das2.2 had no extra XML elements in packet even in non-strict mode,
 			# so everything should have a type attribute at this level
 			if 'type' not in child.attrib:
-				raise ValueError(
-					"Attribute 'type' missing for element %s in packet ID %d"%(
-					child.tag, nPktId
-				))
+
+				if bThrow:
+					raise ValueError(
+						"Attribute 'type' missing for element %s in packet ID %d"%(
+						child.tag, nPktId
+					))
+				else:
+					return None
+
 			nSzEa = _getValSz(child.attrib['type'], child.sourceline)
 		
 			if child.tag == 'yscan':
@@ -126,10 +135,13 @@ def _getDataLen(elPkt, sStreamVer, nPktId):
 			
 					# Get the value type
 					if 'encode' not in subChild.attrib:
-						raise ReaderError(nLine, 
-							"Attribute 'encode' missing for element %s in packet ID %d"%(
-							subChild.tag, nPktId
-						))
+						if bThrow:
+							raise ReaderError(subChild.sourceline, 
+								"Attribute 'encode' missing for element %s in packet ID %d"%(
+								subChild.tag, nPktId
+							))
+						else:
+							return None
 
 				
 					nSzEa = _getValSz(subChild.attrib['encode'], subChild.sourceline)
@@ -516,9 +528,9 @@ class PacketReader:
 				# either lengths or terminators.  Geeeze.  Well, go parse it.
 				parser = Das22HdrParser()
 				fPkt = BytesIO(xDoc)
-				docTree = parser.parse()
+				docTree = parser.parse(fPkt)
 				elRoot = docTree.getroot()
-				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId)
+				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId, False)
 
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 
@@ -579,9 +591,9 @@ class PacketReader:
 			if x1 == b'|':
 				nPipes += 1
 			
-			if len(xTag) > 20:
+			if len(xTag) > 38:
 				raise ValueError(
-					"Sanity limit of 20 bytes exceeded for packet tag '%s'"%(
+					"Sanity limit of 38 bytes exceeded for packet tag '%s'"%(
 						str(xTag)[2:-1])
 				)
 		
@@ -599,7 +611,7 @@ class PacketReader:
 			try:
 				nPktId = int(lTag[1], 10)
 			except ValueError:
-				raise ValueError("Invalid packet ID '%s'"%x4[1:3].decode('utf-8'))
+				raise ValueError("Invalid packet ID '%s'"%lTag[1])
 			
 		if (nPktId < 0):
 			raise ValueError("Invalid packet ID %d in tag at byte offset %d"%(
@@ -643,9 +655,9 @@ class PacketReader:
 				# Sanity check, make sure packet is big enough to hold minimum
 				# size das2.3/basic data.
 				fPkt = BytesIO(xDoc)
-				docTree = etree.parse()
+				docTree = etree.parse(fPkt)
 				elRoot = docTree.getroot()
-				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId)
+				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId, False)
 
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 			else:

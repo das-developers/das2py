@@ -171,13 +171,13 @@ def main(argv):
 			# Try to get last line with an error
 			nLine = -1
 			if isinstance(e, (etree.XMLSyntaxError, etree.DocumentInvalid)):
-				#pout("%s"%e.error_log)
 				nLine = e.error_log[0].line
+				
 			elif isinstance(e, xml.parsers.expat.ExpatError):
 				nLine = e.lineno
 			elif isinstance(e, das2.ReaderError):
 				nLine = e.line
-
+			
 			
 			# Print context if we can get it
 			if curPkt and isinstance(curPkt, das2.HdrPkt):
@@ -195,6 +195,8 @@ def main(argv):
 				sRep = "Element 'properties', the attribute qualifier"
 				sErr = sErr.replace(sFind, sRep)
 			pout(sErr)
+			if not curPkt:
+				pout("No current packet, this usually means the packet tag length value is incorrect.")
 		
 			#pout(type(e), "\n   dir:", dir(e.error_log[-1]), '\n   msg:', e.error_log[-1].message)
 			#pout("Error in %s:\n%s"%(sFile, str(e)))
@@ -203,7 +205,7 @@ def main(argv):
 		for nId in dDataPktCount:
 			pout("|Dx| ID %d %d data packets [OKAY]"%(nId, dDataPktCount[nId]))
 	
-		if bStrict:
+		if opts.bStrict:
 			pout('Stream validates as a strict %s version %s stream without extensions\n'%(
 				sStreamContent, sStreamVer))
 		else:	

@@ -57,7 +57,7 @@ $(BD)/_das2.so:src/_das2.c
 
 # Run tests
 test:
-	#env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_verify_test.sh $(BD)
+	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_verify_test.sh $(BD)
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestRead.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestDasTime.py
 	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_dastime_test1.sh $(BD)

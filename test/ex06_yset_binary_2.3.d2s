@@ -1,22 +1,23 @@
-|Hs||521|
+|Hs||557|
 <stream version="2.3/basic" >
   <properties> 
     <p name="title">Waves: 50 kHz Electric Waveforms%{xCacheResInfo}</p>
-    <p name="xTagWidth" type="Datum">2.0 s</p>
+    <p name="xTagWidth" type="real" units="s">2.0</p>
     <p name="xLabel">SCET %{RANGE}</p>
     <p name="yLabel">E!dy!n Component (V/m)</p>
     <p name="yScaleType">linear</p>
-    <p name="yFill">-1e31</p>
-    <p name="xCacheRange" type="DatumRange">2013-10-09T15:30:59.875 to 2013-10-09T15:33:00.124 UTC</p>
+    <p name="yFill" type="real">-1e31</p>
+    <p name="xCacheRange" type="isotimeRange" units="UTC">
+      2013-10-09T15:30:59.875 to 2013-10-09T15:33:00.124</p>
     <p name="xCacheResInfo"> </p>
     <p name="sourceId">das2_ascii</p>
   </properties>
 </stream>
-|Hx|1|46462|
+|Hx|1|46481|
 <packet>
-  <x pdim="time"><array use="min" type="time24" units="UTC" /></x>
+  <x pdim="time"><array use="min" type="isotime" encode="text24" units="UTC" /></x>
   <yset pdim="Ey" nitems="6144">
-    <array type="little_endian_real4" units="V m**-1" />
+    <array type="real" encode="LEreal4" units="V m**-1" />
     <xcoord pdim="time">
       <values use="offset" units="μs">
          0,    20,    40,    60,    80,   100,   120,   140,   160,   180,
