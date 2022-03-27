@@ -80,8 +80,8 @@
 </xs:complexType>
 
 
-<!-- There may be at most one properies child.  Other elements can occur as often as they
-     like.  Note that this does not cach a misspelled properites tag. -->
+<!-- There may be at most one properies child.  Other elements can occur as often
+     as they like.  Note that this does not cach a misspelled properites tag. -->
 <xs:element name="stream">
 <xs:complexType>
     <xs:sequence>
@@ -146,15 +146,14 @@
 <!-- Data value types, sizes and formats -->
 <xs:simpleType name="EncodeType">
   <xs:restriction base="xs:string">
-      <xs:pattern 
-value="real[48]|int[1248]|text[0-9]*|text\*" />
+    <xs:pattern 
+      value="BEint[1248]|BEreal[48]|LEint[1248]|LEreal[48]|text[0-9]*|text\*" />
    </xs:restriction>
 </xs:simpleType>
 
 <xs:simpleType name="ValueType">
   <xs:restriction base="xs:string">
-      <xs:pattern 
-value="isotime|integer|real|string" />
+      <xs:pattern value="isotime|integer|real|string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -167,12 +166,9 @@ value="isotime|integer|real|string" />
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="Items">
-  <!-- The regex for scientific notation is looooong, just make sure
-       illegal characters are not present -->       
+<xs:simpleType name="ValRepeat">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[1-9][0-9]*" />
-    <xs:whiteSpace value="collapse" />
+    <xs:pattern value="none|whole|each" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -194,8 +190,8 @@ value="isotime|integer|real|string" />
 <!-- Single value per packet physical dimensions -->
 <xs:complexType name="PointPhysDim">
   <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>    
     <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="8"/>
-    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <!-- Can extend with other elements here, but they can't be from this namespace -->
     <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
     <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
@@ -208,9 +204,11 @@ value="isotime|integer|real|string" />
 <xs:complexType name="HdrVarVals">
   <xs:simpleContent>
      <xs:extension base="Values" >
-	    <xs:attribute name="use"     type="VarRole"  default="center" />
-	    <xs:attribute name="units"    type="xs:token" use="required" />
-       <xs:attribute name="repeat"   type="xs:positiveInteger" />
+	    <xs:attribute name="use"    type="VarRole"  default="center" />
+	    <xs:attribute name="units"  type="xs:token" use="required" />
+       <xs:attribute name="nitems" type="xs:nonNegativeInteger" default="0"/>
+       <xs:attribute name="repeat" type="ValRepeat" default="none" />
+       <xs:attribute name="repetitions" type="xs:positiveInteger"/>
 	  </xs:extension>
   </xs:simpleContent>
 </xs:complexType>
@@ -221,17 +219,19 @@ value="isotime|integer|real|string" />
   <xs:attribute name="units"    type="xs:token" use="required" />
   <xs:attribute name="minval"   type="xs:double" use="required"/>
   <xs:attribute name="interval" type="xs:double" use="required"/>
-  <xs:attribute name="repeat"   type="xs:positiveInteger" default="1"/>
+  <xs:attribute name="nitems" type="xs:nonNegativeInteger" default="0"/>
+  <xs:attribute name="repeat"   type="ValRepeat" default="none"/>
+  <xs:attribute name="repetitions" type="xs:positiveInteger" />
 </xs:complexType>
 
 <!-- A physical dimension with data included right in the header -->
 <xs:complexType name="HdrPhysDim">
   <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <xs:choice minOccurs="1" maxOccurs="9">
       <xs:element name="values" type="HdrVarVals"/>
       <xs:element name="sequence" type="HdrVarSeq"/> 
     </xs:choice>
-    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <!-- Can extend with other elements here, but they can't be from this namespace -->
     <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
     <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
@@ -242,54 +242,55 @@ value="isotime|integer|real|string" />
 <!-- Multi Value per packet physical dimenions, spanning 1 coordinate -->
 <xs:complexType name="YSetPhysDim">
   <xs:sequence>
-    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>  
+    <xs:element name="properties" type="Properties" minOccurs="0"/>    
+    <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>
     <xs:element name="xcoord" type="HdrPhysDim" minOccurs="1" maxOccurs="1"/>
-    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <!-- Can extend with other elements here, but they can't be from this namespace -->
     <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
     <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
   </xs:sequence>
   <xs:attribute name="name" type="PhysDimName" />
   <xs:attribute name="pdim" type="PhysDimName" use="required" />
-  <xs:attribute name="nitems" type="Items" use="required" />
+  <xs:attribute name="nitems" type="xs:nonNegativeInteger" use="required"/>
 </xs:complexType>
 
 <!-- Multi Value per packet physical dimenions, spanning 2 coordinates -->
 <xs:complexType name="ZSetPhysDim">
   <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>    
     <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>
     <xs:element name="xcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
     <xs:element name="ycoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
-    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <!-- Can extend with other elements here, but they can't be from this namespace -->
     <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
     <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
   </xs:sequence>
   <xs:attribute name="name" type="PhysDimName" />
   <xs:attribute name="pdim" type="PhysDimName" use="required" />
-  <xs:attribute name="nitems" type="Items" use="required" />
+  <xs:attribute name="nitems" type="xs:nonNegativeInteger" use="required" />
 </xs:complexType>
 
 <!-- Multi Value per packet physical dimenions, spanning 3 coordinate -->
 <xs:complexType name="WSetPhysDim">
   <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>      
     <xs:element name="array" type="PktVariable" minOccurs="1" maxOccurs="9"/>
     <xs:element name="xcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
     <xs:element name="ycoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1" />
     <xs:element name="zcoord" type="HdrPhysDim" minOccurs="0" maxOccurs="1"/>
-    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <!-- Can extend with other elements here, but they can't be from this namespace -->
     <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
     <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
   </xs:sequence>
   <xs:attribute name="name" type="PhysDimName" />
   <xs:attribute name="pdim" type="PhysDimName" use="required" />
-  <xs:attribute name="nitems" type="Items" use="required" />
+  <xs:attribute name="nitems" type="xs:nonNegativeInteger" use="required" />
 </xs:complexType>
 
 
 <xs:complexType name="Dataset">
     <xs:sequence>
+      <xs:element name="properties" type="Properties" minOccurs="0"/>      
       <xs:element name="x"    type="PointPhysDim" minOccurs="1" maxOccurs="unbounded"/>
       <xs:element name="yset" type="YSetPhysDim"  minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="y"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
@@ -297,7 +298,6 @@ value="isotime|integer|real|string" />
       <xs:element name="z"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="wset" type="WSetPhysDim"  minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="w"    type="PointPhysDim" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="properties" type="Properties" minOccurs="0"/>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
       <!-- Can extend with other elements here, but they can't be from this namespace -->
       <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
@@ -305,6 +305,8 @@ value="isotime|integer|real|string" />
       </xs:choice>
     </xs:sequence>
     
+    <xs:attribute name="dataset" type="PhysDimName" />
+    <xs:attribute name="name" type="PhysDimName" />
     <xs:attribute name="arraysep" type="xs:string" />
 
     <!-- Can extend with other attributes, will be skipped by schema -->
