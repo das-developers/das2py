@@ -108,7 +108,7 @@ g_dPropTrans = {
 	'summary': 'CATDESC',  'description':'VAR_NOTES', 
 	'fill':    'FILLVAL',  'scaletype':  'SCALETYP',
 	'validmin':'VALIDMIN', 'validmax':   'VALIDMAX',
-	'label':   'LABAXIS',  
+	'label':   'LABLAXIS',  
 	# Use Autoplot properties, there aren't any ISTP props for these
 	'tagWidth':'CADENCE',  'cacheRange': 'CACHE_TAG'
 }
