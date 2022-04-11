@@ -24,6 +24,15 @@ g_sDas23       = 'das2.3-basic.xsd'
 g_sDas23Strict = 'das2.3-basic-strict.xsd'
 g_sDas22       = 'das2.2-mostly.xsd'
 g_sDas22Strict = 'das2.2-mostly-strict.xsd'
+
+def getSchemaName(sStreamVer, bStrict=False):
+	# If a fixed schema is given we have to load that
+	if sStreamVer   == '2.2' and bStrict: return g_sDas22Strict
+	elif sStreamVer == '2.2': return g_sDas22
+	elif sStreamVer == '2.3/basic' and bStrict: return g_sDas23Strict
+	elif sStreamVer == '2.3/basic': return g_sDas23
+	else:
+		return None
 	
 def loadStreamSchema(sStreamVer, bStrict=False):
 	"""Load the appropriate das2 schema file from the package data location
@@ -238,7 +247,7 @@ class Das22HdrParser:
 
 # ########################################################################## #
 
-class Packet:
+class Packet(object):
 	"""Represents a single packet from a das2 or qstream.
 
 	Properties:
@@ -280,7 +289,7 @@ class Packet:
 class HdrPkt(Packet):
 
 	def __init__(self, sver, tag, id, length, content):
-		super().__init__(sver, tag, id, length, content)
+		super(HdrPkt, self).__init__(sver, tag, id, length, content)
 		self.tree    = None  # Cache the tree if one is created
 
 	def docTree(self):
@@ -323,7 +332,7 @@ class DataHdrPkt(HdrPkt):
 	"""A header packet that describes data to be encountered later in the stream"""
 
 	def __init__(self, sver, tag, id, length, content):
-		super().__init__(sver, tag, id, length, content)
+		super(DataHdrPkt, self).__init__(sver, tag, id, length, content)
 		self.nDatLen = None
 
 	def baseDataLen(self):
@@ -342,7 +351,7 @@ class DataHdrPkt(HdrPkt):
 class DataPkt(Packet):
 	"""A packet of data to display or otherwise use"""
 	def __init__(self, sver, tag, id, length, content):
-		super().__init__(sver, tag, id, length, content)
+		super(DataPkt, self).__init__(sver, tag, id, length, content)
 
 	# Nothing special defined for data packets yet
 
@@ -415,6 +424,9 @@ class PacketReader:
 		
 	def __iter__(self):
 		return self
+		
+	def next(self):
+		return self.__next__()
 
 		
 	def __next__(self):

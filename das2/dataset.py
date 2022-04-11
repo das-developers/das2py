@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # The MIT License
 #
 # Copyright 2019 Chris Piker

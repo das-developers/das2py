@@ -14,11 +14,18 @@ import das2
 
 def pout(item):
 	"""Encode strings if needed, send binary stuff out the door as is"""
-	if isinstance(item, str):
-		sys.stdout.buffer.write(item.encode('utf-8'))
-		sys.stdout.buffer.write(b'\n')
+	if sys.version_info[0] == 2:
+		if isinstance(item, unicode):
+			sys.stdout.write(item.encode('utf-8'))
+			sys.stdout.write(b'\n')
+		else:
+			sys.stdout.write(item)
 	else:
-		sys.stdout.buffer.write(item)
+		if isinstance(item, str):
+			sys.stdout.buffer.write(item.encode('utf-8'))
+			sys.stdout.buffer.write(b'\n')
+		else:
+			sys.stdout.buffer.write(item)
 
 
 def errorExit(sOut):
