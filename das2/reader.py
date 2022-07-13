@@ -20,21 +20,20 @@ class ReaderError(Exception):
 
 # ########################################################################### #
 
-g_sDas23       = 'das2.3-basic.xsd'
-g_sDas23Strict = 'das2.3-basic-strict.xsd'
-g_sDas22       = 'das2.2-mostly.xsd'
-g_sDas22Strict = 'das2.2-mostly-strict.xsd'
+g_sDas2Stream = 'das-stream-v2.2.xsd'
+g_sDas3BasicStream  = 'das-basic-stream-v3.0.xsd'
+g_sDas3BasicDoc     = 'das-basic-doc-v3.0.xsd'
 
-def getSchemaName(sStreamVer, bStrict=False):
+def getSchemaName(sStreamVer, sVariant):
 	# If a fixed schema is given we have to load that
-	if sStreamVer   == '2.2' and bStrict: return g_sDas22Strict
-	elif sStreamVer == '2.2': return g_sDas22
-	elif sStreamVer == '2.3/basic' and bStrict: return g_sDas23Strict
-	elif sStreamVer == '2.3/basic': return g_sDas23
-	else:
-		return None
+	if sStreamVer.startswith('2'): return g_sDas2Stream
+	elif sStreamVer.startswith('3'):
+		if sVariant == "das-basic-doc": return g_sDas3BasicDoc
+		elif sVariant == "das-basic-stream": return g_sDas3BasicStream
 	
-def loadStreamSchema(sStreamVer, bStrict=False):
+	return None
+	
+def loadSchema(sStreamVer, sVariant):
 	"""Load the appropriate das2 schema file from the package data location
 	typcially this one of the files:
 
@@ -48,22 +47,19 @@ def loadStreamSchema(sStreamVer, bStrict=False):
 	sSchemaDir = pjoin(sMyDir, 'xsd')
 	
 	# If a fixed schema is given we have to load that
-	if sStreamVer == '2.2' and bStrict:
-		sFile = pjoin(sSchemaDir, g_sDas22Strict)
-	elif sStreamVer == '2.2':
-		sFile = pjoin(sSchemaDir, g_sDas22)
-	elif sStreamVer == '2.3/basic' and bStrict:
-		sFile = pjoin(sSchemaDir, g_sDas23Strict)
-	elif sStreamVer == '2.3/basic':
-		sFile = pjoin(sSchemaDir, g_sDas23)
-	else:
-		raise ValueError("Unknown stream version %s"%sStreamVer)
+	sFile = getSchemaName(sStreamVer, sVariant)
+	if not sFile:
+		raise ValueError("Unknown stream version %s and variant %s"%(
+			sStreamVer, sVariant
+		))
+
+	sPath = pjoin(sSchemaDir, sFile)	
 	
-	fSchema = open(sFile)
+	fSchema = open(sPath)
 	schema_doc = etree.parse(fSchema)
 	schema = etree.XMLSchema(schema_doc)
 	
-	return (schema,sFile)
+	return (schema,sPath)
 
 # ########################################################################### #
 def _getValSz(sType, nLine):
@@ -252,19 +248,16 @@ class Packet(object):
 
 	Properties:
 		sver - The version of the stream that produced the packet, should be
-			one of: 2.2, 2.3/basic or qstream
+		   one of: 2.2, 2.3/basic or qstream
 
-	   tag - The 2-character content tag, know header tags for das2.3
-		     basic streams are:
-		     
-          Hs    - Stream Header
-          Qs    - QStream Header
-          Hx    - X-slice dataset header
-          Qp    - QStream packet header
-          He,Qe - Exception, Qe is the QStream version, same content
-		  Hc,Qc - Comment, Qc is the QStream version, same content
-          Dx,Qd - X-slice data packet.  Qd is the QStream verson, same 
-			          content.
+	   tag - The 2-character content tag, know header tags for das2 v3.0
+		   streams are:
+		     Hs - Stream Header
+           Hi - I-slice dataset header
+		     Cm - Comment
+           Ex - Exception
+           XX - Extra Packet, contents not defined
+           Pi - I-slice data packet
 			  
 	   id - The packet integer ID.  Stream and pure dataset packets
 		     are always ID 0.  Otherwise the ID is 1 or greater.
@@ -336,8 +329,8 @@ class DataHdrPkt(HdrPkt):
 		self.nDatLen = None
 
 	def baseDataLen(self):
-		"""The das2 parsable data length of each packet.  For das2.3 streams
-		extra information may reside in each packet after known das2 data.
+		"""The das2 parsable data length of each packet.  For das v3 streams
+		extra information may reside in each packet after known das data.
 		This function does not return the size of any extra items.
 		"""
 		
@@ -359,8 +352,7 @@ class DataPkt(Packet):
 # ########################################################################## #
 
 class PacketReader:
-	"""This packet reader can handle either das2.2 or das2.3 packets.  Use
-	the bStrict flag in the constructor if only 2.3 parsing is desired."""
+	"""This packet reader can handle either das v2.2 or v3.0 packets."""
 	
 	def __init__(self, fIn, bStrict=False):
 		self.fIn = fIn
@@ -389,8 +381,8 @@ class PacketReader:
 					self.sContent = "qstream"
 			
 		if self.xFirst.find(b'version') != -1 and \
-		   self.xFirst.find(b'"2.3/basic"') != -1:
-			self.sVersion = "2.3/basic"
+		   self.xFirst.find(b'"3.0"') != -1:
+			self.sVersion = "3.0"
 			
 		elif self.xFirst.find(b'dataset_id') != -1:
 			self.sContent = 'qstream'
@@ -447,7 +439,7 @@ class PacketReader:
 					
 		self.nOffset += 4
 		
-		# Try for a das2.3 packet wrappers, fall back to das2.2 unless prevented
+		# Try for a das v3 packet wrappers, fall back to v2.2 unless prevented
 		if x4[0:1] == b'|':
 			return self._nextVarTag(x4)
 			
@@ -456,9 +448,8 @@ class PacketReader:
 			# In strict das2.3 mode, don't allow static tags
 			if (self.sVersion != "2.2") and (self.bStrict):
 				raise ValueError(
-					"Das2.2 packet tag '%s' detected in strict das2.3/basic stream"%(
-					x4
-				))
+					"Das version 2 packet tag '%s' detected in a version 3 stream"%x4
+				)
 
 			return self._nextStaticTag(x4)
 			
@@ -470,7 +461,7 @@ class PacketReader:
 	
 
 	def _nextStaticTag(self, x4):
-		"""Return a das2.2 packet, this is complicated by the fact that pre-das2.3
+		"""Return a das2.2 packet, this is complicated by the fact that pre das3
 		data packets don't have length value, parsing the associated header is required.
 		"""
 		
@@ -583,9 +574,9 @@ class PacketReader:
 
 
 	def _nextVarTag(self, x4):
-		"""Return the next packet on the stream assuming das2.3+ packaging."""
+		"""Return the next packet on the stream assuming das v3 packaging."""
 				
-		# Das2.3 uses '|' for field separators since they are not used by
+		# Das3 uses '|' for field separators since they are not used by
 		# almost any other language and won't be confused as xml elements or
 		# json elements.
 		
@@ -665,7 +656,7 @@ class PacketReader:
 			if sTag == 'Hx':
 
 				# Sanity check, make sure packet is big enough to hold minimum
-				# size das2.3/basic data.
+				# size das3/basic data.
 				fPkt = BytesIO(xDoc)
 				docTree = etree.parse(fPkt)
 				elRoot = docTree.getroot()

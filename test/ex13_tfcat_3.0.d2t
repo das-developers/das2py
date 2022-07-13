@@ -1,0 +1,26 @@
+<!-- The overall packet shape is * * 1 -->
+<packet>
+  <!-- The time center of the event drawing -->
+  <x pdim="time">
+    <array type="isotime" encode="text24" use="center" />
+  </x>
+  
+  <y pdim="frequency">
+    <array time="real" encode="text11" use="center" />
+  </y>
+  
+  <z pdim="spec_dens">
+    <array encode="text11" units="V**2 m**-2 Hz**-1" />
+	 <properties>
+	 	<p name="summary">The integrated energy in the enclosed region divided by the area</p>
+	 </properties>
+  </z>
+  
+  <z pdim="annotation">
+    <!-- Since each item is variable length, each one must
+         have a length prefix -->
+    <array encode="text*" lenencode="text3">
+  </z>
+</packet>
+|Dx|1|142|2012-12-21T15:06:40.596  8  400 1000 1600 2400 3600 2400 1600 1000  0  1  2  2  1  0 -1 -2 -2 -1  1.476e-14  11 I think this is a type 3 burst
+
