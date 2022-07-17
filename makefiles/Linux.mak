@@ -8,14 +8,13 @@ BD=build.$(N_ARCH)
 
 SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
- container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py 
+ container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py
 
 SCRIPTS=das2_verify
 
 CDFSRC=__init__.py const.py
 
-SCHEMA=das2.2-mostly-strict.xsd das2.2-mostly.xsd das2.3-basic-strict.xsd \
- das2.3-basic.xsd
+SCHEMA=das-basic-stream-v2.2.xsd das-basic-stream-v3.0.xsd das-basic-doc-v3.0.xsd
 
 BUILT_PYSRC=$(patsubst %,$(BD)/das2/%,$(PYSRC))
 INSTALLED_PYSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/%.py,$(PYSRC))

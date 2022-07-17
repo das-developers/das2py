@@ -9,11 +9,11 @@
   suitable for validating non-packitized documents.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  xmlns="das2-basic-doc"
-  targetNamespace="das2-basic-doc"
+  version="3.0"
   elementFormDefault="qualified"
   attributeFormDefault="unqualified"
 >
+<!-- targetNamespace="das-basic-stream" xmlns="das-basic-stream" -->
 
 <!-- Properties ========================================================== -->
 
@@ -391,25 +391,16 @@
 
 <xs:simpleType name="StreamFormat">
   <xs:restriction base="xs:string">
-    <xs:enumeration value="das2-basic-doc" />
+    <xs:enumeration value="das-basic-stream" />
   </xs:restriction>
 </xs:simpleType>
 
 <xs:complexType name="Stream">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
-    
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
-
-    <xs:element name="dataset" type="Dataset" minOccurs="1"/>
-    
-    <xs:choice minOccurs="0" maxOccurs="unbounded">
-      <xs:element name="dataset" type="Dataset" />
-      <xs:element name="i" type="ISlice" />
-    </xs:choice>
-  
   </xs:sequence>
-  <xs:attribute name="format" type="StreamFormat" use="required" />
+  <xs:attribute name="type" type="StreamFormat" use="required" />
   <xs:attribute name="version" type="StreamVersion" use="required" />
   <xs:attribute name="lang" type="ISO639_1" default="en"/>
 </xs:complexType>

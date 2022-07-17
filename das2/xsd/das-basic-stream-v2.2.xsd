@@ -5,7 +5,13 @@
   <exception>, *after* the element tree has been modified to fix very 
   non-standard syntax used for the das2.2 properties elements.
 -->   
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" >
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns="das-basic-stream"
+  targetNamespace="das-basic-stream"
+  version="2.2"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified"
+>
 
 <!-- Stream headers ======================================================= -->
 

@@ -110,10 +110,10 @@ def main(argv):
 		try:
 			reader = das2.PacketReader(fIn, opts.bStrict)
 			
-			sStreamContent, sStreamVer, bVarTags = reader.streamType()
+			sStreamContent, sStreamVer, sTagStyle = reader.streamType()
 			
-			if sStreamContent != 'das2':
-				pout("This is a %s stream, expected a das2 stream"%sStreamContent)
+			if not sStreamContent.startswith('das'):
+				pout("This is a %s, expected a das stream or das document"%sStreamContent)
 				return 5
 			
 			if opts.sExpect and (opts.sExpect != sStreamVer):
@@ -127,7 +127,7 @@ def main(argv):
 				schema_doc = etree.parse(fSchema)
 				schema = etree.XMLSchema(schema_doc)
 			else:
-				(schema, opts.sSchema) = das2.loadSchema(sStreamVer, opts.bStrict)
+				(schema, opts.sSchema) = das2.loadSchema(sStreamContent, sStreamVer)
 			pout("Loaded XSD: %s"%bname(opts.sSchema))
 			
 			
