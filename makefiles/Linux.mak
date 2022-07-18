@@ -14,7 +14,8 @@ SCRIPTS=das2_verify
 
 CDFSRC=__init__.py const.py
 
-SCHEMA=das-basic-stream-v2.2.xsd das-basic-stream-v3.0.xsd das-basic-doc-v3.0.xsd
+SCHEMA=das-basic-stream-v2.2.xsd das-basic-stream-v3.0.xsd \
+ das-basic-stream-ns-v3.0.xsd das-basic-doc-ns-v3.0.xsd
 
 BUILT_PYSRC=$(patsubst %,$(BD)/das2/%,$(PYSRC))
 INSTALLED_PYSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/%.py,$(PYSRC))

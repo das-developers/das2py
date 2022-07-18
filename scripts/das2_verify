@@ -77,12 +77,6 @@ def main(argv):
 		"VERSION are validated.  Use one of '2.3/basic', '2.2'."
 	)
 	
-	psr.add_argument(
-		'-S','--strict', default=False, action="store_true", dest="bStrict",
-		help="Typically das2 client programs should accept and ignore any "+\
-		"extra elements or attributes in headers.  Use this option to flag "+\
-		"any extra attributes, elements, or data as an error"
-	)
 	
 	psr.add_argument(
 		'-p', '--prn-hdrs', default=False, action="store_true",
@@ -108,10 +102,10 @@ def main(argv):
 		dDataPktCount = {}
 	
 		try:
-			reader = das2.PacketReader(fIn, opts.bStrict)
+			reader = das2.PacketReader(fIn)
 			
-			sStreamContent, sStreamVer, sTagStyle = reader.streamType()
-			
+			sStreamContent, sStreamVer, sTagStyle, bUsingNs = reader.streamType()
+
 			if not sStreamContent.startswith('das'):
 				pout("This is a %s, expected a das stream or das document"%sStreamContent)
 				return 5
@@ -127,7 +121,7 @@ def main(argv):
 				schema_doc = etree.parse(fSchema)
 				schema = etree.XMLSchema(schema_doc)
 			else:
-				(schema, opts.sSchema) = das2.loadSchema(sStreamContent, sStreamVer)
+				(schema, opts.sSchema) = das2.loadSchema(sStreamContent, sStreamVer, bUsingNs)
 			pout("Loaded XSD: %s"%bname(opts.sSchema))
 			
 			
@@ -139,10 +133,7 @@ def main(argv):
 					continue
 		
 				if (not isinstance(pkt, das2.HdrPkt) ):
-					if not opts.bStrict:
-						continue
-					else:
-						raise ValueError("Unknown packet type '%s' encountered in strict mode"%pkt.tag)
+					raise ValueError("Unknown packet type '%s' encountered in strict mode"%pkt.tag)
 
 				if opts.bPrnHdr:
 					pout(pkt.content)
@@ -155,9 +146,15 @@ def main(argv):
 			
 				if isinstance(pkt, das2.DataHdrPkt):
 					dDataPktCount[pkt.id] = 0
-					pout("|%s| ID %s %s header [OKAY] (data size %d bytes)"%(
-						pkt.tag, pkt.id, sCurType, pkt.baseDataLen()
-					))
+					nTmp = pkt.dataLen() 
+					if nTmp == None:
+						pout("|%s| ID %s %s header [OKAY] (variable packet size)"%(
+							pkt.tag, pkt.id, sCurType
+						))
+					else:
+						pout("|%s| ID %s %s header [OKAY] (data size %d bytes)"%(
+							pkt.tag, pkt.id, sCurType, pkt.dataLen()
+						))
 				else:
 					pout("|%s| ID %s %s header [OKAY]"%(pkt.tag, pkt.id, sCurType))
 					
@@ -210,13 +207,13 @@ def main(argv):
 			return 5
 				
 		for nId in dDataPktCount:
-			pout("|Dx| ID %d %d data packets [OKAY]"%(nId, dDataPktCount[nId]))
+			pout("|Pd| ID %d %d data packets [OKAY]"%(nId, dDataPktCount[nId]))
 	
-		if opts.bStrict:
-			pout('Stream validates as a strict %s version %s stream without extensions\n'%(
+		if bUsingNs:
+			pout('Stream validates as a %s version %s with a defined namespace\n'%(
 				sStreamContent, sStreamVer))
 		else:	
-			pout('Stream validates as a %s version %s stream\n'%(
+			pout('Stream validates as a %s version %s\n'%(
 				sStreamContent, sStreamVer))
 
 	return 0	

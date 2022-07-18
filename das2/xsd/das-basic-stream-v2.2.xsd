@@ -4,10 +4,11 @@
   top-level das2.2 stream root elements, <stream>, <packet>, <comment> or
   <exception>, *after* the element tree has been modified to fix very 
   non-standard syntax used for the das2.2 properties elements.
+
+  In general das 2.2 streams do no concern themselves with XML namespaces
+  thus the 'xmlns' and 'targetNamespace' items are not present.
 -->   
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
-  xmlns="das-basic-stream"
-  targetNamespace="das-basic-stream"
   version="2.2"
   elementFormDefault="qualified"
   attributeFormDefault="unqualified"

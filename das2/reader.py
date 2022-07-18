@@ -20,24 +20,38 @@ class ReaderError(Exception):
 		self.message = message
 		super().__init__(self.message)
 
+g_lValidTags = (
+	'Sx', # XML stream definition (parse for content)
+	'Hx', # XML packet definition (parse for content)
+	'Pd', # Packetize data, content defined by a header
+	'Cx', # XML Comment packet (XML content)
+	'Ex', # XML Exception packet (XML content)
+	'XX'  # Extra packet, content completely unknown
+)
+
 # ########################################################################### #
 
 g_sDas2BasicStream  = 'das-basic-stream-v2.2.xsd'
 g_sDas3BasicStream  = 'das-basic-stream-v3.0.xsd'
-g_sDas3BasicDoc     = 'das-basic-doc-v3.0.xsd'
+g_sDas3BasicStreamNs = 'das-basic-stream-ns-v3.0.xsd' # Used when xmlns defined
+g_sDas3BasicDoc     = 'das-basic-doc-ns-v3.0.xsd'
 
-def getSchemaName(sContent, sVersion):
+def getSchemaName(sContent, sVersion, bNameSpace=False):
 	# If a fixed schema is given we have to load that
 	if sContent == "das-basic-stream": 
 		if sVersion.startswith('2'): return g_sDas2BasicStream
-		if sVersion.startswith('3'): return g_sDas3BasicStream
+		if sVersion.startswith('3'): 
+			if bNameSpace: 
+				return g_sDas3BasicStreamNs
+			else:
+				return g_sDas3BasicStream
 
 	elif sContent == "das-basic-doc":
 		if sVersion.startswith('3'): return g_sDas3BasicDoc
 
 	return None
 	
-def loadSchema(sContent, sVersion):
+def loadSchema(sContent, sVersion, bNameSpace=False):
 	"""Load the appropriate das2 schema file from the package data location
 	typcially this one of the files:
 
@@ -89,7 +103,7 @@ def _getDas2ValSz(sType, nLine):
 	sSz = ''.join(reversed(sSz))
 	return int(sSz, 10)
 
-def _getDas2PktLen():
+def _getDas2PktLen(elDs, nPktId, bThrow=True):
 	nSize = 0
 
 	for child in elDs:
@@ -117,21 +131,6 @@ def _getDas2PktLen():
 	
 	return nSize
 
-def _getPktLen(elDs, sStreamVer, nPktId, bThrow=True):
-
-	"""Given a das <packet> element, or a das <dataset> element, recurse
-	through top children and figure out the data length.
-
-	returns: The number of bytes in each packet for fixed length packets,
-		None otherwise.
-	"""
-
-	if float(sStreamVer) < 3:
-		return _getDasV2PktLen(elDs, nPktId, bThrow)
-	else:
-		return _getDasV3PktLen(elDs, nPktId, bThrow)
-
-
 def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 	
 	# Das v3.0 data can have variable length array values in each packet
@@ -139,11 +138,13 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 	#
 	# This function does not throw on obvious schema errors, that's up to
 	# the schema checker stage to worry about.
+	nSize = 0
+
 
 	dRecDims = {'jSize':0,'kSize':0}
 	for sIdx in dRecDims:
 		if sIdx not in elDs.attrib: continue
-		else: sSize == dRecDims[sIdx]
+		else: sSize = dRecDims[sIdx]
 		
 		if sSize == "*": return None
 		elif sSize == "": pass
@@ -157,7 +158,7 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 	for axis in elDs:
 			
 		# das v3.0 all packet values are defined in <packet> elements.
-		if child.tag in ('extension','properties'): continue
+		if axis.tag in ('extension','properties'): continue
 
 		for array in axis:
 			if array.tag not in ('scalar','vector','object'): continue
@@ -190,6 +191,22 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 				nSize += nItems*nBytesEa
 	
 	return nSize
+
+def _getPktLen(elDs, sStreamVer, nPktId, bThrow=True):
+
+	"""Given a das <packet> element, or a das <dataset> element, recurse
+	through top children and figure out the data length.
+
+	returns: The number of bytes in each packet for fixed length packets,
+		None otherwise.
+	"""
+
+	if sStreamVer < "3":
+		return _getDas2PktLen(elDs, nPktId, bThrow)
+	else:
+		return _getDas3PktLen(elDs, nPktId, bThrow)
+
+
 
 # ########################################################################### #
 def checkShape3(elDs, nPktId) -> None:
@@ -307,16 +324,8 @@ class Packet(object):
 		sver - The version of the stream that produced the packet, should be
 		   one of: 2.2, 2.3/basic or qstream
 
-	   tag - The 2-character content tag, know header tags for das2 v3.0
-		   streams are:
-		     Hs - Any das2 Stream Header
-		     Qs - Any QStream header
-           Hi - Any das2 I-slice dataset header
-           Qi - Any QStream I-slice dataset header 
-		     Cm - Comment
-           Ex - Exception
-           XX - Extra Packet, contents not defined, okay if using new tag style
-           Pi - I-slice data packet (QStream or Das2 stream)
+	   tag - The 2-character content tag, see g_lValidTags for a list of
+	   	valid tags
 			  
 	   id - The packet integer ID.  Stream and pure dataset packets
 		     are always ID 0.  Otherwise the ID is 1 or greater.
@@ -417,15 +426,15 @@ class DataPkt(Packet):
 class PacketReader:
 	"""This packet reader can handle either das v2.2 or v3.0 packets."""
 	
-	def __init__(self, fIn, bStrict=False):
+	def __init__(self, fIn):
 		self.fIn = fIn
 		self.lPktSize = [None]*100
 		self.lPktDef  = [False]*100
 		self.nOffset = 0
-		self.bStrict = bStrict
 		self.sContent = "das-basic-stream"
 		self.sVersion = "2.2"
 		self.sTagStyle = "fixed"  # Other choices are "var" and "none"
+		self.bUsingNs = False # True if explicit namespaces in use
 		
 		# See if this stream is using variable tags and try to guess the content
 		# using the first 1024 bytes.  Assume a das2.2 stream unless we see
@@ -440,10 +449,6 @@ class PacketReader:
 				# Can't use single index for bytestring or it jumps over to an
 				# integer return. Hence [0:1] instead of [0]. Yay python3 :-\
 				self.sTagStyle = "var"
-				
-				if len(self.xFirst) > 3:
-					if self.xFirst[0:4] == b'|Qs|':
-						self.sContent = "q-stream"
 
 			elif self.xFirst[0:1] == b'<':
 				self.sTagStyle = "none"
@@ -461,6 +466,7 @@ class PacketReader:
 			raise ValueError("Can not find <stream> element in stream header");
 		
 		iStart = m.start() + 7
+
 		ptrn = re.compile(b'version\\s*=\\s*\\"(.*?)\\"')
 		l = ptrn.findall(self.xFirst[iStart:])
 
@@ -473,9 +479,14 @@ class PacketReader:
 			self.sVersion = l[0].decode('utf-8').strip()
 		else:
 			raise ValueError("More then one 'version' attribute present in stream header")
+
+		ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_]*?\\s*=\\s*\\"(.*?)\\"')
+		l = ptrn.findall(self.xFirst[iStart:])
+		if len(l) > 1:
+			self.bUsingNs = True
 	
 	def streamType(self):
-		return (self.sContent, self.sVersion, self.sTagStyle)
+		return (self.sContent, self.sVersion, self.sTagStyle, self.bUsingNs)
 		
 		
 	def _read(self, nBytes):
@@ -532,8 +543,8 @@ class PacketReader:
 			
 		elif (x4[0:1] == b'[') or (x4[0:1] == b':'):
 
-			# In strict das2.3 mode, don't allow static tags
-			if (self.sVersion != "2.2") and (self.bStrict):
+			# In das v3, don't allow static tags
+			if self.sVersion != "2.2":
 				raise ValueError(
 					"Das version 2 packet tag '%s' detected in a version 3 stream"%x4
 				)
@@ -606,7 +617,7 @@ class PacketReader:
 			# Also comment and exception packets are not differentiated, in das2.2
 			# so we have to read ahead to get the content tag
 			if x4 == b'[00]': 
-				sTag = 'Hs'
+				sTag = 'Sx'
 				return HdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 
 			elif nPktId > 0: 
@@ -615,7 +626,7 @@ class PacketReader:
 				# Here's where das2.2 DROPPED THE BALL.  We have to know about
 				# the higher level information just to get the size of a packet.
 				# Every other networking protocol in the world knows to include
-				# either lengths or terminators.  Geeeze.  Well, go parse it.
+				# either lengths or terminators.  Geeeze.  Well... go parse it.
 				parser = Das22HdrParser()
 				fPkt = BytesIO(xDoc)
 				docTree = parser.parse(fPkt)
@@ -625,11 +636,11 @@ class PacketReader:
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 
 			elif (x4 == b'[xx]') or (x4 == b'[XX]'):
-				if sDoc.startswith('<exception'): sTag = 'He'
-				elif sDoc.startswith('<comment'): sTag = 'Hc'
-				elif sDoc.find('comment') > 1: sTag = 'Hc'
-				elif sDoc.find('except') > 1: sTag = 'He'
-				else: sTag = 'Hc'		
+				if sDoc.startswith('<exception'): sTag = 'Ex'
+				elif sDoc.startswith('<comment'): sTag = 'Cx'
+				elif sDoc.find('comment') > 1: sTag = 'Cx'
+				elif sDoc.find('except') > 1: sTag = 'Ex'
+				else: sTag = 'Cx'		
 
 			return HdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 		
@@ -653,7 +664,7 @@ class PacketReader:
 			if len(xData) != self.lPktSize[nPktId]:
 				raise ValueError("Premature end of packet data for id %d"%nPktId)
 			
-			return DataPkt(self.sVersion, 'Dx', nPktId, len(xData), xData)
+			return DataPkt(self.sVersion, 'Pd', nPktId, len(xData), xData)
 
 		raise ValueError(
 			"Expected the start of a header or data packet at offset %d"%self.nOffset
@@ -663,7 +674,7 @@ class PacketReader:
 	def _nextVarTag(self, x4):
 		"""Return the next packet on the stream assuming das v3 packaging."""
 				
-		# Das3 uses '|' for field separators since they are not used by
+		# Das v3 uses '|' for tag separators since they are not used by
 		# almost any other language and won't be confused as xml elements or
 		# json elements.
 		
@@ -689,12 +700,18 @@ class PacketReader:
 		
 		try:
 			lTag = [x.decode('utf-8') for x in xTag.split(b'|')[1:4] ]
+			#print(lTag)
 		except UnicodeDecodeError:
 			raise ValueError(
 				"Packet tag '%s' is not utf-8 text at offset %d"%(xTag, nBegOffset)
 			)
 		
 		sTag = lTag[0]
+		if sTag not in g_lValidTags:
+			raise ValueError("Invalid packet tag '%s', expected one of %s"%(
+				sTag, str(g_lValidTags)
+			))
+
 		nPktId = 0
 		
 		if len(lTag[1]) > 0:  # Empty packet IDs are the same as 0
@@ -728,7 +745,7 @@ class PacketReader:
 				sTag, nPktId, self.nOffset
 			))
 			
-		if sTag not in ('Dx', 'Qd'):
+		if sTag not in ('Pd','XX'):
 			# In a header packet, insure it decodes to text
 			sDoc = None
 			try:
@@ -747,26 +764,20 @@ class PacketReader:
 				fPkt = BytesIO(xDoc)
 				docTree = etree.parse(fPkt)
 				elRoot = docTree.getroot()
-				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId, False)
+
+				# Note, this can be None!
+				self.lPktSize[nPktId] = _getPktLen(elRoot, self.sVersion, nPktId, False)
 
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 			else:
 				return HdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 		else:
 			# If this packet is below minimum necessary size fail it
-			if nLen < self.lPktSize[nPktId]:
+			if self.lPktSize[nPktId] and (nLen < self.lPktSize[nPktId]):
 				raise ValueError(
 					"Short data packet expected %d bytes found %d for |%s|%d| at offset %d"%(
 					self.lPktSize[nPktId], nLen, sTag, nPktId, self.nOffset
 				))
-				
-			# Even instrict mode, variable length packets are allowed, don't
-			# complain about extra stuff in the packet
-			#if self.bStrict and (nLen > self.lPktSize[nPktId]):
-			#	raise ValueError("Strict checking requested, extra content "+\
-			#	  "(%d bytes) not allowed for %s|%d at offset %d"%(
-			#	  nLen - self.lPktSize[nPktId], sTag, nPktId, self.nOffset
-			#	)) 
 
 			# Return the bytes
-			return DataPkt(self.sVersion, 'Dx', nPktId, nLen, xDoc)
+			return DataPkt(self.sVersion, 'Pd', nPktId, nLen, xDoc)

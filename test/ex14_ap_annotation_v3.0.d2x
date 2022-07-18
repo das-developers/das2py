@@ -3,17 +3,17 @@
 |Hi|1|488|
 <dataset valSep="|">
   <xCoord>
-    <scalar use="center" type="isotime" units="UTC">
+    <scalar use="center" valType="isotime" units="UTC">
       <packet numItems="1" encoding="text" itemBytes="24" />
     </scalar>
   </xCoord>
   <yCoord>
-    <scalar use="center" type="real" units="MHz">
+    <scalar use="center" valType="real" units="MHz">
       <packet numItems="1" encoding="text" itemBytes="5" />
     </scalar>
   </yCoord>
   <extData>
-    <object scheme="autoplot" type="Annotation" iSize="*">
+    <object scheme="autoplot" objType="Annotation" iSize="*">
       <packet numItems="1" encoding="xml" itemBytes="*" />
     </object>
   </extData>

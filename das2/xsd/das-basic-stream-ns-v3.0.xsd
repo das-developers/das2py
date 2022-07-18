@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <!-- 
-	This is a multi-root, no-namespace schema definition.  It will validate any
-  one of the top-level das 3.0 stream root elements, <stream>, <dataset>,
-  <comment> or <exception> so long as an 'xmlns' attribute is not included.  
-  Of course to be well-formed only *one* of the elements above may form a
-  header packet.
+	This is a multi-root, das-basic-stream namespace schema definition.  It
+  will validate any one of the top-level das 3.0 stream root elements, 
+  <stream>, <dataset>, <comment> or <exception> so long as the xmlns is
+  given and reads 'das-basic-stream'.  Of course to be well-formed only
+  *one* of the elements above may form a header packet.
 
-  See the file das2-basic-stream-ns-v3.0.xsd for a multi-root schema 
-  definition for files using a declared namespace
+  See the file das2-basic-stream-v3.0.xsd for a multi-root schema 
+  definition for files using un-declared namespaces
 
   See the file das2-basic-doc-v3.0.xsd for a single-root schema definition
   suitable for validating standard (i.e. non-packitized) documents.
@@ -16,8 +16,9 @@
   version="3.0"
   elementFormDefault="qualified"
   attributeFormDefault="unqualified"
+  xmlns="das-basic-stream"
+  targetNamespace="das-basic-stream"
  >
-<!-- targetNamespace="das-basic-stream" xmlns="das-basic-stream" -->
 
 <!-- Properties ========================================================== -->
 
