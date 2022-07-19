@@ -320,7 +320,11 @@
   </xs:sequence>
 
   <xs:attribute name="physDim" type="StructName" use="required"/>
-  <xs:attribute name="name" type="StructName" use="required"/>
+
+  <!-- data dimensions must have unique names, however the name inherits 
+      from the overall dataset name.  So if you only have one <data> 
+      element, the name isn't needed -->
+  <xs:attribute name="name" type="StructName" />
   
 </xs:complexType>
 
@@ -392,6 +396,7 @@
 <xs:complexType name="Dataset">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0" />
+    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- 
     Bad news, a choice of one of x xy xyz rφ ρφz rθφ is not deterministic in 
@@ -438,9 +443,7 @@
     CDF ISTP metadata model. -cwp 2020-07-17
     -->
     
-    <xs:element name="data" type="DataDim"   minOccurs="1" maxOccurs="unbounded" />
-
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="data" type="DataDim" minOccurs="0" maxOccurs="unbounded" />
     <xs:element name="extData" type="ExtendedData" minOccurs="0" maxOccurs="unbounded" />
 
   </xs:sequence>
