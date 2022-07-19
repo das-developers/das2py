@@ -1,6 +1,6 @@
 |Sx||50|
 <stream type="das-basic-stream" version="3.0" />
-|Hx|1|3607|
+|Hx|1|3629|
 <dataset name="ais" rank="3" iSize="*" jSize="160" kSize="80">
 
   <xCoord physDim="time">
@@ -58,7 +58,7 @@
     </scalar>
   </zCoord>
 
-  <data physDim="E_spec_dens">
+  <data physDim="E_spec_dens" name="sounder_return">
     <properties>
       <p name="label">Spectral Density (V!a2!nm!a-2!nHz!a-1!n)</p>
     </properties>

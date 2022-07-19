@@ -77,7 +77,7 @@ def loadSchema(sContent, sVersion, bNameSpace=False):
 
 	sPath = pjoin(sSchemaDir, sFile)	
 
-	print(sContent, sVersion, "-->", sPath)
+	#print(sContent, sVersion, "-->", sPath)
 	
 	fSchema = open(sPath)
 	schema_doc = etree.parse(fSchema)

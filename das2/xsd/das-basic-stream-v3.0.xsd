@@ -19,16 +19,29 @@
  >
 <!-- targetNamespace="das-basic-stream" xmlns="das-basic-stream" -->
 
-<!-- Properties ========================================================== -->
 
-<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
+<!-- General Fields -->
 
-<xs:simpleType name="PropName">
+<!-- The names for things that could be variables in most languages -->
+<xs:simpleType name="VarName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- The names for things that could be variables or struct + member 
+     names in most languages -->
+<xs:simpleType name="StructName">
   <xs:restriction base="xs:string">
     <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.\-,:]*"/>
     <xs:maxLength value="63"/> <!-- leave rooom for null char -->
   </xs:restriction>
 </xs:simpleType>
+
+<!-- Properties ========================================================== -->
+
+<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
 
 <!-- Alt prop by language -->
 <xs:simpleType name="ISO639_1">
@@ -65,7 +78,7 @@
    <xs:sequence>
      <xs:element name="alt" type="AltProp" minOccurs="0" maxOccurs="unbounded" />
    </xs:sequence>
-   <xs:attribute name="name"  type="PropName" use="required" />
+   <xs:attribute name="name"  type="StructName" use="required" />
    <xs:attribute name="valType"  type="PropType" default="string" />
    <xs:attribute name="units" type="xs:token" />
 </xs:complexType>
@@ -215,13 +228,6 @@
 
 <!-- The purposes for values of a plane -->
 
-<!-- The names for things that could be variables in most languages -->
-<xs:simpleType name="VarName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-  </xs:restriction>
-</xs:simpleType>
 
 <!-- An empty string or a positive integer -->
 
@@ -285,14 +291,7 @@
   </xs:complexContent>
 </xs:complexType>
 
-<xs:simpleType name="PhysDimName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-   </xs:restriction>
-</xs:simpleType>
-
-<xs:complexType name="PhysDim">
+<xs:complexType name="CoordDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
@@ -304,7 +303,24 @@
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
 
-  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
+  <xs:attribute name="physDim" type="StructName" use="required"/>
+  
+</xs:complexType>
+
+<xs:complexType name="DataDim">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+
+    <xs:choice minOccurs="1" maxOccurs="unbounded">      
+      <xs:element name="scalar" type="ScalarVar" />
+      <xs:element name="vector" type="VectorVar" />
+    </xs:choice>
+
+    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+
+  <xs:attribute name="physDim" type="StructName" use="required"/>
+  <xs:attribute name="name" type="StructName" use="required"/>
   
 </xs:complexType>
 
@@ -328,7 +344,7 @@
     <xs:element name="object" type="DataObject" minOccurs="1" maxOccurs="unbounded" />
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
-  <xs:attribute name="name" type="PhysDimName" use="required"/>
+  <xs:attribute name="name" type="StructName" use="required"/>
 </xs:complexType>
 
 <!-- Data field separators
@@ -385,25 +401,25 @@
     -->
 
     <!-- Schematron: x, xy or xyz -->
-    <xs:element name="xCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="xCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xy or xyz -->
-    <xs:element name="yCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="yCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: ρφz -->    
-    <xs:element name="rhoCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rhoCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: rφ rθφ -->
-    <xs:element name="rCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: rθφ -->
-    <xs:element name="thetaCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="thetaCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: ρφz or rθφ --> 
-    <xs:element name="phiCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="phiCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xyz or ρφz -->
-    <xs:element name="zCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="zCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- 
     To see if a set of data vary in less then the number of coordinate dimensions
@@ -422,7 +438,7 @@
     CDF ISTP metadata model. -cwp 2020-07-17
     -->
     
-    <xs:element name="data" type="PhysDim"   minOccurs="1" maxOccurs="unbounded" />
+    <xs:element name="data" type="DataDim"   minOccurs="1" maxOccurs="unbounded" />
 
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
     <xs:element name="extData" type="ExtendedData" minOccurs="0" maxOccurs="unbounded" />
