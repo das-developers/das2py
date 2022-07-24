@@ -1,13 +1,13 @@
 |Sx||50|
 <stream type="das-basic-stream" version="3.0" />
-|Hx|1|3629|
+|Hx|1|3630|
 <dataset name="ais" rank="3" iSize="*" jSize="160" kSize="80">
 
   <xCoord physDim="time">
     <properties>
       <p name="label">SCET %{RANGE}</p>
     </properties>
-    <scalar use="center" valType="isotime" iSize="*" jSize="" kSize="" units="UTC">
+    <scalar use="center" valType="datetime" iSize="*" jSize="" kSize="" units="UTC">
       <packet numItems="1" itemBytes="24" encoding="utf8" />
     </scalar> 
   </xCoord>

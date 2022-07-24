@@ -77,7 +77,7 @@ setup(description="Das2 extensions for python",
 	author="Chris Piker",
 	author_email="das-developers@uiowa.edu",
 	url="https://das2.org/das2py",
-	scripts=['scripts/das2_verify'],
+	scripts=['scripts/das_verify'],
 	package_data={'das2':['xsd/*.xsd']}
 )
 

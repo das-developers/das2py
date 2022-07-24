@@ -94,18 +94,19 @@ def main(argv):
 	for sFile in opts.lFiles:
 		fIn = open(sFile, 'rb')
 
-		pout("Validating: %s\n"%sFile)
+		pout("Validating: %s"%sFile)
 	
 		# Same parsing state info to help with exception output
 		curPkt = None
 		sCurType = None
 		dDataPktCount = {}
+		dExpectPktSize = {}
 	
 		try:
 			reader = das2.PacketReader(fIn)
 			
 			sStreamContent, sStreamVer, sTagStyle, bUsingNs = reader.streamType()
-
+			
 			if not sStreamContent.startswith('das'):
 				pout("This is a %s, expected a das stream or das document"%sStreamContent)
 				return 5
@@ -130,10 +131,16 @@ def main(argv):
 				
 				if isinstance(pkt, das2.DataPkt):
 					dDataPktCount[pkt.id] += 1
+					if dExpectPktSize[pkt.id]:
+						if pkt.length != dExpectPktSize[pkt.id]:
+							raise das2.DataError(pkt.tag, pkt.id, dDataPktCount[pkt.id], 
+								"Packet size mismatch, expected %d read %d"%(
+								dExpectPktSize[pkt.id], pkt.length
+							))
 					continue
 		
 				if (not isinstance(pkt, das2.HdrPkt) ):
-					raise ValueError("Unknown packet type '%s' encountered in strict mode"%pkt.tag)
+					raise ValueError("Unknown packet type '%s' encountered"%pkt.tag)
 
 				if opts.bPrnHdr:
 					pout(pkt.content)
@@ -146,8 +153,8 @@ def main(argv):
 			
 				if isinstance(pkt, das2.DataHdrPkt):
 					dDataPktCount[pkt.id] = 0
-					nTmp = pkt.dataLen() 
-					if nTmp == None:
+					dExpectPktSize[pkt.id] = pkt.dataLen() 
+					if dExpectPktSize[pkt.id] == None:
 						pout("|%s| ID %s %s header [OKAY] (variable packet size)"%(
 							pkt.tag, pkt.id, sCurType
 						))
@@ -162,7 +169,7 @@ def main(argv):
 				sCurType = None
 			
 		except(
-			das2.ReaderError, etree.XMLSyntaxError, etree.DocumentInvalid, 
+			das2.HeaderError, etree.XMLSyntaxError, etree.DocumentInvalid, 
 			xml.parsers.expat.ExpatError
 		) as e:
 			if curPkt:
@@ -179,7 +186,7 @@ def main(argv):
 				
 			elif isinstance(e, xml.parsers.expat.ExpatError):
 				nLine = e.lineno
-			elif isinstance(e, das2.ReaderError):
+			elif isinstance(e, das2.HeaderError):
 				nLine = e.line
 			
 			
@@ -205,9 +212,17 @@ def main(argv):
 			#pout(type(e), "\n   dir:", dir(e.error_log[-1]), '\n   msg:', e.error_log[-1].message)
 			#pout("Error in %s:\n%s"%(sFile, str(e)))
 			return 5
+		except das2.DataError as e:
+			pout("|%s| ID %d packet %d, %s [ERROR]"%(
+				e.pkt_type, e.pkt_id, e.pkt_num, e.message))
+			return 5
+		except ValueError as e:
+			pout("%s [ERROR]"%str(e))
+			return 5
+
 				
 		for nId in dDataPktCount:
-			pout("|Pd| ID %d %d data packets [OKAY]"%(nId, dDataPktCount[nId]))
+			pout("|Pd| ID %d data packets %d [OKAY]"%(nId, dDataPktCount[nId]))
 	
 		if bUsingNs:
 			pout('Stream validates as a %s version %s with a defined namespace\n'%(

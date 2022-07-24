@@ -1,25 +1,42 @@
-|Hs||50|
+|Sx||904|
+<!-- This is an example of embedding extension objects within a das stream.
+  In this case it's an Autoplot annotation used as an example.  This should
+  not be taken to mean that Autoplot can read annotations from as stream, just
+  that doing so does not create an illegal stream.  Since all data need
+  coordinates, the X,Y coordinates embedded in the annotation object are used
+  as the location.  Stream parsing tools will just forward this to the output
+  since the content has no meaning.  
+
+  This stream provides variable length items.  To do so:
+    
+    1. In the <packet> element set itemBytes="*"
+
+    2. Proceed each variable length item with a length designator.  Lengths
+       are given by |nnnn| where nnnn is an ascii positive integer.
+
+  See example ex15_ragged_waveform.d3t for an example of writing a variable
+  number of items.
+-->
 <stream type="das-basic-stream" version="3.0" />
-|Hi|1|488|
-<dataset valSep="|">
-  <xCoord>
-    <scalar use="center" valType="isotime" units="UTC">
-      <packet numItems="1" encoding="text" itemBytes="24" />
+|Hx|1|551|
+<dataset name="Annotations" rank="1">
+  <xCoord physDim="time">
+    <scalar use="center" valType="datetime" units="UTC">
+      <packet numItems="1" encoding="utf8" itemBytes="24" />
     </scalar>
   </xCoord>
-  <yCoord>
+  <yCoord physDim="frequency">
     <scalar use="center" valType="real" units="MHz">
-      <packet numItems="1" encoding="text" itemBytes="5" />
+      <packet numItems="1" encoding="utf8" itemBytes="6" />
     </scalar>
   </yCoord>
   <extData>
     <object scheme="autoplot" objType="Annotation" iSize="*">
-      <packet numItems="1" encoding="xml" itemBytes="*" />
+      <packet numItems="1" encoding="utf8" itemBytes="*" />
     </object>
   </extData>
 </dataset>
-|Pi|1|2016|2016-01-08T06:58:39.876Z| 29.37|
-<Annotation id="annotation_0">  
+|Pd|1|2019|2016-01-08T06:58:39.876 29.37 |1984|<Annotation id="annotation_0">  
   <property name="anchorBorderType" type="enum:org.das2.graph.BorderType" value="NONE"/>
   <property name="anchorOffset" type="String" value="1em,1em"/>
   <property name="anchorPosition" type="enum:org.das2.graph.AnchorPosition" value="NE"/>

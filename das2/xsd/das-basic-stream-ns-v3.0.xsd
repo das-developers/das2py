@@ -20,16 +20,28 @@
   targetNamespace="das-basic-stream"
  >
 
-<!-- Properties ========================================================== -->
+<!-- General Fields -->
 
-<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
+<!-- The names for things that could be variables in most languages -->
+<xs:simpleType name="VarName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
 
-<xs:simpleType name="PropName">
+<!-- The names for things that could be variables or struct + member 
+     names in most languages -->
+<xs:simpleType name="StructName">
   <xs:restriction base="xs:string">
     <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.\-,:]*"/>
     <xs:maxLength value="63"/> <!-- leave rooom for null char -->
   </xs:restriction>
 </xs:simpleType>
+
+<!-- Properties ========================================================== -->
+
+<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
 
 <!-- Alt prop by language -->
 <xs:simpleType name="ISO639_1">
@@ -66,8 +78,8 @@
    <xs:sequence>
      <xs:element name="alt" type="AltProp" minOccurs="0" maxOccurs="unbounded" />
    </xs:sequence>
-   <xs:attribute name="name"  type="PropName" use="required" />
-   <xs:attribute name="valType"  type="PropType" default="string" />
+   <xs:attribute name="name"  type="StructName" use="required" />
+   <xs:attribute name="type"  type="PropType" default="string" />
    <xs:attribute name="units" type="xs:token" />
 </xs:complexType>
 
@@ -90,8 +102,8 @@
   <xs:sequence>
     <xs:choice>
       <!-- Can extend with other elements here, but they can't be from this namespace -->
-      <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
-      <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+      <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:any namespace="##local" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:sequence>
 
@@ -163,7 +175,7 @@
 <!-- The data types for values, does not support ranges -->
 <xs:simpleType name="ValueType">
   <xs:restriction base="xs:string">
-      <xs:pattern value="isotime|integer|real|string" />
+      <xs:pattern value="datetime|int|real|string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -216,13 +228,6 @@
 
 <!-- The purposes for values of a plane -->
 
-<!-- The names for things that could be variables in most languages -->
-<xs:simpleType name="VarName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-  </xs:restriction>
-</xs:simpleType>
 
 <!-- An empty string or a positive integer -->
 
@@ -276,24 +281,26 @@
 </xs:simpleType>
 
 <xs:complexType name="VectorVar" >
-  <xs:complexContent>
-    <xs:extension base="ScalarVar" >
-      <xs:sequence>
-        <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
-      </xs:sequence>
-    <xs:attribute name="vecClass"   type="VectorClass" use="required" />
-    </xs:extension>
-  </xs:complexContent>
+  <xs:sequence>
+    <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
+    <xs:choice>
+      <xs:element name="values" type="Values" />
+      <xs:element name="sequence" type="Sequence" />
+      <xs:element name="packet" type="Packet" />
+    </xs:choice>
+  </xs:sequence>
+  <xs:attribute name="use"     type="VarRole" default="center" />
+  <xs:attribute name="units"   type="xs:token" use="required" />
+  <xs:attribute name="valType" type="ValueType" use="required" />
+  <xs:attribute name="fill"    type="xs:string" />
+  <xs:attribute name="iSize"   type="EmptyStar" default="*" />
+  <xs:attribute name="jSize"   type="EmptyPosInt" />
+  <xs:attribute name="kSize"   type="EmptyPosInt" />
+  <xs:attribute name="vecClass"   type="VectorClass" use="required" />
+
 </xs:complexType>
 
-<xs:simpleType name="PhysDimName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-   </xs:restriction>
-</xs:simpleType>
-
-<xs:complexType name="PhysDim">
+<xs:complexType name="CoordDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
@@ -305,7 +312,30 @@
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
 
-  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
+  <xs:attribute name="physDim" type="StructName" use="required"/>
+  
+</xs:complexType>
+
+<xs:complexType name="DataDim">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+
+    <xs:choice minOccurs="1" maxOccurs="unbounded">      
+      <xs:element name="scalar" type="ScalarVar" />
+      <xs:element name="vector" type="VectorVar" />
+    </xs:choice>
+
+    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+  </xs:sequence>
+
+  <xs:attribute name="physDim" type="StructName" use="required"/>
+
+  <!-- 
+  Extended data items must have unique names, however the name inherits 
+  from the overall dataset name.  So if you only have one <data> or 
+  <extData> element, the name isn't needed
+  -->
+  <xs:attribute name="name" type="StructName" />
   
 </xs:complexType>
 
@@ -329,7 +359,13 @@
     <xs:element name="object" type="DataObject" minOccurs="1" maxOccurs="unbounded" />
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
-  <xs:attribute name="name" type="PhysDimName" use="required"/>
+
+  <!-- 
+  Extended data items must have unique names, however the name inherits 
+  from the overall dataset name.  So if you only have one <data> or 
+  <extData> element, the name isn't needed
+  -->
+  <xs:attribute name="name" type="StructName"/>
 </xs:complexType>
 
 <!-- Data field separators
@@ -377,6 +413,7 @@
 <xs:complexType name="Dataset">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0" />
+    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- 
     Bad news, a choice of one of x xy xyz rφ ρφz rθφ is not deterministic in 
@@ -386,25 +423,25 @@
     -->
 
     <!-- Schematron: x, xy or xyz -->
-    <xs:element name="xCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="xCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xy or xyz -->
-    <xs:element name="yCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="yCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: ρφz -->    
-    <xs:element name="rhoCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rhoCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: rφ rθφ -->
-    <xs:element name="rCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: rθφ -->
-    <xs:element name="thetaCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="thetaCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: ρφz or rθφ --> 
-    <xs:element name="phiCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="phiCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xyz or ρφz -->
-    <xs:element name="zCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="zCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- 
     To see if a set of data vary in less then the number of coordinate dimensions
@@ -423,9 +460,7 @@
     CDF ISTP metadata model. -cwp 2020-07-17
     -->
     
-    <xs:element name="data" type="PhysDim"   minOccurs="1" maxOccurs="unbounded" />
-
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="data" type="DataDim" minOccurs="0" maxOccurs="unbounded" />
     <xs:element name="extData" type="ExtendedData" minOccurs="0" maxOccurs="unbounded" />
 
   </xs:sequence>
@@ -436,9 +471,6 @@
   <xs:attribute name="iSize" type="Star" default="*" />
   <xs:attribute name="jSize" type="xs:positiveInteger" />
   <xs:attribute name="kSize" type="xs:positiveInteger" />
-
-  <xs:attribute name="valSep" type="Separator" default=";" />
-  <xs:attribute name="arraySep" type="Separator" default="|" />
 
 </xs:complexType>
 

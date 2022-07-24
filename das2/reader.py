@@ -14,11 +14,19 @@ import xml.parsers.expat  # Switch das2C to use libxml2 as well?
 from lxml import etree
 
 
-class ReaderError(Exception):
+class HeaderError(Exception):
 	def __init__(self, line, message):
 		self.line = line
 		self.message = message
 		super().__init__(self.message)
+
+class DataError(Exception):
+	def __init__(self, pkt_type, pkt_id, pkt_number, message):
+		self.pkt_type = pkt_type
+		self.pkt_id = pkt_id
+		self.pkt_num = pkt_number
+		self.message = message
+		super().__init__(self.message)	
 
 g_lValidTags = (
 	'Sx', # XML stream definition (parse for content)
@@ -69,7 +77,7 @@ def loadSchema(sContent, sVersion, bNameSpace=False):
 	sSchemaDir = pjoin(sMyDir, 'xsd')
 	
 	# If a fixed schema is given we have to load that
-	sFile = getSchemaName(sContent, sVersion)
+	sFile = getSchemaName(sContent, sVersion, bNameSpace)
 	if not sFile:
 		raise ValueError("Unknown stream content %s and version %s"%(
 			sContent, sVersion
@@ -98,7 +106,7 @@ def _getDas2ValSz(sType, nLine):
 		else: break
 	
 	if len(sSz) == 0:
-		raise ReaderError(nLine, "Encoding length not defined in value '%s'"%sType)
+		raise HeaderError(nLine, "Encoding length not defined in value '%s'"%sType)
 
 	sSz = ''.join(reversed(sSz))
 	return int(sSz, 10)
@@ -176,7 +184,7 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 					if nBytesEa < 1: raise ValueError("Value < 1")
 				except ValueError:
 					if bThrow:  # Don't bother to throw here if doing validation pass
-						raise ReaderError(pkt.sourceline,
+						raise HeaderError(pkt.sourceline,
 							"Improper 'itemBytes' for element %s in packet ID %d"%()
 						)
 				try:
@@ -184,7 +192,7 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 					if nBytesEa < 1: raise ValueError("Value < 1")
 				except ValueError:
 					if bThrow:  # Don't bother to throw here if doing validation pass
-						raise ReaderError(pkt.sourceline,
+						raise HeaderError(pkt.sourceline,
 							"Improper 'itemBytes' for element %s in packet ID %d"%()
 						)
 
@@ -227,7 +235,7 @@ def checkShape3(elDs, nPktId) -> None:
 
 	if ('jSize' in elVar) and (len(elVar.attrib['jSize']) > 0):
 		if int(elVar.attrib['jSize']) != jSize:
-			raise ReaderError(elVar.sourceline,
+			raise HeaderError(elVar.sourceline,
 			"Attribute iSize in %s must be empty ")
 
 
@@ -424,7 +432,9 @@ class DataPkt(Packet):
 # ########################################################################## #
 
 class PacketReader:
-	"""This packet reader can handle either das v2.2 or v3.0 packets."""
+	"""This packet reader can handle either das v2.2 or v3.0 streams as
+	well as das v3.0 documents
+	"""
 	
 	def __init__(self, fIn):
 		self.fIn = fIn
@@ -480,9 +490,9 @@ class PacketReader:
 		else:
 			raise ValueError("More then one 'version' attribute present in stream header")
 
-		ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_]*?\\s*=\\s*\\"(.*?)\\"')
+		ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_\\-]*?\\s*=\\s*\\"(.*?)\\"')
 		l = ptrn.findall(self.xFirst[iStart:])
-		if len(l) > 1:
+		if len(l) > 0:
 			self.bUsingNs = True
 	
 	def streamType(self):
@@ -631,7 +641,7 @@ class PacketReader:
 				fPkt = BytesIO(xDoc)
 				docTree = parser.parse(fPkt)
 				elRoot = docTree.getroot()
-				self.lPktSize[nPktId] = _getDataLen(elRoot, self.sVersion, nPktId, False)
+				self.lPktSize[nPktId] = _getPktLen(elRoot, self.sVersion, nPktId, False)
 
 				return DataHdrPkt(self.sVersion, sTag, nPktId, nLen, xDoc)
 

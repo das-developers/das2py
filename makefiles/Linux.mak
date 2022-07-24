@@ -10,7 +10,7 @@ SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
  container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py
 
-SCRIPTS=das2_verify
+SCRIPTS=das_verify
 
 CDFSRC=__init__.py const.py
 
