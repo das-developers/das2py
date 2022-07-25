@@ -57,12 +57,17 @@ $(BD)/_das2.so:src/_das2.c
 
 # Run tests
 test:
-	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_verify_test.sh $(BD)
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestRead.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestDasTime.py
 	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_dastime_test1.sh $(BD)
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestCatalog.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestSortMinimal.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex05_waveform_extra.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex06_waveform_binary.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex08_dynaspec_namespace.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex12_sounder_xyz.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex13_object_annotation.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex96_yscan_multispec.d2t
 
 
 # Install purelib and extensions (python setup.py is so annoyingly

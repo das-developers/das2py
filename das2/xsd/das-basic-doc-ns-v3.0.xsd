@@ -355,23 +355,24 @@
   <xs:attribute name="name" type="PhysDimName" use="required"/>
 </xs:complexType>
 
-<!-- Data field separators
-  By default no separators are defined and an app must rely on itemBytes in
-  <packet> is used to determine where fields end.  Alternatively fexible with
-  fields (and arrays) may be use, but this required field separators which are
-  defined here.
+<!-- Variable length data values
 
-  The characters - + . , are not allowed in separators because they are often
-  found in data values in one locale or another.  The items []{}() are avoided
-  since they indicate opening and closing and it would be confusing to use them
-  alone. The symbol & is avoided because it usually starts an entity reference
-  in XML. Whitespace is avoided since many fields use spaces internally.
+  By default no terminators are defined and an app must rely on itemBytes in
+  <packet> is used to determine where fields end.  Alternatively fexible width
+  fields may be used in one of two ways:
 
-  The default separators are ";" for values and "|" for array boundaries.  If
-  a the length of a set of values a I packet is known, array boundaries are 
-  not needed.
+     1. Provide a length tag before each value, ex: "|17|Some event string"
+
+     2. Provide a value terminator.  Unlike separators in most languages, 
+        terminators MUST follow each value, even the last value.
+
+  In either case, specify that values are variable length using itemsBytes="*"
+  and if terminators are in use, give the terminator character which must be 
+  from the set | \ ? : ; ~ # ^ @ $.
+
+  The suggested value terminator is ";" though no default is given.
 -->
-<xs:simpleType name="Separator" >
+<xs:simpleType name="Terminator" >
   <xs:restriction base="xs:string" >
     <xs:pattern value="[\|/\\\?:;~#\^@$]" />
     <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
@@ -460,8 +461,7 @@
   <xs:attribute name="jSize" type="xs:positiveInteger" />
   <xs:attribute name="kSize" type="xs:positiveInteger" />
 
-  <xs:attribute name="valSep" type="Separator" default=";" />
-  <xs:attribute name="arraySep" type="Separator" default="|" />
+  <xs:attribute name="valTerm" type="Terminator" default=";" />
 
 </xs:complexType>
 
