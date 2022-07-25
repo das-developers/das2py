@@ -452,7 +452,7 @@ class PacketReader:
 		# stream header may have many xml schema and namespace references for
 		# the all-in-one XML documents
 		
-		self.xFirst = fIn.read(1024)
+		self.xFirst = fIn.read(65536)
 		
 		if len(self.xFirst) > 5:
 			if self.xFirst[0:1] == b'|':
@@ -485,11 +485,9 @@ class PacketReader:
 			if self.xFirst.find(b'dataset_id') != -1:	
 				self.sContent = 'q-stream'
 				self.sVersion = None
-		elif len(l) == 1:
-			self.sVersion = l[0].decode('utf-8').strip()
 		else:
-			raise ValueError("More then one 'version' attribute present in stream header")
-
+			self.sVersion = l[0].decode('utf-8').strip()
+		
 		ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_\\-]*?\\s*=\\s*\\"(.*?)\\"')
 		l = ptrn.findall(self.xFirst[iStart:])
 		if len(l) > 0:

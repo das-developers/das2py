@@ -107,6 +107,9 @@
     </xs:choice>
   </xs:sequence>
 
+  <xs:attribute name="scheme" type="xs:string" use="required"/>
+  <xs:attribute name="content" type="xs:string" use="required"/>
+
   <!-- Can extend with other attributes, will be skipped by schema -->
   <xs:anyAttribute processContents="skip" />
 </xs:complexType>
@@ -223,6 +226,7 @@
 <xs:simpleType name="Terminator" >
   <xs:restriction base="xs:string" >
     <xs:pattern value="[\|/\\\?:;~#\^@$]" />
+    <xs:pattern value="\\n" />
     <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
   </xs:restriction>
 </xs:simpleType>
@@ -380,9 +384,10 @@
   <xs:attribute name="use"     type="xs:string" />
   <xs:attribute name="scheme"  type="xs:string" use="required" />
   <xs:attribute name="objType" type="xs:string" use="required" />
+  <xs:attribute name="content" type="xs:string" />
   <xs:attribute name="iSize"   type="EmptyStar" default="*" />
   <xs:attribute name="jSize"   type="EmptyPosInt" />
-  <xs:attribute name="kSize"   type="EmptyPosInt" />  
+  <xs:attribute name="kSize"   type="EmptyPosInt" />
 </xs:complexType>
 
 <xs:complexType name="ExtendedData">

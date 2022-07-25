@@ -56,17 +56,20 @@ $(BD)/_das2.so:src/_das2.c
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 
 # Run tests
-test:
+test: verify
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestRead.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestDasTime.py
 	env PYVER=$(PYVER) PYTHONPATH=$(PWD)/$(BD) test/das2_dastime_test1.sh $(BD)
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestCatalog.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) test/TestSortMinimal.py
+
+verify:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex05_waveform_extra.d3t
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex06_waveform_binary.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex06_waveform_binary.d3s
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex08_dynaspec_namespace.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex12_sounder_xyz.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex13_object_annotation.d3t
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex14_object_tfcat.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex96_yscan_multispec.d2t
 
 

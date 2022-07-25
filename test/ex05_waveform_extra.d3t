@@ -1,4 +1,4 @@
-|Sx||996|
+|Sx||1033|
 <stream type="das-basic-stream" version="3.0">
   <properties>
     <p name="title">Waves: 50 kHz Electric Waveforms%{xCacheResInfo}</p>
@@ -17,7 +17,7 @@
        schema, non-das elements can follow standard stream elements here.  They
        will be ignored by standard das tools.
   -->
-  <extension>
+  <extension scheme="uiowa/tracers" content="xml">
     <conn>user=jason host=interal.goaway.com db=conformance</conn>
     <hardware>lockmart_em</hardware>
     <purpose>Conformance Testing</purpose>
