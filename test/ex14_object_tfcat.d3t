@@ -139,7 +139,7 @@ extended data object.  It is sufficent to merely parse past them.
   
   <extData name="features">
     <properties>
-      <p name="description">Fariday Rotations captured in TFCat Feature JSON objects</p>
+      <p name="description">Faraday Rotations captured in TFCat Feature JSON objects</p>
     </properties>
     <object scheme="TFCat" objType="Feature" content="application/json" >
       <packet itemBytes="*" valTerm="\n" encoding="utf8" numItems="1" />
