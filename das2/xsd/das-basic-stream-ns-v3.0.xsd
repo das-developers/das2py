@@ -41,12 +41,10 @@
 
 <!-- Properties ========================================================== -->
 
-<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
-
 <!-- Alt prop by language -->
 <xs:simpleType name="ISO639_1">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_-]+"/>
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\-]+"/>
     <xs:maxLength value="8"/> <!-- leave rooom for null char -->
   </xs:restriction>
 </xs:simpleType>
@@ -261,11 +259,7 @@
   <xs:attribute name="valTerm" type="Terminator" />
 </xs:complexType>
 
-
-<!-- The purposes for values of a plane -->
-
-
-<!-- An empty string or a positive integer -->
+<!-- The purposes for values of a variable -->
 
 <xs:simpleType name="VarRole">
   <xs:restriction base="xs:string">
@@ -336,6 +330,8 @@
 
 </xs:complexType>
 
+<!-- Physical Dimensions ================================================= -->
+
 <xs:complexType name="CoordDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
@@ -355,33 +351,26 @@
 <xs:complexType name="DataDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
-
     <xs:choice minOccurs="1" maxOccurs="unbounded">      
       <xs:element name="scalar" type="ScalarVar" />
       <xs:element name="vector" type="VectorVar" />
     </xs:choice>
-
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
-
   <xs:attribute name="physDim" type="StructName" use="required"/>
-
   <!-- 
-  Extended data items must have unique names, however the name inherits 
-  from the overall dataset name.  So if you only have one <data> or 
-  <extData> element, the name isn't needed
+  Data items must have unique names, however the name inherits from the overall
+  dataset name.  So if you only have one <data> or <extData> element, the name
+  isn't needed
   -->
   <xs:attribute name="name" type="StructName" />
-  
 </xs:complexType>
 
-<!-- Extended data objects in an extra section -->
+<!-- Extended data objects in an extended data section -->
 <xs:complexType name="DataObject">
   <xs:sequence>
-    <xs:element name="packet" type="Packet" />
+    <xs:element name="packet" type="Packet" minOccurs="1" maxOccurs="unbounded" />
   </xs:sequence>
 
-  <xs:attribute name="use"     type="xs:string" />
   <xs:attribute name="scheme"  type="xs:string" use="required" />
   <xs:attribute name="objType" type="xs:string" use="required" />
   <xs:attribute name="content" type="xs:string" />
@@ -394,7 +383,6 @@
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
     <xs:element name="object" type="DataObject" minOccurs="1" maxOccurs="unbounded" />
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
 
   <!-- 
@@ -497,7 +485,7 @@
   </xs:restriction>  
 </xs:simpleType>
 
-<xs:simpleType name="StreamFormat">
+<xs:simpleType name="StreamType">
   <xs:restriction base="xs:string">
     <xs:enumeration value="das-basic-stream" />
   </xs:restriction>
@@ -508,7 +496,7 @@
     <xs:element name="properties" type="Properties" minOccurs="0"/>
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
-  <xs:attribute name="type" type="StreamFormat" use="required" />
+  <xs:attribute name="type" type="StreamType" use="required" />
   <xs:attribute name="version" type="StreamVersion" use="required" />
   <xs:attribute name="lang" type="ISO639_1" default="en"/>
 </xs:complexType>

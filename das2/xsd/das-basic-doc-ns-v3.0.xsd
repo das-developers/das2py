@@ -1,30 +1,56 @@
 <?xml version="1.0"?>
 <!-- 
-	This is a single-root schema definition intended for complete das2 datasets
-  contained within a single XML document.  Das2 documents are not nearly as 
+	This is a single-root schema definition intended for complete das streams
+  contained within a single XML document.  Das documents are not nearly as 
   common as das2 packetized streams, though they are useful for small datasets.
-  Clients should accept both types.
 
-  The major differences between das2 documents and streams are:
+  Clients should strive to accept both types.
+
+  The major differences between das documents and das streams are:
 
     1. The top level element <stream> contains all other elements
-    2. The new sub element <i> (for I-slice) provides packet data.
-    3. The "encoding" attribute is dropped as only text encodings are allowed.
-    4. The elements <comment> and <exception> are not allowed.
 
-  See the file das2-basic-stream-v3.0.xsd for a multi-root schema definition
+    2. The new sub element <d> (for data) provides packet data.
+
+    3. The "encoding" attribute is dropped, UTF-8 is the expected 
+       encoding for all values.
+
+    4. All values are assumed to be variable length, so itemBytes is 
+       no longer required
+
+    5. The elements <comment> and <exception> are not included since
+       these are ment for real-time information.
+
+  See the file das-basic-stream-v3.0.xsd for a multi-root schema definition
   suitable for validating packetized streams.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  xmlns="das2-basic-doc"
-  targetNamespace="das2-basic-doc"
+  xmlns="das-basic-doc"
+  targetNamespace="das-basic-doc"
   elementFormDefault="qualified"
   attributeFormDefault="unqualified"
 >
 
-<!-- Properties ========================================================== -->
+<!-- General Fields -->
 
-<!-- The names for properties, no spaces, may include special chars ".,-_:" -->
+<!-- The names for things that could be variables in most languages -->
+<xs:simpleType name="VarName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- The names for things that could be variables or struct + member 
+     names in most languages -->
+<xs:simpleType name="StructName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.\-,:]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Properties ========================================================== -->
 
 <xs:simpleType name="PropName">
   <xs:restriction base="xs:string">
@@ -36,7 +62,7 @@
 <!-- Alt prop by language -->
 <xs:simpleType name="ISO639_1">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_-]+"/>
+    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\-]+"/>
     <xs:maxLength value="8"/> <!-- leave rooom for null char -->
   </xs:restriction>
 </xs:simpleType>
@@ -53,8 +79,8 @@
 <xs:simpleType name="PropType">
   <xs:restriction base="xs:string">
     <xs:enumeration value="boolean" />
-    <xs:enumeration value="isotime" />
-    <xs:enumeration value="isotimeRange" />
+    <xs:enumeration value="datetime" />
+    <xs:enumeration value="datetimeRange" />
     <xs:enumeration value="integer" />
     <xs:enumeration value="integerRange" />
     <xs:enumeration value="real" />
@@ -63,16 +89,6 @@
    </xs:restriction>
 </xs:simpleType>
 
-<!-- 
-  The data types for values, does not support ranges, does support object
-  encapsolation, useful for bounding boxes on complex things in a stream
-  such as TFCat regions.
--->
-<xs:simpleType name="ValueType">
-  <xs:restriction base="xs:string">
-      <xs:pattern value="isotime|integer|real|string|object" />
-   </xs:restriction>
-</xs:simpleType>
 
 
 <!-- Single property -->
@@ -100,14 +116,17 @@
   should pass stream-level extension elements unchanged dataset level 
   extension element handling is undefined 
 -->
-<xs:complexType name="Extension">
+<xs:complexType name="Extension" mixed="true">
   <xs:sequence>
     <xs:choice>
       <!-- Can extend with other elements here, but they can't be from this namespace -->
-      <xs:any namespace="##other" processContents="skip" minOccurs="0"/>
-      <xs:any namespace="##local" processContents="skip" minOccurs="0"/>
+      <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:any namespace="##local" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:sequence>
+
+  <xs:attribute name="scheme" type="xs:string" use="required"/>
+  <xs:attribute name="content" type="xs:string" use="required"/>
 
   <!-- Can extend with other attributes, will be skipped by schema -->
   <xs:anyAttribute processContents="skip" />
@@ -116,7 +135,7 @@
 
 <!-- Datasets ============================================================ -->
 
-<!-- Each packet header defines a das2 dataset and how it appears in the data
+<!-- Each packet header defines a das dataset and how it appears in the data
      stream.  The object containment hirearchy is depected in the middle of
      the reference poster, 
      
@@ -154,69 +173,9 @@
   </xs:restriction>
 </xs:simpleType>
 
-<!-- Optional axis affinity -->
-<xs:simpleType name="AxisName">
-  <xs:restriction base="xs:string">
-    <xs:enumeration value="x"/>
-    <xs:enumeration value="y"/>
-    <xs:enumeration value="z"/>
-    <xs:enumeration value="w"/>     <!-- data axis for three coord dimensions -->
-    <xs:enumeration value="r"/>     <!-- radius for polar, cylindrical & spherical -->
-    <xs:enumeration value="h" />    <!-- height for cylindrical coordinates -->
-    <xs:enumeration value="rho"/>   <!-- radius for spherical only -->
-    <xs:enumeration value="theta"/> <!-- polar angle (aka physics convention) -->
-    <xs:enumeration value="phi"/>   <!-- azimuthal (longitude) angle (phys conv.) -->
-  </xs:restriction>
+<xs:simpleType name="NonZeroStar">
+  <xs:union memberTypes="Star xs:positiveInteger" />
 </xs:simpleType>
-
-<xs:simpleType name="ValuesContent">
-  <!-- The regex for scientific notation is looooong, just make sure
-       illegal characters are not present -->       
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[0-9\+\-;\.eE\s]*" />
-    <xs:whiteSpace value="collapse" />
-  </xs:restriction>
-</xs:simpleType>
-
-<xs:simpleType name="ValRepeat">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="none|whole|each" />
-  </xs:restriction>
-</xs:simpleType>
-
-<!-- An array variable in the header -->
-<xs:complexType name="Values">
-  <xs:simpleContent>
-     <xs:extension base="ValuesContent" >
-      <xs:attribute name="repeat" type="ValRepeat" default="none" />
-      <xs:attribute name="repetitions" type="xs:positiveInteger"/>
-    </xs:extension>
-  </xs:simpleContent>
-</xs:complexType>
-
-<xs:complexType name="Sequence">
-  <xs:attribute name="use"      type="VarRole"  default="center" />
-  <xs:attribute name="minval"   type="xs:double" use="required"/>
-  <xs:attribute name="interval" type="xs:double" use="required"/>
-  <xs:attribute name="repeat"   type="ValRepeat" default="none"/>
-  <xs:attribute name="repetitions" type="xs:positiveInteger" />
-</xs:complexType>
-
-<xs:complexType name="Packet">
-  <xs:attribute name="numItems" use="required" /> <!-- encoding is always text -->
-</xs:complexType>
-
-<!-- The purposes for values of a plane -->
-
-<!-- The names for things that could be variables in most languages -->
-<xs:simpleType name="VarName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-  </xs:restriction>
-</xs:simpleType>
-
-<!-- An empty string or a positive integer -->
 
 <xs:simpleType name="Empty" >
   <xs:restriction base="xs:string">
@@ -234,6 +193,87 @@
 <xs:simpleType name="EmptyPosInt" >
   <xs:union memberTypes="IntTwoOrMore Empty" />
 </xs:simpleType>
+
+<!-- The data types for values, does not support ranges -->
+<xs:simpleType name="ValueType">
+  <xs:restriction base="xs:string">
+      <xs:pattern value="datetime|int|real|string" />
+   </xs:restriction>
+</xs:simpleType>
+
+<!-- Encoding type missing since only utf8 is allowed -->
+
+<xs:simpleType name="ValuesContent">
+  <!-- The regex for scientific notation is looooong, just make sure
+       illegal characters are not present -->       
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-9\+\-;\.eE\s]*" />
+    <xs:whiteSpace value="collapse" />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="ValRepeat">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="none|whole|each" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- Variable length data values
+
+  By default no terminators are defined and an app must rely on itemBytes in
+  <packet> is used to determine where fields end.  Alternatively fexible width
+  fields may be used in one of two ways:
+
+     1. Provide a length tag before each value, ex: "|17|Some event string"
+
+     2. Provide a value terminator.  Unlike separators in most languages, 
+        terminators MUST follow each value, even the last value.
+
+  In either case, specify that values are variable length using itemsBytes="*"
+  and if terminators are in use, give the terminator character which must be 
+  from the set | \ ? : ; ~ # ^ @ $.
+
+  The suggested value terminator is ";" though no default is given.
+-->
+<xs:simpleType name="Terminator" >
+  <xs:restriction base="xs:string" >
+    <xs:pattern value="[\|/\\\?:;~#\^@$]" />
+    <xs:pattern value="\\n" />
+    <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- An array variable in the header -->
+<xs:complexType name="Values">
+  <xs:simpleContent>
+     <xs:extension base="ValuesContent" >
+      <xs:attribute name="repeat" type="ValRepeat" default="none" />
+      <xs:attribute name="repetitions" type="xs:positiveInteger"/>
+
+      <!-- Since values elements have a natural end point, no terminator
+        is needed for the last value, so they are called separators here -->
+      <xs:attribute name="valSep" type="Terminator" default=";" />
+
+    </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<xs:complexType name="Sequence">
+  <xs:attribute name="use"      type="VarRole"  default="center" />
+  <xs:attribute name="minval"   type="xs:double" use="required"/>
+  <xs:attribute name="interval" type="xs:double" use="required"/>
+  <xs:attribute name="repeat"   type="ValRepeat" default="none"/>
+  <xs:attribute name="repetitions" type="xs:positiveInteger" />
+</xs:complexType>
+
+<xs:complexType name="Packet">
+  <xs:attribute name="numItems" use="required" /> 
+  <xs:attribute name="itemBytes" type="NonZeroStar" />
+  <!-- encoding is always text -->
+  <xs:attribute name="valTerm" type="Terminator"/>
+</xs:complexType>
+
+<!-- The purposes for values of a variable -->
 
 <xs:simpleType name="VarRole">
   <xs:restriction base="xs:string">
@@ -260,6 +300,7 @@
   <xs:attribute name="use"     type="VarRole" default="center" />
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
+  <xs:attribute name="fill"    type="xs:string" />
   <xs:attribute name="iSize"   type="EmptyStar" default="*" />
   <xs:attribute name="jSize"   type="EmptyPosInt" />
   <xs:attribute name="kSize"   type="EmptyPosInt" />
@@ -270,6 +311,7 @@
 <xs:complexType name="Component">
   <xs:attribute name="name" type="VarName" use="required" />
   <xs:attribute name="units" type="xs:token"/>
+  <xs:attribute name="fill"  type="xs:string" />
 </xs:complexType>
 
 
@@ -283,27 +325,28 @@
 </xs:simpleType>
 
 <xs:complexType name="VectorVar" >
-  <xs:complexContent>
-    <xs:extension base="ScalarVar" >
-      <xs:sequence>
-        <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
-      </xs:sequence>
-    <xs:attribute name="vecClass"   type="VectorClass" use="required" />
-    </xs:extension>
-  </xs:complexContent>
+  <xs:sequence>
+    <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
+    <xs:choice>
+      <xs:element name="values" type="Values" />
+      <xs:element name="sequence" type="Sequence" />
+      <xs:element name="packet" type="Packet" />
+    </xs:choice>
+  </xs:sequence>
+  <xs:attribute name="use"     type="VarRole" default="center" />
+  <xs:attribute name="units"   type="xs:token" use="required" />
+  <xs:attribute name="valType" type="ValueType" use="required" />
+  <xs:attribute name="fill"    type="xs:string" />
+  <xs:attribute name="iSize"   type="EmptyStar" default="*" />
+  <xs:attribute name="jSize"   type="EmptyPosInt" />
+  <xs:attribute name="kSize"   type="EmptyPosInt" />
+  <xs:attribute name="vecClass"   type="VectorClass" use="required" />
 </xs:complexType>
 
 
 <!-- Physical Dimensions ================================================= -->
 
-<xs:simpleType name="PhysDimName">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[a-zA-Z][a-zA-Z0-9_\.]*"/>
-    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
-   </xs:restriction>
-</xs:simpleType>
-
-<xs:complexType name="PhysDim">
+<xs:complexType name="CoordDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
@@ -312,72 +355,56 @@
       <xs:element name="vector" type="VectorVar" />
     </xs:choice>
 
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="1" />
-
   </xs:sequence>
-  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
+  <xs:attribute name="physDim" type="StructName" use="required"/>
 </xs:complexType>
 
-<!-- Extended data section =============================================== -->
+<xs:complexType name="DataDim">
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:choice minOccurs="1" maxOccurs="unbounded">      
+      <xs:element name="scalar" type="ScalarVar" />
+      <xs:element name="vector" type="VectorVar" />
+    </xs:choice>
+  </xs:sequence>
 
-<!--
-  Extended data sections are intended for items that could be streamed along 
-  with some other coordinates or data but are outside the scope of standard
-  stream processing.  Examples include manual annotations on a dataset or TFCat
-  objects, etc.  Client program are free to ignore extended data or may at
-  thier option put a translucent mark in coordinate space indicating that 
-  something un-plottable is present, or take any other desired action.  Stream
-  processors that reduce the packet count are likely to just drop extended
-  data all together.  Since extended data section are listed after wData,
-  they will always appear last in a packet when present.  Like Physical 
-  Dimensions, extra data can have properties.
+  <xs:attribute name="physDim" type="StructName" use="required"/>
+  <!-- 
+  Data items must have unique names, however the name inherits from the overall
+  dataset name.  So if you only have one <data> or <extData> element, the name
+  isn't needed
+  -->
+  <xs:attribute name="name" type="StructName" />
+</xs:complexType>
 
-  Extra data sections are describe stream data items.  For static extended
-  data use the <extension> elements in <stream> or <dataset>
--->
-<xs:complexType name="PacketObject" >
+<!-- Extended data objects in an extended data section -->
+<xs:complexType name="DataObject">
   <xs:sequence>
     <xs:element name="packet" type="Packet" minOccurs="1" maxOccurs="unbounded" />
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="1" />
-  <xs:sequence>
+  </xs:sequence>
+
+  <xs:attribute name="scheme"  type="xs:string" use="required" />
   <xs:attribute name="objType" type="xs:string" use="required" />
-  <xs:attribute name="objVersion" type="xs:string" />
+  <xs:attribute name="content" type="xs:string" />
   <xs:attribute name="iSize"   type="EmptyStar" default="*" />
   <xs:attribute name="jSize"   type="EmptyPosInt" />
   <xs:attribute name="kSize"   type="EmptyPosInt" />
 </xs:complexType>
 
-<xs:complexType name="ExtraData" >
+<xs:complexType name="ExtendedData">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
-    <xs:element name="object" type="PacketObject" minOccurs="1" maxOccurs="unbounded" />
+    <xs:element name="object" type="DataObject" minOccurs="1" maxOccurs="unbounded" />
   </xs:sequence>
-  <xs:attribute name="name" type="PhysDimName" use="required"/>
+
+  <!-- 
+  Extended data items must have unique names, however the name inherits 
+  from the overall dataset name.  So if you only have one <data> or 
+  <extData> element, the name isn't needed
+  -->
+  <xs:attribute name="name" type="StructName"/>
 </xs:complexType>
 
-<!-- Variable length data values
-
-  By default no terminators are defined and an app must rely on itemBytes in
-  <packet> is used to determine where fields end.  Alternatively fexible width
-  fields may be used in one of two ways:
-
-     1. Provide a length tag before each value, ex: "|17|Some event string"
-
-     2. Provide a value terminator.  Unlike separators in most languages, 
-        terminators MUST follow each value, even the last value.
-
-  In either case, specify that values are variable length using itemsBytes="*"
-  and if terminators are in use, give the terminator character which must be 
-  from the set | \ ? : ; ~ # ^ @ $.
-
-  The suggested value terminator is ";" though no default is given.
--->
-<xs:simpleType name="Terminator" >
-  <xs:restriction base="xs:string" >
-    <xs:pattern value="[\|/\\\?:;~#\^@$]" />
-    <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
-  </xs:restriction>
-</xs:simpleType>
 
 <xs:simpleType name="DatasetRank">
   <xs:restriction base="xs:positiveInteger">
@@ -401,7 +428,8 @@
 <xs:complexType name="Dataset">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0" />
-
+    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+    
     <!-- 
     Bad news, a choice of one of x xy xyz rφ ρφz rθφ is not deterministic in 
     the XSD language because you can't tell which sequence you are on from the
@@ -410,25 +438,25 @@
     -->
 
     <!-- Schematron: x, xy or xyz -->
-    <xs:element name="xCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="xCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xy or xyz -->
-    <xs:element name="yCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="yCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: ρφz -->    
-    <xs:element name="rhoCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rhoCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- Schematron: rφ rθφ -->
-    <xs:element name="rCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="rCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: rθφ -->
-    <xs:element name="thetaCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="thetaCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: ρφz or rθφ --> 
-    <xs:element name="phiCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="phiCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- Schematron: xyz or ρφz -->
-    <xs:element name="zCoord" type="PhysDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="zCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
     <!-- 
     To see if a set of data vary in less then the number of coordinate dimensions
@@ -447,28 +475,26 @@
     CDF ISTP metadata model. -cwp 2020-07-17
     -->
     
-    <xs:element name="data" type="PhysDim"   minOccurs="1" maxOccurs="unbounded" />
-
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="data" type="DataDim"   minOccurs="0" maxOccurs="unbounded" />
     <xs:element name="extData" type="ExtendedData" minOccurs="0" maxOccurs="unbounded" />
 
   </xs:sequence>
 
+  <!-- "id" needed since there are no packet tags -->
+  <xs:attribute name="id" type="xs:positiveInteger" use="required"/>
+
   <xs:attribute name="rank" type="DatasetRank" use="required" />
   <xs:attribute name="name" type="DatasetName" use="required"/>
-
   <xs:attribute name="iSize" type="Star" default="*" />
   <xs:attribute name="jSize" type="xs:positiveInteger" />
   <xs:attribute name="kSize" type="xs:positiveInteger" />
 
-  <xs:attribute name="valTerm" type="Terminator" default=";" />
-
 </xs:complexType>
 
-<xs:complexType name="ISlice" >
+<xs:complexType name="PacketData" >
   <xs:simpleContent>
     <xs:extension base="xs:string">
-      <xs:attribute name="ds" type="xs:positiveInteger" use="required"/>
+      <xs:attribute name="id" type="xs:positiveInteger" use="required"/>
     </xs:extension>
   </xs:simpleContent>
 </xs:complexType>
@@ -481,9 +507,9 @@
   </xs:restriction>  
 </xs:simpleType>
 
-<xs:simpleType name="StreamFormat">
+<xs:simpleType name="StreamType">
   <xs:restriction base="xs:string">
-    <xs:enumeration value="das2-basic-doc" />
+    <xs:enumeration value="das-basic-doc" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -496,11 +522,11 @@
     
     <xs:choice minOccurs="0" maxOccurs="unbounded">
       <xs:element name="dataset" type="Dataset" />
-      <xs:element name="i" type="ISlice" />
+      <xs:element name="d" type="PacketData" />
     </xs:choice>
   
   </xs:sequence>
-  <xs:attribute name="format" type="StreamFormat" use="required" />
+  <xs:attribute name="type" type="StreamType" use="required" />
   <xs:attribute name="version" type="StreamVersion" use="required" />
   <xs:attribute name="lang" type="ISO639_1" default="en"/>
 </xs:complexType>

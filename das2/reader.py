@@ -428,6 +428,85 @@ class DataPkt(Packet):
 
 	# Nothing special defined for data packets yet
 
+# ########################################################################## #
+def streamType(xFirst):
+	"""Read the first bytes of the stream and try to determine the stream 
+	type.  Should be able to detect the packetized streams for das v2.2, 
+	das v3.0 and q-stream as well as a das v3.0 document
+
+	Args:
+		xFirst (bytearray) - Initial bytes of the stream, at least 28 bytes
+		   must be provided, to get the exact version number 16K is 
+		   recommended.
+
+	Returns: The tuple (content_name, version_string, tag_style, using_namespaces)
+		where:
+		   content_name - is one of 'das-basic-stream', 'das-basic-doc', 'q-stream'
+
+		   version_string - the content of the 'version' attribute in the stream
+		      header element
+
+			tag_style - is one of 'none', 'var', 'fixed'
+
+			using_namespaces - is one of True, or False
+
+	Exceptions:
+		If the content can't be recognized a ValueError is thrown
+	"""
+
+	sContent = "das-basic-stream"
+	sVersion = "2.2"
+	sTagStyle = "fixed"  # Other choices are "var" and "none"
+	bUsingNs = False # True if explicit namespaces in use
+
+	if len(xFirst) < 8:
+		raise ValueError(
+			"%d bytes are not enough to detect the stream type"%len(xFirst)
+		)
+
+	if xFirst[0:4] == b'|Sx|':
+		# Can't use single index for bytestring or it jumps over to an
+		# integer return. Hence [0:1] instead of [0]. Yay python3 :-\
+		sTagStyle = "var"
+	elif xFirst[0:4] == b'[00]':
+		sTagStyle = "fixed"
+	else:
+		# Assume XML, search for <?xml
+		sTagStyle = "none"
+		sContent = "das-basic-doc"
+		ptrn = re.compile(b'<\\?xml')
+		l = ptrn.findall(xFirst)
+		if len(l) == 0:
+			raise ValueError(
+				"Content is not a packtize stream, but XML document prolog is missing"
+			)
+
+	# So we think it's a stream, try to get the version number if you can
+	ptrn = re.compile(b'<\\s*stream')
+	m = ptrn.search(xFirst)
+	if not m:
+		raise ValueError("Can not find <stream> element in first %d bytes"%len(xFirst));
+	
+	iStart = m.start() + 7
+
+	ptrn = re.compile(b'version\\s*=\\s*\\"(.*?)\\"')
+	l = ptrn.findall(xFirst[iStart:])
+
+	if len(l) == 0:
+		# Just assume version 2.2 stream or qstream with fixed tags.
+		if xFirst.find(b'dataset_id') != -1:	
+			sContent = 'q-stream'
+			sVersion = None
+	else:
+		sVersion = l[0].decode('utf-8').strip()
+	
+	ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_\\-]*?\\s*=\\s*\\"(.*?)\\"')
+	l = ptrn.findall(xFirst[iStart:])
+	if len(l) > 0:
+		bUsingNs = True
+		
+	return (sContent, sVersion, sTagStyle, bUsingNs)
+
 
 # ########################################################################## #
 
@@ -453,49 +532,19 @@ class PacketReader:
 		# the all-in-one XML documents
 		
 		self.xFirst = fIn.read(65536)
-		
-		if len(self.xFirst) > 5:
-			if self.xFirst[0:1] == b'|':
-				# Can't use single index for bytestring or it jumps over to an
-				# integer return. Hence [0:1] instead of [0]. Yay python3 :-\
-				self.sTagStyle = "var"
 
-			elif self.xFirst[0:1] == b'<':
-				self.sTagStyle = "none"
-				self.sContent = "das-basic-doc"
+		(self.sContent, self.sVersion, self.sTagStyle, self.bUsingNs) = streamType(self.xFirst)
 
-			else:
-				self.sTagStyle = "none"
-		
-		# Poor-man's XML pre-parsing to find version number of stream and 
-		# thus load the proper schema independently of any "xmlns" definitions
-		# since these are not required for compliant clients
-		ptrn = re.compile(b'<\\s*stream')
-		m = ptrn.search(self.xFirst)
-		if not m:
-			raise ValueError("Can not find <stream> element in stream header");
-		
-		iStart = m.start() + 7
+		if self.sContent not in ('das-basic-stream', 'das-basic-doc'):
+			raise ValueError("Support stream type '%s' has not been implemented"%self.sContent)
 
-		ptrn = re.compile(b'version\\s*=\\s*\\"(.*?)\\"')
-		l = ptrn.findall(self.xFirst[iStart:])
-
-		if len(l) == 0:
-			# Just assume version 2.2 stream or qstream with fixed tags.
-			if self.xFirst.find(b'dataset_id') != -1:	
-				self.sContent = 'q-stream'
-				self.sVersion = None
-		else:
-			self.sVersion = l[0].decode('utf-8').strip()
-		
-		ptrn = re.compile(b'xmlns[:][a-zA-Z0-9_\\-]*?\\s*=\\s*\\"(.*?)\\"')
-		l = ptrn.findall(self.xFirst[iStart:])
-		if len(l) > 0:
-			self.bUsingNs = True
-	
+		if self.sTagStyle == 'none':
+			raise ValueError(
+				"Support for reading documents instead of packetize streams has not been implemented"
+			)
+			
 	def streamType(self):
-		return (self.sContent, self.sVersion, self.sTagStyle, self.bUsingNs)
-		
+		return (self.sContent, self.sVersion, self.sTagStyle, self.bUsingNs)		
 		
 	def _read(self, nBytes):
 		xOut = b''
