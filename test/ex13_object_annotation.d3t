@@ -1,0 +1,68 @@
+|Sx||904|
+<!-- This is an example of embedding extension objects within a das stream.
+  In this case it's an Autoplot annotation used as an example.  This should
+  not be taken to mean that Autoplot can read annotations from as stream, just
+  that doing so does not create an illegal stream.  Since all data need
+  coordinates, the X,Y coordinates embedded in the annotation object are used
+  as the location.  Stream parsing tools will just forward this to the output
+  since the content has no meaning.  
+
+  This stream provides variable length items.  To do so:
+    
+    1. In the <packet> element set itemBytes="*"
+
+    2. Proceed each variable length item with a length designator.  Lengths
+       are given by |nnnn| where nnnn is an ascii positive integer.
+
+  See example ex15_ragged_waveform.d3t for an example of writing a variable
+  number of items.
+-->
+<stream type="das-basic-stream" version="3.0" />
+|Hx|1|551|
+<dataset name="Annotations" rank="1">
+  <xCoord physDim="time">
+    <scalar use="center" valType="datetime" units="UTC">
+      <packet numItems="1" encoding="utf8" itemBytes="24" />
+    </scalar>
+  </xCoord>
+  <yCoord physDim="frequency">
+    <scalar use="center" valType="real" units="MHz">
+      <packet numItems="1" encoding="utf8" itemBytes="6" />
+    </scalar>
+  </yCoord>
+  <extData>
+    <object scheme="autoplot" objType="Annotation" iSize="*">
+      <packet numItems="1" encoding="utf8" itemBytes="*" />
+    </object>
+  </extData>
+</dataset>
+|Pd|1|2019|2016-01-08T06:58:39.876 29.37 |1984|<Annotation id="annotation_0">  
+  <property name="anchorBorderType" type="enum:org.das2.graph.BorderType" value="NONE"/>
+  <property name="anchorOffset" type="String" value="1em,1em"/>
+  <property name="anchorPosition" type="enum:org.das2.graph.AnchorPosition" value="NE"/>
+  <property default="CANVAS" name="anchorType" type="enum:org.das2.graph.AnchorType" value="PLOT"/>
+  <property name="background" type="color" value="#ffffff (White)"/>
+  <property default="NONE" name="borderType" type="enum:org.das2.graph.BorderType" value="ROUNDED_RECTANGLE"/>
+  <property default="" name="columnId" type="String" value="marginColumn_0"/>
+  <property name="fontSize" type="String" value="1.4em"/>
+  <property name="foreground" type="color" value="#000000 (Black)"/>
+  <property name="overrideColors" type="Boolean" value="false"/>
+  <property default="" name="plotId" type="String" value="plot_0"/>
+  <property name="pointAtOffset" type="String" value=""/>
+  <property default="0.0 (dimensionless)" name="pointAtX" type="datum" value="us2000: 2016-01-08T06:58:39.876Z"/>
+  <property default="0.0 (dimensionless)" name="pointAtY" type="datum" value="MHz: 29.37"/>
+  <property default="" name="rowId" type="String" value="row_1"/>
+  <property name="scale" type="Double" value="1.0"/>
+  <property default="false" name="showArrow" type="Boolean" value="true"/>
+  <property name="splitAnchorType" type="Boolean" value="false"/>
+  <property default="Annotation" name="text" type="String" value="Test annotation"/>
+  <property name="textColor" type="color" value="#000000 (Black)"/>
+  <property name="url" type="String" value=""/>
+  <property name="verticalAnchorType" type="enum:org.das2.graph.AnchorType" value="CANVAS"/>
+  <property name="xrange" type="datumRange">
+      <datumRange units="us2000" value="2016-01-08 6:58:39.876 to 6:58:39.876"/>
+  </property>
+  <property name="yrange" type="datumRange">
+      <datumRange units="MHz" value="29.37 to 29.37 MHz"/>
+  </property>
+</Annotation>

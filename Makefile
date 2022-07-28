@@ -18,7 +18,7 @@ N_ARCH=$(shell uname -s).$(shell uname -p)
 endif
 
 ifeq ($(DAS2C_INCDIR),)
-DAS2C_INCDIR=$(PREFIX)/include/$(N_ARCH)
+DAS2C_INCDIR=$(PREFIX)/include
 endif
 
 ifeq ($(DAS2C_LIBDIR),)
