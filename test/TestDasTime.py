@@ -68,5 +68,13 @@ class TestDasTime(unittest.TestCase):
 		t = das2.from_epoch(rTime, 'TT2000')
 		self.assertEqual(t, (2016, 12, 31, 366, 23, 59, 60.0));
 
+		dt1 = das2.DasTime('2016-12-31T23:59:59.0')
+		dt2 = das2.DasTime('2017-01-01T00:00:00.0')
+
+		r1 = dt1.epoch('TT2000')
+		r2 = dt2.epoch('TT2000')
+		self.assertEqual(r2 - r1, 2e9) # 2 seconds, not 1
+
+
 if __name__ == '__main__':
 	unittest.main()

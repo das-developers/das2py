@@ -301,6 +301,26 @@ class DasTime(object):
 							
 	def t2000(self):
 		return self.mj1958() - _das2.ttime(2000, 1, 1)
+
+
+	def epoch(self, sUnits):
+		"""Get a ticks-from-the-epoch value for this DasTime.
+
+		Args:
+			sUnits - The time offset units.  One of: 
+			'mj1958' - Floating point days since midnight, Jan. 1st 1958 (no leapseconds)
+			't1970'  - POSIX Time, non-leap seconds since midnight, Jan. 1st 1970
+			'ns1970' - NumPy Time, non-leap nanoseconds since midnight, Jan. 1st 1970
+			't2000'	- Non-leap Seconds since midnight, Jan. 1st 2000
+			'us2000' - Non-leap microseconds since midnight, Jan. 1st 2000
+			'TT2000' - ALL nanoseconds since 2000-01-01T11:58:55.816
+
+		Note: Of the systems above, *only* TT2000 is leap-second aware.
+		"""
+		return _das2.to_epoch(
+			sUnits, self.t[0], self.t[1], self.t[2], 
+			        self.t[4], self.t[5], self.t[6]
+		)
 		
 		
 	def adjust(self, nYear, nMonth=0, nDom=0, nHour=0, nMin=0, fSec=0.0):
