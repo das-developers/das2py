@@ -65,7 +65,7 @@ test: verify
 
 verify:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex05_waveform_extra.d3t
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex06_waveform_binary.d3s
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex06_waveform_binary.d3b
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex08_dynaspec_namespace.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex12_sounder_xyz.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex13_object_annotation.d3t

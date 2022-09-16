@@ -164,6 +164,11 @@ const char pyd2help_parse_epoch[] =
 "      - **'mj1958'** : Days since midnight, January 1st 1958\n"
 "      - **'t2000'**  : Seconds since midnight, January 1st 2000\n"
 "      - **'t1970'**  : Seconds since midnight, January 1st 1970, commonly called the UNIX epoch.\n"
+"      - **'ns1970'** : Nanoseconds since midnight, January 1st 1970, commonly used by numpy.\n"
+"      - **'TT2000'** : Nanoseconds since 2000-01-01T11:58:55.816 includes leap seconds\n"
+"\n"
+"Note: Only the TT2000 range includes leapseconds.  All others ignore\n"
+"      leapseconds as if they did not occur."
 "\n"
 "Returns:\n"
 "   A 7-tuple containing the broken down time values\n"
@@ -174,7 +179,9 @@ const char pyd2help_parse_epoch[] =
 "   - **yday** (*int*): The day of the year from 1 to 366\n"
 "   - **hour** (*int*): The hour of the day from 0 to 23\n"
 "   - **minute** (*int*): The minute of the hour from 0 to 59\n"
-"   - **seconds** (*float*): The seconds of the minute from 0.0 to < 60.0\n"
+"   - **seconds** (*float*): The seconds of the minute from 0.0 to < 60.0*\n"
+"\n"
+" *Except for TT2000 conversions, where seconds are 0.0 to < 61.0 at times\n"
 "\n"
 "Raises:\n"
 "   ValueError: If `sUnits` is an unknown time value format\n"
@@ -198,6 +205,114 @@ static PyObject* pyd2_parse_epoch(PyObject* self, PyObject* args)
 	
 	return Py_BuildValue("(iiiiiid)", dt.year, dt.month, dt.mday, dt.yday, 
 	                     dt.hour, dt.minute, dt.second);
+}
+
+const char pyd2help_to_epoch[] = 
+"to_epoch(nYr, nMon, nDom, nHr, nMin, rSec, sUnits)\n"
+"\n"
+"Encodes a broken down time as an floating point value in the given time\n"
+"offset units.  The units define both the epoch and interval.  Arguments\n"
+"will be normalized if necessary.\n"
+"\n"
+"Args:\n"
+"   sUnits (str) - The time encoding, should be one of \n"
+"   nYr  (int)          - year\n"
+"   nMon (int,optional) - month of year (1-12)\n"
+"   nDom (int,optional) - day of month (1-31)\n"
+"   nHr  (int,optional) - hour of day (0-23)\n"
+"   nMin (int,optional) - minute of hour (0-59)\n"
+"   rSec (float,optional) - second of minute (0.0 <= s < 60.0)*\n"
+"\n"
+"Returns (float):\n"
+"   The encoded floating point epoch time.\n"
+"\n"
+"Raises:\n"
+"   ValueError: If `sUnits` is an unknown time value format\n"
+"\n"
+"Note:  To use day of year as input, simple specify 1 for the month and\n"
+"the day of year in place of day of month. ONLY the day of month and\n"
+"higher fields are normalized!\n"
+"\n"
+"TT2000 Note: If the output units are TT2000, the seconds field can be\n"
+"greater then 60.0.\n"
+"\n";
+
+static const int days[2][14] = {
+  { 0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 },
+  { 0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 } };
+
+static PyObject* pyd2_to_epoch(PyObject* self, PyObject* args)
+{
+	//             y  m  md yd h  m  s
+	das_time dt = {0, 1, 1, 1, 0, 0, 0.0};
+	double rEpoch = 0.0;
+	const char* sTo = NULL;
+
+	if(!PyArg_ParseTuple(
+		args, "si|iiiid:to_epoch", &sTo, &(dt.year), &(dt.month), 
+		&(dt.mday), &(dt.hour), &(dt.minute), &(dt.second)
+	)) return NULL;
+
+	das_units units = Units_fromStr(sTo);
+	if(! Units_haveCalRep(units)){
+		PyErr_SetString(PyExc_ValueError, "Units are not a recognized epoch time");
+		return NULL;
+	}
+
+   /* Adapted from time.c ................................................... */
+
+#define LEAP(y) ((y) % 4 ? 0 : ((y) % 100 ? 1 : ((y) % 400 ? 0 : 1)))
+
+	int leap, ndays;
+
+	/* month is required input -- first adjust month */
+	if (dt.month > 12 || dt.month < 1) {
+		/* temporarily make month zero-based */
+		(dt.month)--;
+		dt.year += dt.month / 12;
+		dt.month %= 12;
+		if (dt.month < 0) {
+			dt.month += 12;
+			(dt.year)--;
+		}
+		(dt.month)++;
+	}
+
+	/* index for leap year */
+	leap = LEAP(dt.year);
+
+	/* day-of-year is output only -- calculate it */
+	dt.yday = days[leap][dt.month] + dt.mday;
+
+	/* final adjustments for year and day of year */
+	ndays = leap ? 366 : 365;
+	if (dt.yday > ndays || dt.yday < 1) {
+		while (dt.yday > ndays) {
+			(dt.year)++;
+			dt.yday -= ndays;
+			leap = LEAP(dt.year);
+			ndays = leap ? 366 : 365;
+		}
+		while (dt.yday < 1) {
+			(dt.year)--;
+			leap = LEAP(dt.year);
+			ndays = leap ? 366 : 365;
+			dt.yday += ndays;
+		}
+	}
+
+	/* and finally convert day-of-year back to month and day */
+	while (dt.yday <= days[leap][dt.month]) (dt.month)--;
+	while (dt.yday >  days[leap][dt.month + 1]) (dt.month)++;
+	dt.mday = dt.yday - days[leap][dt.month];
+
+#undef LEAP
+	/* ........................................... end adapted from time.c */
+
+	/* Okay, we can now safely convert day-of-year times to TT2000 since
+	   we won't accidentally roll-over the leap seconds */
+	rEpoch = Units_convertFromDt(units, &dt);
+	return Py_BuildValue("d", rEpoch);
 }
 
 const char pyd2help_ttime[] = 
@@ -583,6 +698,7 @@ static PyMethodDef pyd2_methods[] = {
 	/* Stuff from this file */
 	{"parsetime",   pyd2_parsetime,   METH_VARARGS, pyd2help_parsetime   },
 	{"parse_epoch", pyd2_parse_epoch, METH_VARARGS, pyd2help_parse_epoch },
+	{"to_epoch",    pyd2_to_epoch,    METH_VARARGS, pyd2help_to_epoch    },
 	{"ttime",       pyd2_ttime,       METH_VARARGS, pyd2help_ttime       },
 	{"emitt",       pyd2_emitt,       METH_VARARGS, pyd2help_emitt       },
 	{"tnorm",       pyd2_tnorm,       METH_VARARGS, pyd2help_tnorm       },

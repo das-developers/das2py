@@ -42,6 +42,8 @@ from das2.reader    import *
 # Pull up a function or two from the C module:
 from _das2 import convert
 from _das2 import convertible
+from _das2 import parse_epoch as from_epoch;
+from _das2 import to_epoch;
 
 import das2.toml as toml
 import das2.pkt as pkt
