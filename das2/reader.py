@@ -517,8 +517,8 @@ class PacketReader:
 	
 	def __init__(self, fIn):
 		self.fIn = fIn
-		self.lPktSize = [None]*100
-		self.lPktDef  = [False]*100
+		self.lPktSize = [None]*1000
+		self.lPktDef  = [False]*1000
 		self.nOffset = 0
 		self.sContent = "das-basic-stream"
 		self.sVersion = "2.2"

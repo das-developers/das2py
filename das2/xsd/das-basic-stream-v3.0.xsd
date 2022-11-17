@@ -176,7 +176,7 @@
 <!-- The data types for values, does not support ranges -->
 <xs:simpleType name="ValueType">
   <xs:restriction base="xs:string">
-      <xs:pattern value="datetime|int|real|string" />
+      <xs:pattern value="bool|datetime|int|real|string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -184,7 +184,7 @@
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
     <xs:pattern 
-      value="ubyte|utf8|BEint|BEreal|LEint|LEreal" />
+      value="ubyte|utf8|BEint|BEuint|BEreal|LEint|LEuint|LEreal" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -416,7 +416,7 @@
     <!-- 
     Bad news, a choice of one of x xy xyz rφ ρφz rθφ is not deterministic in 
     the XSD language because you can't tell which sequence you are on from the
-    first element.  Even though on those patterns are allowed, further checking
+    first element.  Even though only those patterns are allowed, further checking
     will have to depend on schematron
     -->
 
