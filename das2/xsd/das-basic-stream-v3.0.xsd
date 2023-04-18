@@ -99,8 +99,7 @@
 <xs:complexType name="Extension" mixed="true">
   <xs:sequence>
     <xs:choice>
-      <!-- Can extend with other elements here, but they can't be from this namespace -->
-      <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Can extend with other elements here, but they can't have a namespace -->
       <xs:any namespace="##local" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:sequence>
