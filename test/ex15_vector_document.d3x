@@ -19,7 +19,7 @@
       </scalar>
     </xCoord>
     
-    <data physDim="B0">
+    <data physDim="B" name="mag0">
       <properties>
         <p name="label">VMR0 R12 N261</p>
       </properties>
@@ -32,7 +32,7 @@
       </vector>
     </data>
     
-    <data physDim="B1">
+    <data physDim="B" name="mag1">
       <properties>
         <p name="label">VMR1 R12 N261</p>
       </properties>
@@ -45,7 +45,7 @@
       </vector>
     </data>
     
-    <data physDim="B2">
+    <data physDim="B" name="mag2">
       <properties>
         <p name="label">VMR2 R12 N261</p>
       </properties>
@@ -58,7 +58,7 @@
       </vector>
     </data>
     
-    <data physDim="B3">
+    <data physDim="B" name="mag3">
       <properties>
         <p name="label">VMR3 R12 N261</p>
       </properties>
