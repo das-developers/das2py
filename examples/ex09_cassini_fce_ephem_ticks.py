@@ -65,7 +65,7 @@ def dayLabels(sDay, sEphemSrc):
 			dsEphem['R_S']['center'][i].to_value(), 
 			dsEphem['Lon']['center'][i].to_value(),
 			dsEphem['Lat']['center'][i].to_value(),
-			#dsEphem['LT']['center'][i].to_value(), # das2 converting LT to actual time!
+			#dsEphem['LT']['center'][i].to_value(), #<-- BUG! das2 converting LT to actual time!
 			dsEphem['L']['center'][i].to_value()
 		))
 		
@@ -82,11 +82,8 @@ def dayLabels(sDay, sEphemSrc):
 # ########################################################################### #
 
 def main(lArgs):
-	"""An example of making daily plots of Cassini Fce.
-	
-	This example is not complete as the ephemeris values need to be added
-	to the tick labels.  This will require adjusting the location of the
-	lower x-axis and producing multi-line labels
+	"""An example of making daily plots of Cassini Fce with ephemeris 
+	tic marks
 	"""
 
 	if len(lArgs) != 2:
@@ -115,13 +112,11 @@ def main(lArgs):
 	(fig, ax0) = pyplot.subplots()
 	
 	# The main plot item will be the electron cyclotron frequency
-	
+	#
 	# matplotlib axis labeling for datetime64 has traditionally been
 	# poor, best bet is to just treat time as a generic int64 and 
 	# label it yourself.
 	
-	# As an exercise for the reader
-
 	aX = dsFce['time']['center'].array.astype('int64')
 	aY = dsFce['Fce']['center'].array
 	
@@ -135,6 +130,7 @@ def main(lArgs):
 	sEphemId = 'site:/uiowa/cassini/ephemeris/saturn/das2'
 	(sRowLbl, lTicLbls) = dayLabels(sBeg, sEphemId)
 	
+	# Add the ephemeris row header
 	pyplot.gcf().text(0.02,0.068, sRowLbl)
 	
 	pyplot.xticks(ticks=dayTicks(sBeg), labels=lTicLbls)
