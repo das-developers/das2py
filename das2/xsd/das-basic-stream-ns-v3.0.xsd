@@ -39,6 +39,15 @@
   </xs:restriction>
 </xs:simpleType>
 
+<!-- Parameter dimension names, typically physical dimensions. Absense of a
+     physical dimension can be indicated by an explicit empty string  -->
+<xs:simpleType name="PhysDimName">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[*]{0}|[a-zA-Z][a-zA-Z0-9_\.]*"/>
+    <xs:maxLength value="63"/> <!-- leave rooom for null char -->
+  </xs:restriction>
+</xs:simpleType>
+
 <!-- Properties ========================================================== -->
 
 <!-- Alt prop by language -->
@@ -96,12 +105,11 @@
   should pass stream-level extension elements unchanged dataset level 
   extension element handling is undefined 
 -->
-<xs:complexType name="Extension">
+<xs:complexType name="Extension" mixed="true">
   <xs:sequence>
     <xs:choice>
       <!-- Can extend with other elements here, but they can't be from this namespace -->
       <xs:any namespace="##other" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:any namespace="##local" processContents="skip" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:sequence>
 
@@ -115,7 +123,7 @@
 
 <!-- Datasets ============================================================ -->
 
-<!-- Each packet header defines a das2 dataset and how it appears in the data
+<!-- Each dataset header defines a das dataset and how it appears in the data
      stream.  The object containment hirearchy is depected in the middle of
      the reference poster, 
      
@@ -203,7 +211,6 @@
   </xs:restriction>
 </xs:simpleType>
 
-
 <!-- Variable length data values
 
   By default no terminators are defined and an app must rely on itemBytes in
@@ -228,7 +235,6 @@
     <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
   </xs:restriction>
 </xs:simpleType>
-
 
 <!-- An array variable in the header -->
 <xs:complexType name="Values">
@@ -296,7 +302,7 @@
 
 <xs:complexType name="Component">
   <xs:attribute name="name"  type="VarName" use="required" />
-  <xs:attribute name="units" type="xs:token"/>
+  <xs:attribute name="units" type="xs:token" />
   <xs:attribute name="fill"  type="xs:string" />
 </xs:complexType>
 
@@ -327,7 +333,6 @@
   <xs:attribute name="jSize"   type="EmptyPosInt" />
   <xs:attribute name="kSize"   type="EmptyPosInt" />
   <xs:attribute name="vecClass"   type="VectorClass" use="required" />
-
 </xs:complexType>
 
 <!-- Physical Dimensions ================================================= -->
@@ -341,11 +346,8 @@
       <xs:element name="vector" type="VectorVar" />
     </xs:choice>
 
-    <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
-
-  <xs:attribute name="physDim" type="StructName" use="required"/>
-  
+  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
 </xs:complexType>
 
 <xs:complexType name="DataDim">
@@ -356,7 +358,8 @@
       <xs:element name="vector" type="VectorVar" />
     </xs:choice>
   </xs:sequence>
-  <xs:attribute name="physDim" type="StructName" use="required"/>
+
+  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
   <!-- 
   Data items must have unique names, however the name inherits from the overall
   dataset name.  So if you only have one <data> or <extData> element, the name
@@ -392,6 +395,7 @@
   -->
   <xs:attribute name="name" type="StructName"/>
 </xs:complexType>
+
 
 <xs:simpleType name="DatasetRank">
   <xs:restriction base="xs:positiveInteger">
@@ -469,7 +473,6 @@
 
   <xs:attribute name="rank" type="DatasetRank" use="required" />
   <xs:attribute name="name" type="DatasetName" use="required"/>
-
   <xs:attribute name="iSize" type="Star" default="*" />
   <xs:attribute name="jSize" type="xs:positiveInteger" />
   <xs:attribute name="kSize" type="xs:positiveInteger" />
