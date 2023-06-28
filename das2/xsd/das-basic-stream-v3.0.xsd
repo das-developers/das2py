@@ -435,19 +435,19 @@
     <!-- Schematron: xy or xyz -->
     <xs:element name="yCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
-    <!-- Schematron: ρφz -->    
+    <!-- Schematron: Cylindrical ρφz -->    
     <xs:element name="rhoCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
-    <!-- Schematron: rφ rθφ -->
+    <!-- Schematron: Polar or Spherical rφ rθφ -->
     <xs:element name="rCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
-    <!-- Schematron: rθφ -->
+    <!-- Schematron: Spherical rθφ -->
     <xs:element name="thetaCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
-    <!-- Schematron: ρφz or rθφ --> 
+    <!-- Schematron: Cylindrical or Spherical ρφz or rθφ --> 
     <xs:element name="phiCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
 
-    <!-- Schematron: xyz or ρφz -->
+    <!-- Schematron: Cartesian or Cylindrical xyz or ρφz -->
     <xs:element name="zCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
     
     <!-- 
