@@ -184,7 +184,7 @@
 <!-- The data types for values, does not support ranges -->
 <xs:simpleType name="ValueType">
   <xs:restriction base="xs:string">
-      <xs:pattern value="datetime|int|real|string" />
+      <xs:pattern value="bool|datetime|int|real|string" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -192,7 +192,7 @@
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
     <xs:pattern 
-      value="ubyte|utf8|BEint|BEreal|LEint|LEreal" />
+      value="ubyte|utf8|BEint|BEuint|BEreal|LEint|LEuint|LEreal" />
    </xs:restriction>
 </xs:simpleType>
 
