@@ -134,7 +134,7 @@ def main(lArgs):
 	pyplot.gcf().text(0.02,0.068, sRowLbl)
 	
 	pyplot.xticks(ticks=dayTicks(sBeg), labels=lTicLbls)
-	ax0.xaxis.set_minor_locator(ticker.AutoMinorLocator(3))
+	ax0.xaxis.set_minor_locator(ticker.AutoMinorLocator(4))
 		
 	dt = das2.DasTime(sBeg)
 	sDate = "%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom())

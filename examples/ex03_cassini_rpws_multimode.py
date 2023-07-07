@@ -73,4 +73,4 @@ cbar.set_label("Spectral Density (%s)"%das2.mpl.label(sUnits))
 ax0.set_title( src.props['title'] )
 
 # matplotlib is a little slow displaying this one, expect ~10 sec delay
-pyplot.show()
+pyplot.savefig('ex03_cassini_rpws_multimode.png')

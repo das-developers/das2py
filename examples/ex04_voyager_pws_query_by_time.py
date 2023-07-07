@@ -78,4 +78,4 @@ ax[iBot].fmt_xdata = dates.DateFormatter("%Y-%m-%dT%H:%M")  # mouse over dates
 ax[iBot].xaxis.set_minor_locator(dates.HourLocator(interval=1)) # add minor ticks
 ax[iBot].set_xlabel(das2.mpl.range_label(time) )
 
-pyplot.show()
+pyplot.savefig('ex04_voyager_pws_query_by_time.png')

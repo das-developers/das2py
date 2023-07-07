@@ -195,7 +195,7 @@ def main(lArgs):
    dsPsd = calcPsd(dsReal, dsImg, nDFT, nSlide)
 
    # Writing CDF file
-   sCdfFile = "wav_hfrIQ_psd%d_slide%d_%s_%s.cdf"%(nDFT, nDFT//nSlide, sBeg, sEnd)
+   sCdfFile = "ex08_juno_waves_wfrm_to_cdf.cdf"
    print("Finished generating spectra from %s to %s"%(sBeg, sEnd))
    print("Writing %s"%sCdfFile)
 

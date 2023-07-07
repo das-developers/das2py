@@ -46,7 +46,7 @@ $(INST_BIN)/%:$(BD)/scripts-$(PYVER)/%
 
 # Explicit Rules #############################################################
 
-.PHONY: test
+.PHONY: test examples
 
 build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 
@@ -76,6 +76,20 @@ verify:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex15_vector_document.d3x
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex96_yscan_multispec.d2t
 
+# All the planet based test are broken right now
+examples:
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex01_source_queries.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex03_cassini_rpws_multimode.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex04_voyager_pws_query_by_time.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex08_juno_waves_wfrm_to_cdf.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex10_manual_datasets.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex09_cassini_fce_ephem_ticks.py 2017-02-01
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex11_catalog_listings.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex05_mex_marsis_query_by_angle.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex02_galileo_pws_spectra.py
+
+#env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex06_astro_lwa1_multiscale.py
+#env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex07_cassini_rpws_query_opts.py
 
 # Install purelib and extensions (python setup.py is so annoyingly
 # restrictive that we'll just do this ourselves)
