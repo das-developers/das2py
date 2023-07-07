@@ -169,7 +169,7 @@ def main():
               
    fig.colorbar(hb, cax=color_ax)
    
-   pyplot.show()
+   pyplot.savefig('ex05_mex_marsis_query_by_angle.png')
 
 if __name__ == '__main__': main()
 

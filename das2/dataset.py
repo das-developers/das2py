@@ -1399,7 +1399,7 @@ class Dataset(object):
 				lIdx[iSort] = numpy.argsort(aSortMe, kind="mergesort", axis=iSort)
 
 				for var in lVars:
-					var.array = var.array[lIdx]
+					var.array = var.array[tuple(lIdx)]
 
 
 			# Multiple index sorts:
