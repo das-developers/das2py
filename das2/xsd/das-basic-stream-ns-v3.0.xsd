@@ -93,7 +93,7 @@
 <!-- Properties grouping -->
 <xs:complexType name="Properties">
   <xs:sequence>
-    <xs:element name="p" type="Property" minOccurs="1" maxOccurs="unbounded"/>
+    <xs:element name="p" type="Property" minOccurs="0" maxOccurs="unbounded"/>
   </xs:sequence>
 </xs:complexType>
 
