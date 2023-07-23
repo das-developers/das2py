@@ -18,20 +18,20 @@
   number of items.
 -->
 <stream type="das-basic-stream" version="3.0" />
-|Hx|1|551|
-<dataset name="Annotations" rank="1">
-  <xCoord physDim="time">
-    <scalar use="center" valType="datetime" units="UTC">
+|Hx|1|614|
+<dataset name="Annotations" rank="1" index="*" plot="cartesian2d">
+  <coord physDim="time" axis="x">
+    <scalar use="center" valType="datetime" units="UTC" index="*">
       <packet numItems="1" encoding="utf8" itemBytes="24" />
     </scalar>
-  </xCoord>
-  <yCoord physDim="frequency">
-    <scalar use="center" valType="real" units="MHz">
+  </coord>
+  <coord physDim="frequency" axis="y">
+    <scalar use="center" valType="real" units="MHz" index="*">
       <packet numItems="1" encoding="utf8" itemBytes="6" />
     </scalar>
-  </yCoord>
+  </coord>
   <extData>
-    <object scheme="autoplot" objType="Annotation" iSize="*">
+    <object scheme="autoplot" objType="Annotation" index="*">
       <packet numItems="1" encoding="utf8" itemBytes="*" />
     </object>
   </extData>

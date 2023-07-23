@@ -172,18 +172,25 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
 	nSize = 0
 
 
-	dRecDims = {'jSize':0,'kSize':0}
-	for sIdx in dRecDims:
-		if sIdx not in elDs.attrib: continue
-		else: sSize = dRecDims[sIdx]
+	# Look for general size, or fall back to specifics
+	if "size" in elDs.attrib:
+		sSize = elDs.attrib["size"]
+		lSize = sSize.split(";")
+		if (len(lSize) > 1) and ("*" in lSize[1:]):
+			return None  # Variable length records
+	else:
+		dRecDims = {'jSize':0,'kSize':0}
+		for sIdx in dRecDims:
+			if sIdx not in elDs.attrib: continue
+			else: sSize = dRecDims[sIdx]
 		
-		if sSize == "*": return None
-		elif sSize == "": pass
-		else:
-			try:
-				dRecDims[sIdx] = int(elDs.attrib[sIdx])
-			except:
-				return None
+			if sSize == "*": return None
+			elif sSize == "": pass
+			else:
+				try:
+					dRecDims[sIdx] = int(elDs.attrib[sIdx])
+				except:
+					return None
 
 	nBytes = 0
 	for axis in elDs:
@@ -240,26 +247,26 @@ def _getPktLen(elDs, sStreamVer, nPktId, bThrow=True):
 
 
 # ########################################################################### #
-def checkShape3(elDs, nPktId) -> None:
-	"""Check that the array items (i.e. scaler, vector, object) have array 
-	dimesions that will properly broadcast to the dataset dimensions.
-
-	Args:
-		elDs (lxml.etree.Element) - A das-basic-*-v3.x <dataset> element. Works
-			with either packetized streams or documents
-
-		nPktId (int,None) - The packet ID tag for this element. Only used for
-			Exception messages.
-	"""
-
-	for axis in elDs:
-		for array in axis:
-			if array.tag not in ('scalar', 'vector', 'object'): continue
-
-	if ('jSize' in elVar) and (len(elVar.attrib['jSize']) > 0):
-		if int(elVar.attrib['jSize']) != jSize:
-			raise HeaderError(elVar.sourceline,
-			"Attribute iSize in %s must be empty ")
+# def checkShape3(elDs, nPktId) -> None:
+# 	"""Check that the array items (i.e. scaler, vector, object) have array 
+# 	dimesions that will properly broadcast to the dataset dimensions.
+# 
+# 	Args:
+# 		elDs (lxml.etree.Element) - A das-basic-*-v3.x <dataset> element. Works
+# 			with either packetized streams or documents
+# 
+# 		nPktId (int,None) - The packet ID tag for this element. Only used for
+# 			Exception messages.
+# 	"""
+# 
+# 	for axis in elDs:
+# 		for array in axis:
+# 			if array.tag not in ('scalar', 'vector', 'object'): continue
+# 
+# 	if ('jSize' in elVar) and (len(elVar.attrib['jSize']) > 0):
+# 		if int(elVar.attrib['jSize']) != jSize:
+# 			raise HeaderError(elVar.sourceline,
+# 			"Attribute iSize in %s must be empty ")
 
 
 # ########################################################################### #

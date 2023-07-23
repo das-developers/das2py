@@ -34,25 +34,25 @@
   </properties>
 
 </stream>
-|Hx|10|4074|<?xml version="1.0" encoding="UTF-8" ?>
+|Hx|10|4109|<?xml version="1.0" encoding="UTF-8" ?>
 <dataset xmlns="das-basic-stream"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="
     das-basic-stream
     https://das2.org/schema/das-basic-stream-ns-v3.0.xsd
   "
-  rank="2" jSize="152" name="PWS_E"
+  rank="2" index="*;152" name="PWS_E" plot="cartesian2d"
 >
-  <xCoord physDim="time">
-    <scalar use="min" valType="datetime" units="UTC" >
+  <coord physDim="time" axis="x">
+    <scalar use="min" valType="datetime" units="UTC" index="*;-" >
       <packet numItems="1" itemBytes="24" encoding="utf8" />
     </scalar>
-  </xCoord>
+  </coord>
 
-  <yCoord physDim="frequency">
+  <coord physDim="frequency" axis="y">
     <properties><p name="label">Frequency Channels (Hz)</p></properties>      
     
-    <scalar use="center" units="Hz" valType="real" iSize="" jSize="152">
+    <scalar use="center" units="Hz" valType="real" index="-;152">
       <values>
         5.620e+00; 1.000e+01; 1.780e+01; 3.110e+01; 4.213e+01; 4.538e+01; 
         4.888e+01; 5.265e+01; 5.671e+01; 6.109e+01; 6.580e+01; 7.087e+01; 
@@ -82,7 +82,7 @@
         5.231e+06; 5.770e+06
       </values>    
     </scalar>
-    <scalar use="width" units="Hz" valType="real" iSize="" jSize="152">
+    <scalar use="width" units="Hz" valType="real" index="-;152">
       <values>
         0.832; 1.86;  2.75;  4.79;  4.26;  4.26; 4.26;  4.26;  4.26;  4.26;  4.26;  4.26;
         4.26;  4.26;  4.26;  4.26;  4.26;  4.26; 4.26;  4.26;  4.26;  4.26;  4.26;  4.26;
@@ -99,13 +99,13 @@
         1340;  1340
       </values>
     </scalar>
-  </yCoord>
+  </coord>
 
   <data physDim="electric">
     <properties>
       <p name="fill" type="real">0.0</p>
     </properties>
-    <scalar valType="real" units="V**2 m**-2 Hz**-1" jSize="152">
+    <scalar valType="real" units="V**2 m**-2 Hz**-1" index="*;152">
       <packet numItems="152" itemBytes="11" encoding="utf8"/>
     </scalar>
   </data>

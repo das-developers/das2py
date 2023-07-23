@@ -11,6 +11,8 @@
 
   See the file das2-basic-doc-v3.0.xsd for a single-root schema definition
   suitable for validating standard (i.e. non-packitized) documents.
+
+  version 3.0, release candidate 1, 2023-07-23.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   version="3.0"
@@ -148,6 +150,83 @@
                  |- Quantities   <values> <sequence> <i>
 -->
 
+
+<!-- The understood plot type strings -->
+<xs:simpleType name="PlotType">
+  <xs:restriction base="xs:string">
+    <xs:pattern
+      value="(cartesian2d|cartesian3d|polar|cylindrical|spherical)(:movie)?"
+    />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Direction">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="x" />
+    <xs:enumeration value="y" />
+    <xs:enumeration value="z" />
+    <xs:enumeration value="ρ" /> <!-- radius cylindrical -->
+    <xs:enumeration value="r" /> <!-- radius spherical & polar -->
+    <xs:enumeration value="θ" /> <!-- polar angle -->
+    <xs:enumeration value="φ" /> <!-- azimuthal angle in x-y plane -->
+    <xs:enumeration value="t" /> <!-- for movies, not time on a space axis -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- The Index space definition for this dataset.
+
+  Just as the plot type can define the graphical space for a dataset,
+  this defines the value lookup space.
+
+  How to read the Dataset Index Space definition:
+
+  1. There are always as many positions in the index space definition as
+     the dataset rank.  Aka rank 2, ==> "max_index1 ; max_index2"
+
+  2. Each full location in index space denotes how to lookup a single 
+     item.
+
+  3. The special size "*" means "fills the container", this is typically
+     used with the first index.  It means the size of the full dataset in
+     the first index is just equal to the number of records you happen to
+     get.  If "*" appears in subsequent indexes, it means you have variable
+     length packets.
+-->
+<xs:simpleType name="DsIndexShape">
+  <xs:restriction base="xs:string">
+    <xs:pattern
+      value="(\*|[1-9][0-9]*)(;(\*|[1-9][0-9]*))*"
+    />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- The shape of a Variable in index space
+
+  How to read the index shape:
+
+  1. There are always as many elements as the dataset rank
+
+  2. This is the size in items.  Note that an item can have it's own
+     internal size.  For example vectors have more then one component
+     strings can have multiple characters, etc.
+
+  3. The special size "*" means "fills the container", be it the 
+     end of the stream, or the end of a packet.
+
+  4. The special size "-" means this index is meaningless to this variable.
+     The variable is just not a function of that index so any value is okay.
+     (Note that "-" never appears in the dataset global space)
+
+-->
+<xs:simpleType name="VarIndexShape">
+  <xs:restriction base="xs:string">
+    <xs:pattern
+      value="(-|\*|[1-9][0-9]*)(;(-|\*|[1-9][0-9]*))*"
+    />
+  </xs:restriction>
+</xs:simpleType>
+
+
 <xs:simpleType name="Star" final="restriction">
   <xs:restriction base="xs:string">
     <xs:enumeration value="*" />
@@ -181,6 +260,7 @@
 <xs:simpleType name="EmptyPosInt" >
   <xs:union memberTypes="IntTwoOrMore Empty" />
 </xs:simpleType>
+
 
 <!-- The data types for values, does not support ranges -->
 <xs:simpleType name="ValueType">
@@ -293,10 +373,9 @@
   <xs:attribute name="use"     type="VarRole" default="center" />
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
+  <xs:attribute name="index"   type="VarIndexShape" use="required" />
   <xs:attribute name="fill"    type="xs:string" />
-  <xs:attribute name="iSize"   type="EmptyStar" default="*" />
-  <xs:attribute name="jSize"   type="EmptyPosInt" />
-  <xs:attribute name="kSize"   type="EmptyPosInt" />
+
 </xs:complexType>
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
@@ -329,10 +408,8 @@
   <xs:attribute name="use"     type="VarRole" default="center" />
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
+  <xs:attribute name="index"   type="VarIndexShape" use="required" />
   <xs:attribute name="fill"    type="xs:string" />
-  <xs:attribute name="iSize"   type="EmptyStar" default="*" />
-  <xs:attribute name="jSize"   type="EmptyPosInt" />
-  <xs:attribute name="kSize"   type="EmptyPosInt" />
   <xs:attribute name="vecClass"   type="VectorClass" use="required" />
 </xs:complexType>
 
@@ -342,13 +419,15 @@
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
-    <xs:choice minOccurs="1" maxOccurs="unbounded">      
-      <xs:element name="scalar" type="ScalarVar" />
-      <xs:element name="vector" type="VectorVar" />
-    </xs:choice>
+    <!-- For v3.0/basic only allow scalar types in coordinates -->
+    <!-- <xs:choice minOccurs="1" maxOccurs="unbounded">  -->
+    <xs:element name="scalar" type="ScalarVar" minOccurs="1" maxOccurs="unbounded"/>
+    <!-- <xs:element name="vector" type="VectorVar" /> -->
+    <!-- </xs:choice> -->
 
   </xs:sequence>
   <xs:attribute name="physDim" type="PhysDimName" use="required"/>
+  <xs:attribute name="axis"    type="Direction"   use="required" />
 </xs:complexType>
 
 <xs:complexType name="DataDim">
@@ -377,10 +456,9 @@
 
   <xs:attribute name="scheme"  type="xs:string" use="required" />
   <xs:attribute name="objType" type="xs:string" use="required" />
+  <xs:attribute name="index"   type="VarIndexShape" use="required" />
   <xs:attribute name="content" type="xs:string" />
-  <xs:attribute name="iSize"   type="EmptyStar" default="*" />
-  <xs:attribute name="jSize"   type="EmptyPosInt" />
-  <xs:attribute name="kSize"   type="EmptyPosInt" />
+
 </xs:complexType>
 
 <xs:complexType name="ExtendedData">
@@ -401,12 +479,8 @@
 <xs:simpleType name="DatasetRank">
   <xs:restriction base="xs:positiveInteger">
     <xs:minInclusive value="1" />
-
-    <!-- To expand this we'll need to add wSize, etc. OR just have shape="" 
-         have special parsers for the shape value.  That's probably best
-         left to get general streams -->
-    <xs:maxInclusive value="3" />
-
+    <!-- High ranks are rarely needed, support as many independent indicies as the PDS -->
+    <xs:maxInclusive value="8" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -422,34 +496,19 @@
     <xs:element name="properties" type="Properties" minOccurs="0" />
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
 
-    <!-- 
-    Bad news, a choice of one of x xy xyz rφ ρφz rθφ is not deterministic in 
-    the XSD language because you can't tell which sequence you are on from the
-    first element.  Even though only those patterns are allowed, further checking
-    will have to depend on schematron
-    -->
-
-    <!-- Schematron: x, xy or xyz -->
-    <xs:element name="xCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
-
-    <!-- Schematron: xy or xyz -->
-    <xs:element name="yCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
+    <!-- Axis patterns to check via schematron once implemented:       -->
+    <!--                                                               -->
+    <!--    axis="x" used for Cartesion x, xy or xyz                   -->
+    <!--    axis="y" used for Cartesion xy or xyz                      -->
+    <!--    axis="ρ" used for Cylindrical ρφz                          -->             
+    <!--    axis="r" used for Polar rφ or Spherical rθφ                -->
+    <!--    axis="θ" used for Spherical rθφ                            -->
+    <!--    axis="φ" used for Cylindrical ρφz or Spherical or rθφ      --> 
+    <!--    axis="z" used for Cartesian xyz or Cylindrical xyz or ρφz  -->
+    <!--    axis="t" can be added to any to recommend a movie          -->
     
-    <!-- Schematron: Cylindrical ρφz -->    
-    <xs:element name="rhoCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
-    
-    <!-- Schematron: Polar or Spherical rφ rθφ -->
-    <xs:element name="rCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
+    <xs:element name="coord" type="CoordDim" minOccurs="1" maxOccurs="unbounded" />
 
-    <!-- Schematron: Spherical rθφ -->
-    <xs:element name="thetaCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
-
-    <!-- Schematron: Cylindrical or Spherical ρφz or rθφ --> 
-    <xs:element name="phiCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
-
-    <!-- Schematron: Cartesian or Cylindrical xyz or ρφz -->
-    <xs:element name="zCoord" type="CoordDim" minOccurs="0" maxOccurs="unbounded" />
-    
     <!-- 
     To see if a set of data vary in less then the number of coordinate dimensions
     one needs to:
@@ -472,11 +531,10 @@
 
   </xs:sequence>
 
-  <xs:attribute name="rank" type="DatasetRank" use="required" />
-  <xs:attribute name="name" type="DatasetName" use="required"/>
-  <xs:attribute name="iSize" type="Star" default="*" />
-  <xs:attribute name="jSize" type="xs:positiveInteger" />
-  <xs:attribute name="kSize" type="xs:positiveInteger" />
+  <xs:attribute name="rank"  type="DatasetRank" use="required" />
+  <xs:attribute name="name"  type="DatasetName" use="required"/>
+  <xs:attribute name="index" type="DsIndexShape" use="required" />
+  <xs:attribute name="plot"  type="PlotType" />
 
 </xs:complexType>
 

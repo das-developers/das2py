@@ -25,22 +25,22 @@
   </extension>
   
 </stream>
-|Hx|1|1305|
-<dataset rank="2" name="LFR" iSize="*" jSize="6144">
-  <xCoord physDim="time">
-    <scalar use="reference" valType="datetime" units="UTC" iSize="*" jSize="" >
+|Hx|1|1283|
+<dataset name="LFR" rank="2" index="*;6144">
+  <coord axis="x" physDim="time">
+    <scalar use="reference" valType="datetime" units="UTC" index="*;-">
       <packet numItems="1" itemBytes="24" encoding="utf8" />
     </scalar>
-    <scalar use="offset" valType="real" units="μs" iSize="" jSize="6144">
+    <scalar use="offset" valType="real" units="μs" index="-;6144">
       <sequence minval="0.0" interval="20.0" />
     </scalar>     
-  </xCoord>
+  </coord>
   
   <data physDim="Ey">
     <properties>
       <p name="fill" type="real">-1e31</p>
     </properties>
-    <scalar units="V m**-1" valType="real" iSize="*" jSize="6144">
+    <scalar units="V m**-1" valType="real" index="*;6144">
       <packet numItems="6144" itemBytes="11" encoding="utf8" />
     </scalar>
   </data>
@@ -57,7 +57,7 @@
         but it was placed in a extended data section as a demonstration.
       </p>
     </properties>
-    <object objType="sync" scheme="tracers" iSize="*">
+    <object objType="sync" scheme="tracers" index="*;-">
       <packet numItems="1" itemBytes="8" encoding="ubyte"/>
     </object>
   </extData>

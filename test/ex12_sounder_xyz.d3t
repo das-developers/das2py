@@ -1,38 +1,38 @@
 |Sx||50|
 <stream type="das-basic-stream" version="3.0" />
-|Hx|1|3630|
-<dataset name="ais" rank="3" iSize="*" jSize="160" kSize="80">
+|Hx|1|3566|
+<dataset name="ais" rank="3" index="*;160;80" plot="cartesian3d" >
 
-  <xCoord physDim="time">
+  <coord physDim="time" axis="x">
     <properties>
       <p name="label">SCET %{RANGE}</p>
     </properties>
-    <scalar use="center" valType="datetime" iSize="*" jSize="" kSize="" units="UTC">
+    <scalar use="center" valType="datetime" index="*;-;-" units="UTC">
       <packet numItems="1" itemBytes="24" encoding="utf8" />
     </scalar> 
-  </xCoord>
+  </coord>
 
-  <yCoord physDim="altitude">
+  <coord physDim="altitude" axis="y">
     <properties>
       <p name="label">cΔt/2, Apparent altitude (km)</p>
     </properties>
 
-    <scalar use="reference" valType="real" iSize="*" jSize="" kSize="" units="km">
+    <scalar use="reference" valType="real" index="*;-;-" units="km">
       <packet numItems="1" itemBytes="12" encoding="utf8" />
     </scalar>
 
-    <scalar use="offset" valType="real" iSize="" jSize="" kSize="80" units="km">
+    <scalar use="offset" valType="real" index="-;-;80" units="km">
       <sequence minval="0.0000e+00" interval="-1.3705e+01" />
     </scalar>
 
-  </yCoord>
+  </coord>
 
-  <zCoord physDim="frequency">
+  <coord physDim="frequency" axis="z">
     <properties>
       <p name="label">Frequency (MHz)</p>
     </properties>
 
-    <scalar use="center" valType="real" iSize="" jSize="160" kSize="" units="MHz">
+    <scalar use="center" valType="real" index="-;160;-" units="MHz">
       <values>
       1.09400e-01; 1.20500e-01; 1.31200e-01; 1.42300e-01; 1.53000e-01; 1.75200e-01; 1.85900e-01; 1.97000e-01;
       2.07600e-01; 2.18800e-01; 2.29900e-01; 2.40500e-01; 2.51700e-01; 2.73400e-01; 2.84600e-01; 2.95200e-01;
@@ -56,16 +56,13 @@
       4.95440e+00; 5.04200e+00; 5.12960e+00; 5.21680e+00; 5.30430e+00; 5.39190e+00; 5.47950e+00; 5.50130e+00
       </values>
     </scalar>
-  </zCoord>
+  </coord>
 
   <data physDim="E_spec_dens" name="sounder_return">
     <properties>
       <p name="label">Spectral Density (V!a2!nm!a-2!nHz!a-1!n)</p>
     </properties>
-    <scalar 
-      use="center" valType="real" iSize="*" jSize="160" kSize="80"
-      units="V**2 m**-2 Hz**-1" fill="-1.0e+31"
-    >
+    <scalar use="center" valType="real" index="*;160;80" units="V**2 m**-2 Hz**-1" fill="-1.0e+31" >
       <packet numItems="12800" itemBytes="12" encoding="utf8"/>
     </scalar>
   </data>

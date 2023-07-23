@@ -27,8 +27,8 @@ extended data object.  It is sufficent to merely parse past them.
     <p name="title">Cassini RPWS Survey</p>
   </properties>
 </stream>
-|Hx|1|3892|
-<dataset rank="1" name="FR_regions">
+|Hx|1|3961|
+<dataset rank="1" name="FR_regions" index="*">
 
   <properties>
     <p name="title">Cassini RPWS/HFR, Faraday Rotation patches in SKR</p>
@@ -119,29 +119,29 @@ extended data object.  It is sufficent to merely parse past them.
 }
   </extension>
   
-  <xCoord physDim="time">
-    <scalar use="min" valType="real" units="t1970" >
+  <coord physDim="time" axis="x">
+    <scalar use="min" valType="real" units="t1970" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-    <scalar use="max" valType="real" units="t1970" >
+    <scalar use="max" valType="real" units="t1970" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-  </xCoord>
+  </coord>
 
-  <yCoord physDim="frequency">
-    <scalar use="min" valType="real" units="Hz" >
+  <coord physDim="frequency" axis="y">
+    <scalar use="min" valType="real" units="Hz" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-    <scalar use="max" valType="real" units="Hz" >
+    <scalar use="max" valType="real" units="Hz" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-  </yCoord>
+  </coord>
   
   <extData name="features">
     <properties>
       <p name="description">Faraday Rotations captured in TFCat Feature JSON objects</p>
     </properties>
-    <object scheme="TFCat" objType="Feature" content="application/json" >
+    <object scheme="TFCat" objType="Feature" content="application/json" index="*">
       <packet itemBytes="*" valTerm="\n" encoding="utf8" numItems="1" />
     </object>
   </extData>
