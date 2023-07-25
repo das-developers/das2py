@@ -269,7 +269,7 @@
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
     <xs:pattern 
-      value="byte|ubyte|utf8|BEint|BEuint|BEreal|LEint|LEuint|LEreal" />
+      value="none|byte|ubyte|utf8|BEint|BEuint|BEreal|LEint|LEuint|LEreal" />
    </xs:restriction>
 </xs:simpleType>
 
