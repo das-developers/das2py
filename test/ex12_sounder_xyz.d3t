@@ -62,8 +62,8 @@
     <properties>
       <p name="label">Spectral Density (V!a2!nm!a-2!nHz!a-1!n)</p>
     </properties>
-    <scalar use="center" valType="real" index="*;160;80" units="V**2 m**-2 Hz**-1" fill="-1.0e+31" >
-      <packet numItems="12800" itemBytes="12" encoding="utf8"/>
+    <scalar use="center" valType="real" index="*;160;80" units="V**2 m**-2 Hz**-1" >
+      <packet numItems="12800" itemBytes="12" encoding="utf8" fill="-1.0e+31"/>
     </scalar>
   </data>
 </dataset>

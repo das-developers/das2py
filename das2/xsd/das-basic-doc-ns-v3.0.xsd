@@ -350,10 +350,11 @@
 </xs:complexType>
 
 <xs:complexType name="Packet">
-  <xs:attribute name="numItems" use="required" /> 
+  <xs:attribute name="numItems"  use="required" /> 
   <xs:attribute name="itemBytes" type="NonZeroStar" />
   <!-- encoding is always text -->
-  <xs:attribute name="valTerm" type="Terminator"/>
+  <xs:attribute name="valTerm"   type="Terminator"/>
+  <xs:attribute name="fill"      type="xs:string" />
 </xs:complexType>
 
 <!-- The purposes for values of a variable -->
@@ -384,8 +385,6 @@
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
   <xs:attribute name="index"   type="VarIndexShape" use="required" />
-  <xs:attribute name="fill"    type="xs:string" />
-
 </xs:complexType>
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
@@ -393,7 +392,6 @@
 <xs:complexType name="Component">
   <xs:attribute name="name" type="VarName" use="required" />
   <xs:attribute name="units" type="xs:token"/>
-  <xs:attribute name="fill"  type="xs:string" />
 </xs:complexType>
 
 
@@ -418,7 +416,6 @@
   <xs:attribute name="use"     type="VarRole" default="center" />
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
-  <xs:attribute name="fill"    type="xs:string" />
   <xs:attribute name="index"   type="VarIndexShape" use="required" />
   <xs:attribute name="vecClass"   type="VectorClass" use="required" />
 </xs:complexType>
