@@ -144,7 +144,7 @@ class DasTime(object):
 			
 		if isinstance(nYear, (tuple, list)):
 			self.t = [0, 0, 0, 0, 0, 0, 0.0]
-			for i in xrange(0, len(nYear)):
+			for i in range(0, len(nYear)):
 				j = i
 				if i >= 3:
 					j = i+1
