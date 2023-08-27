@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # The MIT License
 #
 # Copyright 2019 Chris Piker
@@ -47,6 +45,7 @@ from _das2 import to_epoch;
 
 import das2.toml as toml
 import das2.pkt as pkt
+import das2.cli as cli
 
 # ########################################################################### #
 # The basic data reading functions

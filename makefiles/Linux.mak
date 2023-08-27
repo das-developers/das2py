@@ -11,7 +11,7 @@ BD=build.$(N_ARCH)
 
 SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
- container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py
+ container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py cli.py
 
 SCRIPTS=das_verify
 
