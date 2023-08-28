@@ -28,7 +28,7 @@ INSTALLED_CDFSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/pycdf/%.py,$(CDFSRC))
 # Treat schemas as package data
 INSTALLED_SCHEMA=$(patsubst %.xsd,$(INST_HOST_LIB)/das2/xsd/%.xsd,$(SCHEMA))
 
-INSTALLED_SCRIPTS=$(patsubst %,$(INST_BIN)/%, $(SCRIPTS))
+INSTALLED_SCRIPTS=$(patsubst %,$(INST_HOST_BIN)/%, $(SCRIPTS))
 
 # Pattern Rules #############################################################
 
@@ -41,7 +41,7 @@ $(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
 $(INST_HOST_LIB)/das2/xsd/%.xsd:$(BD)/das2/xsd/%.xsd
 	install -D -m 664 $< $@
 
-$(INST_BIN)/%:$(BD)/scripts-$(PYVER)/%
+$(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
 	install -D -m 775 $< $@	
 
 # Explicit Rules #############################################################

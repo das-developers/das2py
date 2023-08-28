@@ -41,6 +41,10 @@ ifeq ($(H_ARCH),)
 H_ARCH=python$(PYVER)
 endif
 
+ifeq ($(INST_HOST_BIN),)
+INST_HOST_BIN=$(PREFIX)/bin/$(H_ARCH)
+endif
+
 ifeq ($(INST_HOST_LIB),)
 INST_HOST_LIB=$(PREFIX)/lib/$(H_ARCH)
 endif
