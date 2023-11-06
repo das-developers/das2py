@@ -37,7 +37,7 @@ def main(argv):
 	sSite = "tag:das2.org,2012:das/site/uiowa"
 		
 	# Get a standalone item give it what ever name we want
-	sLoc = 'http://das2.org/catalog/das/site/uiowa/cassini/ephemeris/dione/das2.json'
+	sLoc = 'https://das2.org/catalog/das/site/uiowa/cassini/ephemeris/dione/das2.json'
 	pout("   Test 1: Load direct URL %s"%sLoc)
 	sId = "magnetospheric/dione/cassini/ephemeris"
 	

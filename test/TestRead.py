@@ -32,7 +32,7 @@ def main(argv):
 
 	# Try server read
 
-	sUrl = 'http://planet.physics.uiowa.edu/das/das2Server?server=dataset&'+\
+	sUrl = 'https://jupiter.physics.uiowa.edu/das/server?server=dataset&'+\
 	       'dataset=Galileo/PWS/Survey_Electric&start_time=2001-001&' +\
 			 'end_time=2001-002'
 			 
