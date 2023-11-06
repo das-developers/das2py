@@ -61,4 +61,4 @@ BUILD_DIR:=build.$(N_ARCH)
 
 UNAME = $(shell uname)
 
-include makefiles/$(UNAME).mak
+include buildfiles/$(UNAME).mak

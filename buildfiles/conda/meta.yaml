@@ -1,0 +1,70 @@
+# Go generate the sha-hash run
+# HASH=$(openssl sha256  das2C-${VERSION}.tar.gz | awk '{print $2}')
+#
+# Example:
+#  openssl sha256 das2py-tmp.tar.gz | awk '{print $2}'
+
+{% set name = "das2py" %}
+{% set conda_version = "2.3.0" %}
+{% set git_version = "2.3.0" %}
+#{% set bld_date = "20231106" %}
+#{% set sha256 = "a417f1f5bbb5af408cbf3ced8c2da007ed40964f3d0468e6f6f4af95e865ab48" %}
+{% set sha256 = "e3b9520c56a12fbaabe79c84b7b4c5e2c4748da280ed39cf095c39054e08bf1c" %}
+
+package:
+   name: {{ name }} 
+   version: {{ conda_version }} 
+   
+source:
+   fn:  das2py-{{ git_version }}.tar.gz
+   #url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
+   url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
+   sha256: {{ sha256 }}
+   
+build:
+   # This is the zeroth build
+   number: 0
+   
+# The build process for das2py calls python in the make files so we
+# need to make sure it uses the anaconda python, not the system version
+
+requirements:
+   build:
+      - {{ compiler('c') }}
+            
+   host:
+      - python
+      - setuptools
+      - cython
+      - numpy >=1.20.0 
+      - numpy-devel >=1.20.0
+      - expat
+      - fftw
+      - zlib
+      - openssl
+      - pthreads4w [win]
+      - dasdevelopers::das2c =={{ git_version }}
+      
+   run:
+      - python
+      - setuptools
+      - cython
+      - numpy >=1.20.0
+      - numpy-devel >=1.20.0
+      - expat
+      - fftw
+      - zlib
+      - openssl
+      - pthreads4w [win]
+      - dasdevelopers::das2c =={{ git_version }}
+      
+test:
+   imports:
+      - das2
+      - _das2
+
+about:
+   home: https://das2.org/das2py
+   license: MIT
+   license_file: LICENSE
+   summary: An efficient space physics data client for python

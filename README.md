@@ -16,6 +16,9 @@ compiler is required.   To install the conda package run the command:
 ```bash
 (base) $ conda install -c dasdevelopers das2py
 ```
+The anaconda package automatically pulls in [das2C](https://anaconda.org/dasdevelopers/das2c), 
+[pycdf](https://anaconda.org/dasdevelopers/pycdf), and [pthreads4w](https://anaconda.org/dasdevelopers/pthreads4w) as needed.
+
 If this works then test using:
 ```bash
 (base) $ wget https://raw.githubusercontent.com/das-developers/das2py/master/examples/ex05_mex_marsis_query_by_angle.py
@@ -35,7 +38,7 @@ both Python 2 and Python 3.  The following packages are required to build das2py
   * [Das2C](https://github.com/das-developers/das2C) - Version 2.3 or above.  Need not be installed, but must be built
   * **NumPy** - Version 1.10.1 or above
   * **MatplotLib++** - For plotting data (optional, recommended)
-  * **SpacePy** - For writing CDF files (optional)
+  * **[CDF](https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf38_1/cdf38_1-dist-cdf.tar.gz)** - For writing CDF files (optional)
 
 Pre-requisite package install commands are give below.
 ```bash
@@ -44,7 +47,7 @@ $ sudo apt install python3-setuptools python3-dev python3-numpy # debian
 
 ## Build and Install
 Decide where you want to install das2py.  In the example below I've selected 
-`/usr/local/lib/python3.6/site-packages` but any location is fine so long as
+`/usr/local/lib/python3.9/site-packages` but any location is fine so long as
 it is on the `PYTHONPATH` or you are willing to add it to your PYTHONPATH.
 
 ```bash
@@ -53,11 +56,11 @@ $ export DAS2C_INCDIR=$HOME/git/das2C
 $ export DAS2C_LIBDIR=$HOME/git/das2C/build.  #last dot is not a typo
 
 # Which python version to use
-$ export PYVER=3.7
+$ export PYVER=3.9
 
 # Where you want to install the files
-$ export INST_HOST_LIB=/usr/local/lib/python3.6
-$ export INST_EXT_LIB=/usr/local/lib/python3.6
+$ export INST_HOST_LIB=/usr/local/lib/python3.9
+$ export INST_EXT_LIB=/usr/local/lib/python3.9
 
 # Build and test
 $ make
@@ -67,6 +70,9 @@ $ make test
 $ make -n install
 $ make install
 ```
+
+## Building the sphix docs
+
 
 ## First program
 

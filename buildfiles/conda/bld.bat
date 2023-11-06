@@ -1,12 +1,6 @@
 set PYVER=%PY_VER%
 set N_ARCH=/
 
-rem set
-rem @echo "HOWDY!"
-
-rem Not using the downloaded sources while debugging
-rem cd C:\Users\Chris\svn\das2\core\devel\libdas2
-
 nmake.exe /nologo /f makefiles\Windows.mak clean
 
 if %ERRORLEVEL% NEQ 0 (

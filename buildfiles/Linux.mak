@@ -54,7 +54,7 @@ $(BD):
 	@if [ ! -e "$(BD)" ]; then echo mkdir $(BD); \
         mkdir $(BD); chmod g+w $(BD); fi
 
-$(BD)/_das2.so:src/_das2.c
+$(BD)/_das2.so:src/_das2.c src/py_builder.c src/py_catalog.c  src/py_dft.c
 	python$(PYVER) $(NOUSERSITE) setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 

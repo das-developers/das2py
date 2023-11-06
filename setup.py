@@ -71,7 +71,7 @@ else:
 
 setup(description="Das2 extensions for python",
 	name="das2py",
-	version="2.3.pre5",
+	version="2.3.0",
 	ext_modules=[ ext ],
 	packages=['das2', 'das2.pycdf'],
 	author="Chris Piker",
