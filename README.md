@@ -47,7 +47,7 @@ $ sudo apt install python3-setuptools python3-dev python3-numpy # debian
 
 ## New build instructions (wheel)
 
-In this version, almost no environment variabls are needed.  Build das2C
+In this version, almost no environment variables are needed.  Build das2C
 adjacent to das2py so that it can be included in the build.
 ```bash
 # First build and test das2C, installation is not necessary
@@ -62,7 +62,7 @@ git clone git@github.com:das-developers/das2py.git
 env DAS2C_LIBDIR=$PWD/das2C/build.GNU_Linux.x86_64 DAS2C_INCDIR=$PWD/das2C \
   pip3.9 wheel ./das2py
 ```
-That's it!  Now you have a wheel file that can be install where ever you
+That's it!  Now you have a wheel file that can be installed where ever you
 like.  The included setup.py instructs the python setuptools module to staticlly
 link das2C. So the wheel is self contained.
 
