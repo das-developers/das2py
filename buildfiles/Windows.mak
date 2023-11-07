@@ -13,7 +13,7 @@ $(BD):
 	if not exist "$(BD)" mkdir "$(BD)"
 
 $(BD)\_das2.pyd:$(SRC)
-	python setup.py build -b $(BD) -t $(BD) --build-lib=$(BD)
+	python buildfiles\du_setup.py build -b $(BD) -t $(BD) --build-lib=$(BD)
 	if exist $@ del $@
 	copy $(BD)\_das2*.pyd $@
 

@@ -45,7 +45,51 @@ Pre-requisite package install commands are give below.
 $ sudo apt install python3-setuptools python3-dev python3-numpy # debian
 ```
 
-## Build and Install
+## New build instructions (wheel)
+
+In this version, almost no environment variabls are needed.  Build das2C
+adjacent to das2py so that it can be included in the build.
+```bash
+# First build and test das2C, installation is not necessary
+git clone git@github.com:das-developers/das2C.git
+cd das2C
+make 
+make test
+
+# Now build das2py using the PIP of your choice in an adjacent directory
+cd ../
+git clone git@github.com:das-developers/das2py.git
+env DAS2C_LIBDIR=$PWD/das2C/build.GNU_Linux.x86_64 DAS2C_INCDIR=$PWD/das2C \
+  pip3.9 wheel ./das2py
+```
+That's it!  Now you have a wheel file that can be install where ever you
+like.  The included setup.py instructs the python setuptools module to staticlly
+link das2C. So the wheel is self contained.
+
+To install your new wheel into the user-local area:
+```bash
+pip3.9 install ./das2py-2.3.0-cp310-cp310-linux_x86_64.whl
+ls .local/bin/das_verify
+ls .local/lib/python3.9/site-packages/das2
+ls .local/lib/python3.9/site-packages/_das2*
+```
+
+And to test it by validating one of the example files...
+```bash
+das_verify das2py/test/ex96_yscan_multispec.d2t
+```
+or generating a plot of Cassini electron cyclotron frequencies.
+```bash
+python3.9 das2py/examples/ex09_cassini_fce_ephem_ticks.py 2017-09-14
+okular cas_mag_fce_2017-09-14.png # Or whatever PNG viewer you like
+```
+
+## Old Build and Install
+
+*The old makefile based build and install wrapper is still supported.  It's 
+based on distutils, and it works for Python 2.7 and up.  For newer versions 
+of python the pip-wheel build is recommended, for Python2 support read on...*
+
 Decide where you want to install das2py.  In the example below I've selected 
 `/usr/local/lib/python3.9/site-packages` but any location is fine so long as
 it is on the `PYTHONPATH` or you are willing to add it to your PYTHONPATH.

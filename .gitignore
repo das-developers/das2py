@@ -3,4 +3,7 @@ das2/__pycache__
 das2/*.pyc
 *.png
 *.cdf
+build
+dist
+*.egg-info
 

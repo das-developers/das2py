@@ -9,7 +9,7 @@
 {% set git_version = "2.3.0" %}
 #{% set bld_date = "20231106" %}
 #{% set sha256 = "a417f1f5bbb5af408cbf3ced8c2da007ed40964f3d0468e6f6f4af95e865ab48" %}
-{% set sha256 = "e3b9520c56a12fbaabe79c84b7b4c5e2c4748da280ed39cf095c39054e08bf1c" %}
+{% set sha256 = "fcf9fb9982c55b6f704005ce0bf6384d0086f28ddd2995b6267bd68c894188cc" %}
 
 package:
    name: {{ name }} 
@@ -31,32 +31,42 @@ build:
 requirements:
    build:
       - {{ compiler('c') }}
+      - setuptools
+      - cython
+      - numpy >=1.20.0 
+      - expat
+      - fftw
+      - zlib
+      - openssl
+      - pthreads4w [win]
+      - das2c =={{ git_version }}
+      - lxml
             
    host:
       - python
       - setuptools
       - cython
       - numpy >=1.20.0 
-      - numpy-devel >=1.20.0
       - expat
       - fftw
       - zlib
       - openssl
       - pthreads4w [win]
-      - dasdevelopers::das2c =={{ git_version }}
+      - das2c =={{ git_version }}
+      - lxml
       
    run:
       - python
       - setuptools
       - cython
       - numpy >=1.20.0
-      - numpy-devel >=1.20.0
       - expat
       - fftw
       - zlib
       - openssl
       - pthreads4w [win]
-      - dasdevelopers::das2c =={{ git_version }}
+      - das2c =={{ git_version }}
+      - lxml
       
 test:
    imports:

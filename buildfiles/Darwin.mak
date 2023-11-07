@@ -30,7 +30,7 @@ $(BD):
         mkdir $(BD); chmod g+w $(BD); fi
 
 $(BD)/_das2.so:src/_das2.c
-	env ARCHFLAGS="-arch x86_64" python$(PYVER) setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
+	env ARCHFLAGS="-arch x86_64" python$(PYVER) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 
 # Run tests
