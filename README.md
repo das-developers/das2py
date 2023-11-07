@@ -47,8 +47,8 @@ $ sudo apt install python3-setuptools python3-dev python3-numpy # debian
 
 ## New build instructions (wheel)
 
-In this version, almost no environment variables are needed.  Build das2C
-adjacent to das2py so that it can be included in the build.
+In this version, almost no environment variables are needed  Below, das2C
+is built adjacent to das2py so that it can be included in das2py.
 ```bash
 # First build and test das2C, installation is not necessary
 git clone git@github.com:das-developers/das2C.git
@@ -74,11 +74,11 @@ ls .local/lib/python3.9/site-packages/das2
 ls .local/lib/python3.9/site-packages/_das2*
 ```
 
-And to test it by validating one of the example files...
+To test it by validating one of the example files...
 ```bash
 das_verify das2py/test/ex96_yscan_multispec.d2t
 ```
-or generating a plot of Cassini electron cyclotron frequencies.
+and to generate a plot of Cassini electron cyclotron frequencies.
 ```bash
 python3.9 das2py/examples/ex09_cassini_fce_ephem_ticks.py 2017-09-14
 okular cas_mag_fce_2017-09-14.png # Or whatever PNG viewer you like
@@ -114,9 +114,6 @@ $ make test
 $ make -n install
 $ make install
 ```
-
-## Building the sphix docs
-
 
 ## First program
 
