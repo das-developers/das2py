@@ -68,6 +68,15 @@ else:
 	)
 
 setup(
+	name="das2py",
+	version="2.3.0",
 	ext_modules=[ext],
-	scripts=['scripts/das_verify']
+	packages=['das2', 'das2.pycdf', 'das2.xsd'],
+	author="Chris Piker",
+	author_email="das-developers@uiowa.edu",
+	url="https://das2.org/das2py",
+	scripts=['scripts/das_verify'],
+	include_package_data=True,
+	#package_data={'das2':['xsd/*.xsd']},
+	install_requires=['lxml','numpy']
 )

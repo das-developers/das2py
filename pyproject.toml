@@ -1,8 +1,32 @@
-[build-system]
-requires = [ "setuptools" ]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "das2py"
 version = "2.3.0"
 dependencies = [ "numpy", "lxml" ]
+description = "An efficient space physics data client for python"
+readme = "README.md"
+requires-python = ">=2.7"
+license = {file = "LICENSE"}
+authors = [
+   {name = "Chris Piker", email = "cpiker@users.noreply.github.com"}
+]
+keywords = ["space-physics", "magneosphere", "das2"]
+
+[project.urls]
+Homepage = "https://das2.org/das2py"
+Repository = "https://github.com/das-developers/das2py"
+
+# This does not work with top-level non-module python scripts.  Instead we're
+# expected to make a module named "verify" and point out it's main function
+# here.  That's okay I guess, but it gets very far from the shell-script roots
+# of python and makes it harder to run scripts directly from the source tree
+# as top-level programs, which is an long expected feature.  For now the
+# 'scripts=' line in setup.py is going to have to handle this one.
+#[project.scripts]
+#das_verify = "das_verify"
+
+[build-system]
+requires = [ "setuptools" ]
+build-backend = "setuptools.build_meta"
+
+[tools.setuptools]
+packages = ["das2", "das2.pycdf", "das2.xsd"]

@@ -7,9 +7,8 @@
 {% set name = "das2py" %}
 {% set conda_version = "2.3.0" %}
 {% set git_version = "2.3.0" %}
-#{% set bld_date = "20231106" %}
-#{% set sha256 = "a417f1f5bbb5af408cbf3ced8c2da007ed40964f3d0468e6f6f4af95e865ab48" %}
-{% set sha256 = "fcf9fb9982c55b6f704005ce0bf6384d0086f28ddd2995b6267bd68c894188cc" %}
+{% set bld_date = "20231108" %}
+{% set sha256 = "a417f1f5bbb5af408cbf3ced8c2da007ed40964f3d0468e6f6f4af95e865ab48" %}
 
 package:
    name: {{ name }} 
@@ -17,8 +16,7 @@ package:
    
 source:
    fn:  das2py-{{ git_version }}.tar.gz
-   #url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
-   url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
+   url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
    sha256: {{ sha256 }}
    
 build:
@@ -32,39 +30,23 @@ requirements:
    build:
       - {{ compiler('c') }}
       - setuptools
-      - cython
-      - numpy >=1.20.0 
-      - expat
-      - fftw
-      - zlib
-      - openssl
-      - pthreads4w [win]
+      - python
+      - pip
+      - wheel
+      - numpy >=1.10.0 
       - das2c =={{ git_version }}
       - lxml
-            
+
    host:
       - python
-      - setuptools
-      - cython
-      - numpy >=1.20.0 
-      - expat
-      - fftw
-      - zlib
-      - openssl
-      - pthreads4w [win]
+      - numpy >=1.10.0
       - das2c =={{ git_version }}
       - lxml
-      
+
    run:
       - python
       - setuptools
-      - cython
-      - numpy >=1.20.0
-      - expat
-      - fftw
-      - zlib
-      - openssl
-      - pthreads4w [win]
+      - numpy >=1.10.0
       - das2c =={{ git_version }}
       - lxml
       

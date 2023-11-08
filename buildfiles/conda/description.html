@@ -10,13 +10,20 @@ newest release and is newer then the 2.3.1 version previously posted here.
 Sorry for the confusion.  Now that the anaconda and github versions are
 in sync, no further version revisions are expected.
 
-To test your installation issue:
+To test stream verification issue:
 <ul>
-<li>conda install matplotlib (if you don't already have it)</li>
-<li>wget http://das2.org/das2py/examples/ex02_galileo_pws_spectra.py</li>
-<li>python ex02_galileo_pws_spectra.py</li>
+<li>wget https://raw.githubusercontent.com/das-developers/das2py/main/test/ex96_yscan_multispec.d2t</li>
+<li>das_verify ex96_yscan_multispec.d2t</li>
+</ul>
+
+To test plot generation issue:
+<ul>
+<li>conda install matplotlib (if not already present)</li>
+<li>wget https://raw.githubusercontent.com/das-developers/das2py/main/examples/ex09_cassini_fce_ephem_ticks.py</li>
+<li>python ex09_cassini_fce_ephem_ticks.py 2017-09-14</li>
+<li>okular cas_mag_fce_2017-09-14.png (or whichever PNG viewer you like)</li>
 </ul>
 You should get the same plot as the one at: 
-<a href="http://das2.org/das2py/examples/ex02_galileo_pws_spectra.png">ex02\_galileo\_pws\_spectra.png</a>
+<a href="https://github.com/das-developers/das2py/blob/main/examples/ex09_cassini_fce_ephem_ticks.png">ex09\_cassini\_fce\_ephem\_ticks.png</a>
 
 Thanks for trying das2py :)
