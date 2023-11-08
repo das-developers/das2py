@@ -34,7 +34,7 @@ else: lLibDirs = []
 if sCHdrDir: lInc = [sCHdrDir, "./src"]
 else: lInc = ["./src"]
 
-lSrc = ["src/_das2.c"]  # The rest are just included
+lSrc = ["src/_das2.c"]
 
 if sys.platform == 'win32':
 	print("setup.py: Using Headers from %s"%lInc)
@@ -52,6 +52,13 @@ if sys.platform == 'win32':
 		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
 elif sys.platform == 'darwin':
+
+	# A macOS hack
+	lInc.append(
+		"/opt/homebrew/lib/python%d.%d/site-packages/numpy/core/include"%(
+			sys.version_info.major, sys.version_info.minor
+		)
+	)
 
 	if bLinkStatic:
 		lExObjs = [
@@ -93,7 +100,7 @@ setup(
 	version="2.3.0",
 	ext_modules=[ext],
 	packages=['das2', 'das2.pycdf', 'das2.xsd'],
-	author="Chris Piker",
+	author="C Piker",
 	author_email="das-developers@uiowa.edu",
 	url="https://das2.org/das2py",
 	scripts=['scripts/das_verify'],

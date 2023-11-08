@@ -46,7 +46,7 @@
 #include <das2/operator.h>
 /* #include <python3.4m/modsupport.h> */
 
-/* static char* myname = "_das2"; */
+/* static char* myname i= "_das2"; */
 
 /* ************************************************************************* */
 /* The exceptions and logging */
@@ -686,9 +686,9 @@ static PyObject* pyd2_can_merge(PyObject* self, PyObject* args)
 /* ************************************************************************* */
 /* Include Object Defs */
 
-#include "py_dft.c"
-#include "py_builder.c"
-#include "py_catalog.c" /* After py_builder.c, uses g_pMgr from py_builder.c */
+#include "py_dft.h"
+#include "py_builder.h"
+#include "py_catalog.h" /* After py_builder.c, uses g_pMgr from py_builder.c */
 
 /*****************************************************************************/
 /* The method definitions */
