@@ -55,11 +55,12 @@ git clone git@github.com:das-developers/das2C.git
 cd das2C
 env N_ARCH=/ make 
 env N_ARCH=/ make test
+cd ../
 
 # Now build das2py using the PIP of your choice in an adjacent directory
-cd ../
 git clone git@github.com:das-developers/das2py.git
-env DAS2C_LIBDIR=$PWD/das2C/build. DAS2C_INCDIR=$PWD/das2C pip3.9 wheel ./das2py
+cd das2py
+env DAS2C_LIBDIR=$PWD/../das2C/build. DAS2C_INCDIR=$PWD/../das2C python3.9 -m build
 ```
 That's it!  Now you have a wheel file that can be installed where ever you
 like.  The included setup.py instructs the python setuptools module to staticlly

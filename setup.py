@@ -1,10 +1,17 @@
 from setuptools import Extension, setup
 import os
-import numpy
+# import numpy  # <-- apparently a big no-no now.
 import sys
 
+# Assume das2C is in a parallel directory and that N_ARCH=/ if no
+# other option is set.
 sCLibDir = os.getenv("DAS2C_LIBDIR")
+if not sCLibDir:
+	sCLibDir = "../das2C/build."
+	
 sCHdrDir = os.getenv("DAS2C_INCDIR")
+if not sCHdrDir:
+	sCHdrDir = "../das2C"
 
 print('(setup.py) DAS2C_LIBDIR = %s'%sCLibDir)
 print('(setup.py) DAS2C_INCDIR = %s'%sCHdrDir)
@@ -20,10 +27,14 @@ lDefs = []
 if sCLibDir: lLibDirs = [sCLibDir]
 else: lLibDirs = []
 
-if sCHdrDir: lInc = [sCHdrDir, numpy.get_include()]
-else: lInc = [numpy.get_include()]
+# Hopefully the build system knows how to add numpy headers back in
+#if sCHdrDir: lInc = [sCHdrDir, numpy.get_include()]
+#else: lInc = [numpy.get_include()]
 
-lSrc = ["src/_das2.c"]
+if sCHdrDir: lInc = [sCHdrDir, "./src"]
+else: lInc = ["./src"]
+
+lSrc = ["src/_das2.c"]  # The rest are just included
 
 if sys.platform == 'win32':
 	print("setup.py: Using Headers from %s"%lInc)

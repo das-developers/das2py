@@ -7,7 +7,7 @@ readme = "README.md"
 requires-python = ">=2.7"
 license = {file = "LICENSE"}
 authors = [
-   {name = "Chris Piker", email = "cpiker@users.noreply.github.com"}
+   {name = "C Piker", email = "cpiker@users.noreply.github.com"}
 ]
 keywords = ["space-physics", "magneosphere", "das2"]
 
