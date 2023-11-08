@@ -38,21 +38,23 @@ elif sys.platform == 'darwin':
 
 	# Hack in static locations for homebrew stuff, will probably break
 	# in the future
-	lExObjs = [
-		'%s/libdas2.3.a'%sCLibDir,
-		'/usr/local/opt/openssl/lib/libssl.a',
-		'/usr/local/opt/openssl/lib/libcrypto.a',
-		'/usr/local/lib/libfftw3.a'
-	]
+	#lExObjs = [
+	#	'%s/libdas2.3.a'%sCLibDir,
+	#	'/usr/local/opt/openssl/lib/libssl.a',
+	#	'/usr/local/opt/openssl/lib/libcrypto.a',
+	#	'/usr/local/lib/libfftw3.a'
+	#]
 
 	ext = Extension(
 		"_das2", sources=lSrc 
 		,include_dirs=lInc
 		,define_macros=lDefs
 		,library_dirs=lLibDirs
-		,libraries=["expat", "z"]
+		#,libraries=["expat", "z"]
+		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-		,extra_objects=lExObjs
+		#,extra_objects=lExObjs
+		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 		,extra_link_args=['-Wl,-no_compact_unwind']
 	)	
 else:
