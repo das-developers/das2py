@@ -9,6 +9,12 @@ sCHdrDir = os.getenv("DAS2C_INCDIR")
 print('(setup.py) DAS2C_LIBDIR = %s'%sCLibDir)
 print('(setup.py) DAS2C_INCDIR = %s'%sCHdrDir)
 
+# Under conda we can dependend on shared objects, under system builds we can't
+if os.getenv("CONDA_PREFIX"):
+	bLinkStatic=False
+else:
+	bLinkStatic=True
+
 lDefs = []
 
 if sCLibDir: lLibDirs = [sCLibDir]
@@ -36,25 +42,27 @@ if sys.platform == 'win32':
 	)
 elif sys.platform == 'darwin':
 
-	# Hack in static locations for homebrew stuff, will probably break
-	# in the future
-	#lExObjs = [
-	#	'%s/libdas2.3.a'%sCLibDir,
-	#	'/usr/local/opt/openssl/lib/libssl.a',
-	#	'/usr/local/opt/openssl/lib/libcrypto.a',
-	#	'/usr/local/lib/libfftw3.a'
-	#]
+	if bLinkStatic:
+		lExObjs = [
+			'%s/libdas2.3.a'%sCLibDir,
+			'/opt/homebrew/opt/openssl/lib/libssl.a',
+			'/opt/homebrew/opt/openssl/lib/libcrypto.a',
+			'/opt/homebrew/lib/libfftw3.a'
+		]
+		lLibs = ["expat", "z"]
+	else:
+		lExObjs = ['%s/libdas2.3.a'%sCLibDir]
+		lLibs   = ["fftw3", "expat", "ssl", "crypto", "z"]
+
 
 	ext = Extension(
 		"_das2", sources=lSrc 
 		,include_dirs=lInc
 		,define_macros=lDefs
 		,library_dirs=lLibDirs
-		#,libraries=["expat", "z"]
-		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
+		,libraries=lLibs
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-		#,extra_objects=lExObjs
-		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
+		,extra_objects=lExObjs
 		,extra_link_args=['-Wl,-no_compact_unwind']
 	)	
 else:
