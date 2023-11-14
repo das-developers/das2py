@@ -1,5 +1,7 @@
 from setuptools import Extension, setup
 import os
+from os.path import dirname as dname
+from os.path import join as pjoin
 # import numpy  # <-- apparently a big no-no now.
 import sys
 
@@ -37,19 +39,55 @@ else: lInc = ["./src"]
 lSrc = ["src/_das2.c"]
 
 if sys.platform == 'win32':
+
+	if bLinkStatic:  # currently a synonym for not-conda 
+		# A windows hack, since we're not allowed to import numpy
+		# inside setup.py.  Any help on gitting rid of this hack
+		# would be highly appreciated
+		sPyDir = dname(sys.executable)
+		lInc.append(
+			pjoin(sPyDir, "lib", "site-packages", "numpy", "core", "include")
+		)
+
+		sVcRoot = os.getenv("VCPKG_ROOT")
+		if sVcRoot:
+			sVcLibDir = pjoin(sVcRoot, "installed","x64-windows-static","lib")
+			sVcIncDir = pjoin(sVcRoot, "installed","x64-windows-static","include")
+		else:
+			# With no other input, assume it's next door
+			sVcLibDir = "..\\vcpkg\\installed\\x64-windows-static\\lib"
+			sVcIncDir = "..\\vcpkg\\installed\\x64-windows-static\\include"
+
+		print('(setup.py) VCPKG_LIBDIR = %s'%sVcLibDir)
+
+		lLibDirs.append( sVcLibDir )
+		lInc.append( sVcIncDir )
+		lExObjs = ['%s/libdas2.3.lib'%sCLibDir]
+		lLibs = [ 
+			"fftw3", "libexpatMD", "libssl", "libcrypto", "Advapi32",
+			"User32", "Crypt32", "zlib", "pthreadVC3", "ws2_32"
+		]
+	else:
+		# Anaconda will setup the lib directories for us, but still
+		# link das2C statically.  Also anaconda and vcpkg use different
+		# names for expaxt library
+		lExObjs = ['%s/libdas2.3.lib'%sCLibDir]
+		lLibs = [ 
+			"fftw3", "expat", "libssl", "libcrypto",
+			"zlib", "pthreadVC3", "ws2_32"
+		]
+
 	print("setup.py: Using Headers from %s"%lInc)
 	print("setup.py: Using Libs from %s"%lLibDirs)
+
 	ext = Extension(
 		"_das2"
 		,sources=lSrc
 		,include_dirs=lInc
 		,define_macros=lDefs
 		,library_dirs=lLibDirs
-		,libraries=[
-			"libdas2.3", "fftw3", "expat", "libssl", "libcrypto",
-			"zlib", "pthreadVC3", "ws2_32"
-		]
-		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
+		,libraries=lLibs
+		,extra_objects=lExObjs
 	)
 elif sys.platform == 'darwin':
 
