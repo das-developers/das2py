@@ -50,11 +50,16 @@ $(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
 
 build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 
+local: $(BD) src/*.c das2/*.py das2/pycdf/*.py das2/xsd/*.xsd
+	python$(PYVER) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
+	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
+	
+
 $(BD):
 	@if [ ! -e "$(BD)" ]; then echo mkdir $(BD); \
         mkdir $(BD); chmod g+w $(BD); fi
 
-$(BD)/_das2.so:src/_das2.c src/py_builder.c src/py_catalog.c  src/py_dft.c
+$(BD)/_das2.so:src/*.c
 	python$(PYVER) $(NOUSERSITE) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 

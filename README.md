@@ -107,7 +107,9 @@ $ export INST_HOST_LIB=/usr/local/lib/python3.9
 $ export INST_EXT_LIB=/usr/local/lib/python3.9
 
 # Build and test
-$ make
+$ make           # <-- If only using system packages
+$ make local     # <-- If using numpy or others from $HOME/.local
+                 #     Do not use for RPM/DEB builds
 $ make test
 
 # Check install location, then install

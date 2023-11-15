@@ -5,9 +5,12 @@ dependencies = [ "numpy", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
 requires-python = ">=2.7"
-license = {file = "LICENSE"}
+license = "MIT"
 authors = [
    {name = "C Piker", email = "cpiker@users.noreply.github.com"}
+]
+maintainers = [
+	{name = "K Steele", email = "KaiwenS7@users.noreply.github.com"}
 ]
 keywords = ["space-physics", "magneosphere", "das2"]
 
