@@ -2,7 +2,8 @@ from setuptools import Extension, setup
 import os
 from os.path import dirname as dname
 from os.path import join as pjoin
-# import numpy  # <-- apparently a big no-no now.
+# import numpy  # <-- forced to be hacky with custom build_ext
+from setuptools.command.build_ext import build_ext as _build_ext
 import sys
 
 # Assume das2C is in a parallel directory and that N_ARCH=/ if no
@@ -44,10 +45,10 @@ if sys.platform == 'win32':
 		# A windows hack, since we're not allowed to import numpy
 		# inside setup.py.  Any help on gitting rid of this hack
 		# would be highly appreciated
-		sPyDir = dname(sys.executable)
-		lInc.append(
-			pjoin(sPyDir, "lib", "site-packages", "numpy", "core", "include")
-		)
+		#sPyDir = dname(sys.executable)
+		#lInc.append(
+		#	pjoin(sPyDir, "lib", "site-packages", "numpy", "core", "include")
+		#)
 
 		sVcRoot = os.getenv("VCPKG_ROOT")
 		if sVcRoot:
@@ -92,11 +93,11 @@ if sys.platform == 'win32':
 elif sys.platform == 'darwin':
 
 	# A macOS hack
-	lInc.append(
-		"/opt/homebrew/lib/python%d.%d/site-packages/numpy/core/include"%(
-			sys.version_info.major, sys.version_info.minor
-		)
-	)
+	#lInc.append(
+	#	"/opt/homebrew/lib/python%d.%d/site-packages/numpy/core/include"%(
+	#		sys.version_info.major, sys.version_info.minor
+	#	)
+	#)
 
 	if bLinkStatic:
 		lExObjs = [
@@ -133,7 +134,19 @@ else:
 		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
 	)
 
+# ... because import numpy at top level doesn't work anymore (yay)
+# Solution from:
+# https://stackoverflow.com/questions/54117786/add-numpy-get-include-argument-to-setuptools-without-preinstalled-numpy
+class build_ext(_build_ext):
+	def finalize_options(self):
+		_build_ext.finalize_options(self)
+		# Prevent numpy from thinking it is still in its setup process:
+		__builtins__.__NUMPY_SETUP__ = False
+		import numpy
+		self.include_dirs.append(numpy.get_include())
+
 setup(
+	cmdclass={'build_ext':build_ext},
 	name="das2py",
 	version="2.3.0",
 	ext_modules=[ext],

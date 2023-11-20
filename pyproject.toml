@@ -5,7 +5,7 @@ dependencies = [ "numpy", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
 requires-python = ">=2.7"
-license = "MIT"
+license = {file = "LICENSE"}
 authors = [
    {name = "C Piker", email = "cpiker@users.noreply.github.com"}
 ]
@@ -28,7 +28,7 @@ Repository = "https://github.com/das-developers/das2py"
 #das_verify = "das_verify"
 
 [build-system]
-requires = [ "setuptools" ]
+requires = [ "setuptools", "numpy >= 1.10" ]
 build-backend = "setuptools.build_meta"
 
 [tools.setuptools]
