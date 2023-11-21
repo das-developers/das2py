@@ -10,7 +10,7 @@
 {% set git_version = "2.3.1" %}
 {% set bld_date = "20231108" %}
 # This sha-hash is not right, checkout next version of main to get correct one
-#{% set sha256 = "51f0d53f668ea7036a79dbf5167fadc1f522309db50b6f2e3b262f6b6d6e2198" %}
+{% set sha256 = "f4a635898af682cf8cfb9e26d40418278e6d7a07c2e227033813fa4bda6e6b20" %}
 
 package:
    name: {{ name }} 
@@ -18,8 +18,8 @@ package:
    
 source:
    fn:  das2py-{{ git_version }}.tar.gz
-   url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
-   #url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
+   #url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
+   url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
    sha256: {{ sha256 }}
    
 build:
