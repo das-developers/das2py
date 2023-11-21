@@ -5,11 +5,12 @@
 #  openssl sha256 das2py-tmp.tar.gz | awk '{print $2}'
 
 {% set name = "das2py" %}
-{% set conda_version = "2.3.0" %}
-{% set git_version = "2.3.0" %}
+{% set das2c_version = "2.3.0" %}
+{% set conda_version = "2.3.1" %}
+{% set git_version = "2.3.1" %}
 {% set bld_date = "20231108" %}
+# This sha-hash is not right, checkout next version of main to get correct one
 #{% set sha256 = "51f0d53f668ea7036a79dbf5167fadc1f522309db50b6f2e3b262f6b6d6e2198" %}
-{% set sha256 = "6e1c1a0c5454e1311686dbc925fc5924ba756f046179997181f119be81379bcc" %}
 
 package:
    name: {{ name }} 
@@ -17,8 +18,8 @@ package:
    
 source:
    fn:  das2py-{{ git_version }}.tar.gz
-   #url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
-   url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
+   url: https://github.com/das-developers/das2py/archive/refs/tags/v{{ git_version }}.tar.gz
+   #url: https://space.physics.uiowa.edu/~pikerc/das2py-tmp.tar.gz
    sha256: {{ sha256 }}
    
 build:
@@ -36,20 +37,20 @@ requirements:
       - pip
       - wheel
       - numpy >=1.10.0 
-      - das2c =={{ git_version }}
+      - das2c =={{ das2c_version }}
       - lxml
 
    host:
       - python
       - numpy >=1.10.0
-      - das2c =={{ git_version }}
+      - das2c =={{ das2c_version }}
       - lxml
 
    run:
       - python
       - setuptools
       - numpy >=1.10.0
-      - das2c =={{ git_version }}
+      - das2c =={{ das2c_version }}
       - lxml
       
 test:
