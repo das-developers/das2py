@@ -99,12 +99,22 @@ elif sys.platform == 'darwin':
 	#	)
 	#)
 
-	if bLinkStatic:
+	if bLinkStatic: 
+		# Try to find homebrew openssl
+		sBrewDir=None
+		for sDir in ("/opt/homebrew","/usr/local"):
+			if os.path.isdir(pjoin(sDir, "opt/openssl")):
+				sBrewDir = sDir
+				break
+		if not sBrewDir:
+			print("Error: Failed to find homebrew openssl")
+			sys.exit(7)
+
 		lExObjs = [
 			'%s/libdas2.3.a'%sCLibDir,
-			'/opt/homebrew/opt/openssl/lib/libssl.a',
-			'/opt/homebrew/opt/openssl/lib/libcrypto.a',
-			'/opt/homebrew/lib/libfftw3.a'
+			'%s/opt/openssl/lib/libssl.a'%sBrewDir,
+			'%s/opt/openssl/lib/libcrypto.a'%sBrewDir,
+			'%s/lib/libfftw3.a'%sBrewDir
 		]
 		lLibs = ["expat", "z"]
 	else:
