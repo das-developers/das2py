@@ -110,7 +110,7 @@ def loadSchema(sContent, sVersion, bNameSpace=False):
 
 	#print(sContent, sVersion, "-->", sPath)
 	
-	fSchema = open(sPath)
+	fSchema = open(sPath, encoding='utf-8')
 	schema_doc = etree.parse(fSchema)
 	schema = etree.XMLSchema(schema_doc)
 	
