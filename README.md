@@ -50,6 +50,9 @@ $ sudo apt install python3-setuptools python3-dev python3-numpy # debian
 In this version, almost no environment variables are needed  Below, das2C
 is built adjacent to das2py so that it can be included in das2py.
 ```bash
+# (Works on Linux, more steps needed on Windows & MacOS. 
+#  See buildfiles/pypi/ReadMe.md for details)
+
 # First build and test das2C, installation is not necessary
 git clone git@github.com:das-developers/das2C.git
 cd das2C
@@ -68,7 +71,7 @@ link das2C. So the wheel is self contained.
 
 To install your new wheel into the user-local area:
 ```bash
-pip3.9 install ./das2py-2.3.0-cp310-cp310-linux_x86_64.whl
+pip3.9 install ./dist/das2py-2.3.0-cp310-cp310-linux_x86_64.whl
 ls .local/bin/das_verify
 ls .local/lib/python3.9/site-packages/das2
 ls .local/lib/python3.9/site-packages/_das2*

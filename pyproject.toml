@@ -18,14 +18,8 @@ keywords = ["space-physics", "magneosphere", "das2"]
 Homepage = "https://das2.org/das2py"
 Repository = "https://github.com/das-developers/das2py"
 
-# This does not work with top-level non-module python scripts.  Instead we're
-# expected to make a module named "verify" and point out it's main function
-# here.  That's okay I guess, but it gets very far from the shell-script roots
-# of python and makes it harder to run scripts directly from the source tree
-# as top-level programs, which is an long expected feature.  For now the
-# 'scripts=' line in setup.py is going to have to handle this one.
-#[project.scripts]
-#das_verify = "das_verify"
+[project.scripts]
+das_verify = "das2.verify:main"
 
 [build-system]
 requires = [ "setuptools", "numpy >= 1.10" ]

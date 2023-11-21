@@ -44,7 +44,7 @@ python -m pip install --upgrade build
 python -m pip install --upgrade twain
 set DAS2C_LIBDIR=..\das2C\build.windows
 set DAS2C_INCDIR=..\das2C
-python -m build -w -n
+python -m build -w
 cd ..\
 
 rem test das2py
@@ -57,5 +57,4 @@ rem OTHER TESTS HERE
 rem upload to pypi
 cd das2py
 python -m twine upload dist/*
-
 ```

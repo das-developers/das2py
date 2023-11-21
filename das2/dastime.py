@@ -144,7 +144,7 @@ class DasTime(object):
 			
 		if isinstance(nYear, (tuple, list)):
 			self.t = [0, 0, 0, 0, 0, 0, 0.0]
-			for i in range(0, len(nYear)):
+			for i in xrange(0, len(nYear)):
 				j = i
 				if i >= 3:
 					j = i+1
@@ -171,6 +171,37 @@ class DasTime(object):
 		resolution."""
 		return '%04d-%02d-%02dT%02d:%02d:%09.6f'%(self.t[0], self.t[1],
 		           self.t[2], self.t[4], self.t[5], self.t[6])
+
+	def isoc(self, nSecPrec):
+		"""Returns an ISO 8601 standard day-of-month time string to arbitrary
+		seconds precision"""
+		if nSecPrec < 0:
+			raise ValueError("Precision must be >= 0");
+		elif nSecPrec == 0:
+			return '%04d-%02d-%02dT%02d:%02d:%02d'%(
+				self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], 
+				round(self.t[6])
+			)
+		else:
+			sFmt = '%%04d-%%02d-%%02dT%%02d:%%02d:%%0%d.%df'%(nSecPrec+3, nSecPrec)
+			return sFmt%(
+				self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], self.t[6]
+			)
+
+	def isod(self, nSecPrec):
+		"""Returns an ISO 8601 standard day-of-year time string to arbitrary
+		seconds precision"""
+		if nSecPrec < 0:
+			raise ValueError("Precision must be >= 0");
+		elif nSecPrec == 0:
+			return '%04d-%03dT%02d:%02d:%02d'%(
+				self.t[0], self.t[3], self.t[4], self.t[5], round(self.t[6])
+			)
+		else:
+			sFmt = '%%04d-%%03dT%%02d:%%02d:%%0%d.%df'%(nSecPrec+3, nSecPrec)
+			return sFmt%(
+				self.t[0], self.t[3], self.t[4], self.t[5], self.t[6]
+			)
 	
 	# This is only useful for Python 2.x
 	
