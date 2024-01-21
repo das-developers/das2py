@@ -31,6 +31,8 @@
     <xs:enumeration value="boolean" />
     <xs:enumeration value="int" />
     <xs:enumeration value="double" />
+    <xs:enumeration value="Time" />
+    <xs:enumeration value="TimeRange" />
     <xs:enumeration value="DatumRange" />
    </xs:restriction>
 </xs:simpleType>
