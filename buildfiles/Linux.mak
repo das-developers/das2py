@@ -11,7 +11,8 @@ BD=build.$(N_ARCH)
 
 SRC=_das2.c
 PYSRC=util.py __init__.py dastime.py toml.py source.py dataset.py \
- container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py cli.py
+ container.py pkt.py mpl.py auth.py node.py streamsrc.py cdf.py reader.py \
+ cli.py verify.py
 
 SCRIPTS=das_verify
 
@@ -47,8 +48,11 @@ $(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
 # Explicit Rules #############################################################
 
 .PHONY: test examples
-
+	
 build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
+
+vars:
+	@echo $(INSTALLED_SCRIPTS)
 
 local: $(BD) src/*.c das2/*.py das2/pycdf/*.py das2/xsd/*.xsd
 	python$(PYVER) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)

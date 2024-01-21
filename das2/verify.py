@@ -127,7 +127,9 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 						pkt.tag, pkt.id, sCurType, pkt.dataLen()
 					))
 			else:
-				pout("|%s| ID %s %s header [OKAY]"%(pkt.tag, pkt.id, sCurType))
+				sId = pkt.id
+				if pkt.id < 0: sId = '-'
+				pout("|%s| ID %s %s header [OKAY]"%(pkt.tag, sId, sCurType))
 				
 			curPkt = None
 			sCurType = None

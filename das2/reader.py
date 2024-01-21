@@ -365,8 +365,9 @@ class Packet(object):
 	   tag - The 2-character content tag, see g_lValidTags for a list of
 	   	valid tags
 			  
-	   id - The packet integer ID.  Stream and pure dataset packets
-		     are always ID 0.  Otherwise the ID is 1 or greater.
+	   id - The packet integer ID.  Stream and pure dataset packets are are
+		     always ID 0. Data and headers are 1 or greater.  Out of band data 
+		     such as comment and exceptions are -1
 			
 		length - The original length of the packet before decoding UTF-8
 		     strings.
@@ -650,15 +651,20 @@ class PacketReader:
 		data packets don't have length value, parsing the associated header is required.
 		"""
 		
-		try:
-			nPktId = int(x4[1:3].decode('utf-8'), 10)
-		except ValueError:
-			raise ValueError("Invalid packet ID '%s'"%x4[1:3].decode('utf-8'))
+		# Use -1 for comment packets
+		sPktId = x4[1:3].decode('utf-8')
+		nPktId = -1
+
+		if sPktId not in ('xx','XX'):
+			try:
+				nPktId = int(sPktId, 10)
+			except ValueError:
+				raise ValueError("Invalid packet ID '%s'"%x4[1:3].decode('utf-8'))
 			
-		if (nPktId < 0) or (nPktId > 99):
-			raise ValueError("Invalid packet ID %s at byte offset %s"%(
-				x4[1:3].decode('utf-8'), self.nOffset
-			))
+			if (nPktId < 0) or (nPktId > 99):
+				raise ValueError("Invalid packet ID %s at byte offset %s"%(
+					x4[1:3].decode('utf-8'), self.nOffset
+				))
 			
 		if self.nOffset == 4 and (x4 != b'[00]'):
 			raise ValueError("Input does not start with '[00]' does not appear to be a das2 stream")
@@ -695,7 +701,8 @@ class PacketReader:
 					x4.decode('utf-8'), nLen
 				))
 			
-			self.lPktDef[nPktId] = True
+			if nPktId > -1:
+				self.lPktDef[nPktId] = True
 			
 			# Higher level parser will have to give us the length.  This is an
 			# oversight in the das2 stream format that has been around for a while.
