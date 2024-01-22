@@ -114,7 +114,7 @@
 <xs:simpleType name="StorageType">
   <xs:restriction base="xs:string">
       <xs:pattern 
-value="big_endian_real[48]|little_endian_real[48]|big_endian_int8|little_endian_int8|ascii[1-9][0-9]*|time[1-9][0-9]*|char[1-9][0-9]*" />
+value="sun_real[48]|little_endian_real[48]|ascii[1-9][0-9]*|time[1-9][0-9]*" />
    </xs:restriction>
 </xs:simpleType>
 
