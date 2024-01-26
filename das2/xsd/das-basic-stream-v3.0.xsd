@@ -100,6 +100,30 @@
   </xs:sequence>
 </xs:complexType>
 
+<!-- Coordinate Frames =================================================== -->
+
+<!-- These are independent of any particular values and assign DIRECTIONALTY
+     ONLY!  Frame components have no units.  These are not to be confused with
+     the "axis" values from <coord>.  The attribute "axis" is a graphical display
+     directive and refers to a display axis, not a physical axis.  
+
+     The two can be made to coincide by using the optional "frame" and "component"
+     attributes of <coord>
+-->
+
+<xs:complexType name="Component">
+  <xs:attribute name="name"  type="VarName" use="required" />
+  <xs:attribute name="units" type="xs:token" />
+</xs:complexType>
+
+<xs:complexType name="Frame" >
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="component" type="Component" minOccurs="1" maxOccurs="9" />
+  </xs:sequence>
+  <xs:attribute name="name" type="StructName" use="required"/>
+  <xs:attribute name="type" type="VarName" use="required" />
+</xs:complexType>
 
 <!-- Extensions ========================================================== -->
 
@@ -160,7 +184,7 @@
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="Direction">
+<xs:simpleType name="PlotDirection">
   <xs:restriction base="xs:string">
     <xs:enumeration value="x" />
     <xs:enumeration value="y" />
@@ -380,12 +404,6 @@
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
 
-<xs:complexType name="Component">
-  <xs:attribute name="name"  type="VarName" use="required" />
-  <xs:attribute name="units" type="xs:token" />
-</xs:complexType>
-
-
 <xs:simpleType name="VectorClass">
   <xs:restriction base="xs:string">
     <xs:enumeration value="cartesian" />
@@ -397,7 +415,7 @@
 
 <xs:complexType name="VectorVar" >
   <xs:sequence>
-    <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
+    <xs:element name="component" type="Component" minOccurs="1" maxOccurs="3" />
     <xs:choice>
       <xs:element name="values" type="Values" />
       <xs:element name="sequence" type="Sequence" />
@@ -408,7 +426,8 @@
   <xs:attribute name="units"   type="xs:token" use="required" />
   <xs:attribute name="valType" type="ValueType" use="required" />
   <xs:attribute name="index"   type="VarIndexShape" use="required" />
-  <xs:attribute name="vecClass"   type="VectorClass" use="required" />
+  <!-- deprecated -->
+  <xs:attribute name="vecClass"   type="VectorClass" />
 </xs:complexType>
 
 <!-- Physical Dimensions ================================================= -->
@@ -424,8 +443,10 @@
     <!-- </xs:choice> -->
 
   </xs:sequence>
-  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
-  <xs:attribute name="axis"    type="Direction"   use="required" />
+  <xs:attribute name="physDim" type="PhysDimName"   use="required"/>
+  <xs:attribute name="axis"    type="PlotDirection" use="required"/>
+  <xs:attribute name="frame"   type="StructName" />
+  <xs:attribute name="component" type="VarName"  />
 </xs:complexType>
 
 <xs:complexType name="DataDim">
@@ -443,7 +464,8 @@
   dataset name.  So if you only have one <data> or <extData> element, the name
   isn't needed
   -->
-  <xs:attribute name="name" type="StructName" />
+  <xs:attribute name="name"  type="StructName" />
+  <xs:attribute name="frame" type="StructName" />
 </xs:complexType>
 
 <!-- Extended data objects in an extended data section -->
@@ -554,6 +576,7 @@
 <xs:complexType name="Stream">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:element name="frame" type="Frame" minOccurs="0" />
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
   <xs:attribute name="type" type="StreamType" use="required" />

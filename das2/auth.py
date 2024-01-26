@@ -94,8 +94,10 @@ def auth_load(sFile=None):
 	if sFile is None:
 		import os
 		sHome = os.getenv('HOME')
-		if sHome is None:
-			raise EnvironmentError("Can't find account home directory")
+		if sHome == None:
+			sHome = os.getenv('USERPROFILE')
+			if sHome == None:
+				raise EnvironmentError("Can't find account home directory")
 			
 		sFile = "%s/.das2_auth"%sHome
 	

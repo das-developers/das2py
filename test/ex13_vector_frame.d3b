@@ -1,0 +1,42 @@
+|Sx||613|
+<stream version="3.0" type="das-basic-stream">
+  <properties>
+    <p name="instrument">EFI</p>
+    <p name="Discipline">Space Physics>Magnetospheric Science</p>
+    <p name="Generated_by">The University of Iowa</p>
+    <p name="Mission_group">TRACERS</p>
+    <p name="modelId">fm2</p>
+    <p name="modelLabel">FM-2</p>
+    <p name="title">EFI FM2 - Level 1</p>
+  </properties>
+  <frame name="TSCS" type="cartesian">
+    <properties>
+      <p name="label">Tracers Spocecraft Coordinate Frame</p>
+    </properties>
+    <component name="x"/>
+	 <component name="y"/>
+	 <component name="z"/>    
+  </frame>
+</stream>
+|Hx|80|832|
+<dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
+  <properties>
+    <p name="info">Fluxgate Magnetic Field 3-Vectors sampled at 128 Hz</p>
+    <p name="label">Magnetic Field, 128 Hz</p>
+  </properties>
+  
+  <coord axis="x" physDim="time" >
+    <properties><p name="label">UTC</p></properties>
+    <scalar use="center" valType="datetime" index="*" units="TT2000">
+      <packet numItems="1" itemBytes="8" encoding="LEint" fill="-9223372036854775808"/>
+    </scalar>
+  </coord>
+  <data name="EAC" physDim="E" frame="TSCS" >
+    <properties><p name="label">EFI SCI @ 128 Hz</p></properties>
+    <vector use="center" valType="int" index="*" units="">
+      <component name="x"/>
+      <component name="y"/>
+      <packet numItems="2" itemBytes="4" encoding="LEint" fill="-2147483648"/>
+    </vector>
+  </data>
+</dataset>
