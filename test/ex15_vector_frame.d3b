@@ -1,4 +1,4 @@
-|Sx||613|
+|Sx||597|
 <stream version="3.0" type="das-basic-stream">
   <properties>
     <p name="instrument">EFI</p>
@@ -13,12 +13,12 @@
     <properties>
       <p name="label">Tracers Spocecraft Coordinate Frame</p>
     </properties>
-    <component name="x"/>
-	 <component name="y"/>
-	 <component name="z"/>    
+    <dir name="x"/>
+	  <dir name="y"/>
+	  <dir name="z"/>    
   </frame>
 </stream>
-|Hx|80|832|
+|Hx|80|830|
 <dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
   <properties>
     <p name="info">Fluxgate Magnetic Field 3-Vectors sampled at 128 Hz</p>
@@ -34,8 +34,8 @@
   <data name="EAC" physDim="E" frame="TSCS" >
     <properties><p name="label">EFI SCI @ 128 Hz</p></properties>
     <vector use="center" valType="int" index="*" units="">
-      <component name="x"/>
-      <component name="y"/>
+      <component dir="x"/>
+      <component dir="y"/>
       <packet numItems="2" itemBytes="4" encoding="LEint" fill="-2147483648"/>
     </vector>
   </data>

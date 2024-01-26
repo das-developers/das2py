@@ -82,7 +82,8 @@ verify:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex12_sounder_xyz.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex13_object_annotation.d3t
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex14_object_tfcat.d3t
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex15_vector_document.d3x
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex15_vector_frame.d3b
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex16_mag_grid_doc.d3x
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) scripts/das_verify test/ex96_yscan_multispec.d2t
 
 # All the planet based test are broken right now
