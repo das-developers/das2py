@@ -1076,13 +1076,12 @@ static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
 	DasDs** lDs = DasDsBldr_getDataSets(pBldr, &uCorDs);
 
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
+	
+	PyObject* pRet = (lDs != NULL) ? _DsList2PyList(lDs, uCorDs) : PyList_New(0);
 
-	PyObject* pRet = _DsList2PyList(lDs, uCorDs);
-
-	for(size_t u = 0; u < uCorDs; ++u){
-		/* arrays don't own re-used data and may be freed */
+	/* arrays don't own re-used data and may be freed */
+	for(size_t u = 0; u < uCorDs; ++u)
 		del_DasDs(lDs[u]);
-	}
 	
 	del_DasIO(pIn);
 	return pRet;
@@ -1179,7 +1178,7 @@ static PyObject* pyd2_read_server(PyObject* self, PyObject* args)
 
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
 
-	PyObject* pDsList = _DsList2PyList(lDs, uDs);
+	PyObject* pDsList = (lDs != NULL) ? _DsList2PyList(lDs, uDs) : PyList_New(0);
 
 	for(size_t u = 0; u < uDs; ++u){
 		/* arrays don't own re-used data and may be freed */
@@ -1250,7 +1249,7 @@ static PyObject* pyd2_read_cmd(PyObject* self, PyObject* args)
 
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
 
-	PyObject* pRet = _DsList2PyList(lDs, uDs);
+	PyObject* pRet = (lDs != NULL) ? _DsList2PyList(lDs, uDs) : PyList_New(0);
 
 	for(size_t u = 0; u < uDs; ++u){
 		/* arrays don't own re-used data and may be freed */

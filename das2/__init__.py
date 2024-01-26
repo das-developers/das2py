@@ -97,7 +97,7 @@ def read_file(sFileName):
 	try:
 		lDs = _das2.read_file(sFileName)
 	except Exception as e:
-		sys.stderr.write("Error running '%s': %s\n"%(sFileName, str(e)))
+		sys.stderr.write("Error reading '%s': %s\n"%(sFileName, str(e)))
 		return None
 
 	if lDs != None:

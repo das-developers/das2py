@@ -1,4 +1,4 @@
-[00]000359<stream version="2.2">
+[00]000358<stream version="2.2">
 <properties String:title="['cas_fpe']%{xCacheResInfo}"
             String:xLabel="SCET (UTC)"
             Datum:xTagWidth="10 s"
@@ -7,7 +7,7 @@
             String:xCacheResInfo=" (Intrinsic Resolution)"
 />
 </stream>
-	[01]000623<packet>
+[01]000623<packet>
   <x type="time25" units="us2000"></x>
   <y type="little_endian_real4" name="freq" units="Hz" >
     <properties String:ySummary="Plasma Frequency"

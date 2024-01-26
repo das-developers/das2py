@@ -15,14 +15,18 @@ def main(argv):
 
 	# Low level
 	lDs = das2._das2.read_file(sFile)
-	for ds in lDs: print(ds['info'])
+	for ds in lDs: 
+		print(ds['info'])
 	print("")
 
 	# High level
 	lDs = das2.read_file(sFile)
+	return 0
 
-	for ds in lDs: print(ds)
+	for ds in lDs:
+		print(ds)
 	print("")
+	
 
 	lDs = das2.ds_strip_empty(lDs)
 	if len(lDs) > 0:
