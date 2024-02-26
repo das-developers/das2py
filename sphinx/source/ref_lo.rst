@@ -1,9 +1,9 @@
 _das2, libdas2 Python bindings
 ===============================
-Functions in this module provide bindings to the C libdas2_ library.  Most of
+Functions in this module provide bindings to the das2C_ library.  Most of
 the small server side programs used to reduce streams in time, compute
 power spectral densities, read cache blocks are based off of libdas2.  Whenever
-possible das2py wraps libdas2 functionality instead of creating a parallel
+possible das2py wraps das2C functionality instead of creating a parallel
 code base.
 
 .. contents::
@@ -11,7 +11,7 @@ code base.
 Reading Catalog Files
 ---------------------
 Das2 catalog_ data consists of nodes defined in JSON and XML.  At present only
-JSON nodes are parsable by libdas2, though support for SPASE_ XML records may
+JSON nodes are parsable by das2C, though support for SPASE_ XML records may
 be added in funture versions.  The _das2 module converts catalog data to
 python dictionaries.  Higher level pure python code parses these dictionaries
 to create catalog objects such as `das2.Collection` and `das2.Catalog`.
@@ -139,5 +139,5 @@ Time Handling
 
 .. _SPASE:   http://spase-group.org/
 .. _catalog: https://das2.org/catalog
-.. _libdas2: https://saturn.physics.uiowa.edu/svn/das2/core/stable/libdas2_3/
+.. _das2C:   https://github.com/das-developers/das2C
 .. _das2/2.2 format: https://das2.org/Das2.2.2-ICD_2017-05-09.pdf

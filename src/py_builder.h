@@ -142,9 +142,12 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 	}
 
 	/* Type branch to keep inner loops small */
-	const byte* pByte;   const int16_t* pShort; const uint16_t* pUShort;
-	const int32_t* pInt; const int64_t* pLong;  const float* pFloat;
-	const double* pDbl;  const das_time* pDt;
+	const ubyte* pUByte;   const int8_t* pByte;
+	const int16_t* pShort; const uint16_t* pUShort;
+	const int32_t* pInt;   const uint32_t* pUInt;
+	const int64_t* pLong;  const uint64_t* pULong;
+	const float* pFloat;   const double* pDbl;
+	const das_time* pDt;
 	npy_intp nd_index0[16] = {'\0'};
 	int64_t* pNdData = (int64_t*) PyArray_GetPtr((PyArrayObject*)pNdAry, nd_index0);
 
@@ -152,15 +155,15 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 	das_time dt;
 	das_units units = DasAry_units(pAry);
 	switch(vt){
-	case vtByte:
-		for(pByte = (const byte*)pMem, u = 0; u < uLen; ++u, ++pByte, ++pNdData) {
-			Units_convertToDt(&dt, (double)(*pByte), units);
+	case vtUByte:
+		for(pUByte = (const ubyte*)pMem, u = 0; u < uLen; ++u, ++pUByte, ++pNdData) {
+			Units_convertToDt(&dt, (double)(*pUByte), units);
 			*pNdData = dt_nano_1970(&dt);
 		}
 		break;
-	case vtShort:
-		for(pShort = (const int16_t*)pMem, u = 0; u < uLen; ++u, ++pShort, ++pNdData) {
-			Units_convertToDt(&dt, (double)(*pShort), units);
+	case vtByte:
+		for(pByte = (const int8_t*)pMem, u = 0; u < uLen; ++u, ++pByte, ++pNdData) {
+			Units_convertToDt(&dt, (double)(*pByte), units);
 			*pNdData = dt_nano_1970(&dt);
 		}
 		break;
@@ -170,9 +173,27 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 			*pNdData = dt_nano_1970(&dt);
 		}
 		break;
+	case vtShort:
+		for(pShort = (const int16_t*)pMem, u = 0; u < uLen; ++u, ++pShort, ++pNdData) {
+			Units_convertToDt(&dt, (double)(*pShort), units);
+			*pNdData = dt_nano_1970(&dt);
+		}
+		break;
+	case vtUInt:
+		for(pUInt = (const uint32_t*)pMem, u = 0; u < uLen; ++u, ++pUInt, ++pNdData) {
+			Units_convertToDt(&dt, (double)(*pUInt), units);
+			*pNdData = dt_nano_1970(&dt);
+		}
+		break;
 	case vtInt:
 		for(pInt = (const int32_t*)pMem, u = 0; u < uLen; ++u, ++pInt, ++pNdData) {
 			Units_convertToDt(&dt, (double)(*pInt), units);
+			*pNdData = dt_nano_1970(&dt);
+		}
+		break;
+	case vtULong:
+		for(pULong = (const uint64_t*)pMem, u = 0; u < uLen; ++u, ++pULong, ++pNdData) {
+			Units_convertToDt(&dt, (double)(*pULong), units);
 			*pNdData = dt_nano_1970(&dt);
 		}
 		break;
@@ -253,9 +274,11 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 	}
 
 	/* Type branch to keep inner loops small */
-	const byte* pByte;   const int16_t* pShort; const uint16_t* pUShort;
-	const int32_t* pInt; const int64_t* pLong;  const float* pFloat;
-	const double* pDbl;
+	const ubyte* pUByte; const int8_t* pByte; 
+	const int16_t* pShort; const uint16_t* pUShort;
+	const uint32_t* pUInt; const int32_t* pInt; 
+	const uint64_t* pULong; const int64_t* pLong;  
+	const float* pFloat; const double* pDbl;
 	double dTmp = 0.0;
 	float  fTmp = 0.0f;
 	npy_intp nd_index0[16] = {'\0'};
@@ -263,8 +286,13 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 
 	size_t u = 0;
 	switch(vt){
+	case vtUByte:
+		for(pUByte = (const ubyte*)pMem, u = 0; u < uLen; ++u, ++pUByte, ++pNdData) {
+			*pNdData = (long int)((*pUByte)*factor);
+		}
+		break;
 	case vtByte:
-		for(pByte = (const byte*)pMem, u = 0; u < uLen; ++u, ++pByte, ++pNdData) {
+		for(pByte = (const int8_t*)pMem, u = 0; u < uLen; ++u, ++pByte, ++pNdData) {
 			*pNdData = (long int)((*pByte)*factor);
 		}
 		break;
@@ -278,9 +306,19 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 			*pNdData = (long int)((*pUShort)*factor);
 		}
 		break;
+	case vtUInt:
+		for(pUInt = (const uint32_t*)pMem, u = 0; u < uLen; ++u, ++pUInt, ++pNdData) {
+			*pNdData = (long int)((*pUInt)*factor);
+		}
+		break;
 	case vtInt:
 		for(pInt = (const int32_t*)pMem, u = 0; u < uLen; ++u, ++pInt, ++pNdData) {
 			*pNdData = (long int)((*pInt)*factor);
+		}
+		break;
+	case vtULong:
+		for(pULong = (const uint64_t*)pMem, u = 0; u < uLen; ++u, ++pULong, ++pNdData) {
+			*pNdData = (long int)((*pULong)*factor);
 		}
 		break;
 	case vtLong:
@@ -446,10 +484,13 @@ static PyObject* _DasGenericAryToNumpyAry(DasAry* pAry)
 	int nType = 0;
 	das_val_type et = DasAry_valType(pAry);
 	switch(et){
-	case vtByte:   nType = NPY_UINT8; break;
+	case vtUByte:  nType = NPY_UINT8; break;
+	case vtByte:   nType = NPY_INT8; break;
 	case vtUShort: nType = NPY_UINT16; break;
 	case vtShort:  nType = NPY_INT16; break;
+	case vtUInt:   nType = NPY_UINT32; break;
 	case vtInt:    nType = NPY_INT32; break;
+	case vtULong:  nType = NPY_UINT64; break;
 	case vtLong:   nType = NPY_INT64; break;
 	case vtFloat:  nType = NPY_FLOAT32; break;
 	case vtDouble: nType = NPY_FLOAT64; break;
@@ -463,7 +504,7 @@ static PyObject* _DasGenericAryToNumpyAry(DasAry* pAry)
 	/* Make sure das2 arrays don't delete their data when free'ed */
 	size_t uLen = 0;
 	size_t uOffset = 0;
-	byte* pMem = DasAry_disownElements(pAry, &uLen, &uOffset);
+	ubyte* pMem = DasAry_disownElements(pAry, &uLen, &uOffset);
 	PyObject* pNdAry = NULL;
 	
 	if(uLen != 0){
@@ -551,10 +592,13 @@ static PyObject* _DasAryFillToObj(DasAry* pAry)
 	double  rFill = 0.0;
 
 	switch(vt){
-	case vtByte:   nFill = *((byte*)vpFill);     break;
+	case vtUByte:  nFill = *((ubyte*)vpFill);    break;
+	case vtByte:   nFill = *((int8_t*)vpFill);   break;
 	case vtUShort: nFill = *((uint16_t*)vpFill); break;
 	case vtShort:  nFill = *((int16_t*)vpFill);  break;
+	case vtUInt:   nFill = *((uint32_t*)vpFill); break;
 	case vtInt:    nFill = *((int32_t*)vpFill);  break;
+	case vtULong:  nFill = *((uint64_t*)vpFill); break;
 	case vtLong:   nFill = *((int64_t*)vpFill);  break;
 	case vtFloat:  rFill = *((float*)vpFill);    break;
 	case vtDouble: rFill = *((double*)vpFill);   break;
@@ -617,44 +661,28 @@ static PyObject* _DasAryFillToObj(DasAry* pAry)
 
 static PyObject* _props2PyDict(DasDesc* pDesc)
 {
-	char sType[32] = {'\0'};
-	char sName[32] = {'\0'};
-
-	const char* pColon = NULL;
-	const char* pRead = NULL;
-	char* pWrite = NULL;
+	const char* sUnits = NULL;
 	PyObject* pDict = PyDict_New();
 	PyObject* pTup;
 
-	for(int i = 0; i < DAS_XML_MAXPROPS; i += 2){
-		if(pDesc->properties[i] == NULL) continue;
-		if(pDesc->properties[i+1] == NULL) continue;
-		pColon = strchr(pDesc->properties[i], ':');
+	size_t uProps = DasDesc_length(pDesc);
+	for(size_t u = 0; u < uProps; ++u){
 
-		if(pColon != NULL){
-			if(pColon == pDesc->properties[i])
-				continue;  /* Colon at front */
-			if( (pColon - pDesc->properties[i] + 1) == (ptrdiff_t)strlen(pDesc->properties[i]) )
-				continue;  /* Colon at back */
+		const DasProp* pProp = DasDesc_getPropByIdx(pDesc, u);
+		if(pProp == NULL) continue;  /* Unlikely, but possible */
 
-			pRead = pDesc->properties[i];
-			memset(sType, 0, 32);
-			pWrite = sType;
-			while(pRead < pColon){ *pWrite = *pRead; ++pWrite; ++pRead; }
+		if((pProp->units == NULL)||(pProp->units[0] == '\0'))
+			sUnits = "";
+		else
+			sUnits = pProp->units;
 
-			memset(sName, 0, 32);
-			strncpy(sName, pColon + 1, 32);
-		}
-		else{
-			strncpy(sType, "String", 31);
-			strncpy(sName, pDesc->properties[i], 31);
-		}
-
-		pTup = Py_BuildValue("ss", sType, pDesc->properties[i+1]);
+		pTup = Py_BuildValue("ss", DasProp_typeStr2(pProp), DasProp_value(pProp), sUnits);
+		/* soon... */
+		/* pTup = Py_BuildValue("sss", DasProp_typeStr3(pProp), DasProp_value(pProp), sUnits); */
 		if(pTup == NULL){
 			Py_DECREF(pDict); return NULL;
 		}
-		if(PyDict_SetItemString(pDict, sName, pTup) != 0){
+		if(PyDict_SetItemString(pDict, DasProp_name(pProp), pTup) != 0){
 			Py_DECREF(pTup); Py_DECREF(pDict); return NULL;
 		}
 	}

@@ -1533,6 +1533,9 @@ def _mk_prop_from_raw(tProp):
 	if sType == 'double':
 		return float(tProp[1])
 
+	if sType == 'real':
+		return float(tProp[1])
+
 	if sType == 'datum':
 		lDatum = tProp[1].split()
 
@@ -1594,8 +1597,7 @@ def _mk_prop_from_raw(tProp):
 		return Quantity([beg, end], 'UTC')
 
 
-
-	raise ValueError("Unknown property data type: %s"%sType)
+	raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
 
 # #########################
 

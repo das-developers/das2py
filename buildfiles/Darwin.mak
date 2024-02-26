@@ -1,7 +1,7 @@
 export DAS2C_LIBDIR
 export DAS2C_INCDIR
 
-LIBDAS=das2.3
+LIBDAS=das3.0
 
 # Project definitions #########################################################
 BD=build.$(N_ARCH)

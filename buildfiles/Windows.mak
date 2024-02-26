@@ -1,7 +1,7 @@
 # Building python lib under anaconda on windows
 
 
-LIBDAS=libdas2.3.lib
+LIBDAS=libdas3.0.lib
 
 BD=build.windows
 

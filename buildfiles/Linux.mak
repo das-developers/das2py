@@ -4,7 +4,7 @@ export DAS2C_INCDIR
 # This is important or web-services will end up bound to numpy in .local
 NOUSERSITE:=-s
 
-LIBDAS=das2.3
+LIBDAS=das3.0
 
 # Project definitions #########################################################
 BD=build.$(N_ARCH)

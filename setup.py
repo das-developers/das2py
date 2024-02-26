@@ -63,7 +63,7 @@ if sys.platform == 'win32':
 
 		lLibDirs.append( sVcLibDir )
 		lInc.append( sVcIncDir )
-		lExObjs = ['%s/libdas2.3.lib'%sCLibDir]
+		lExObjs = ['%s/libdas3.0.lib'%sCLibDir]
 		lLibs = [ 
 			"fftw3", "libexpatMD", "libssl", "libcrypto", "Advapi32",
 			"User32", "Crypt32", "zlib", "pthreadVC3", "ws2_32"
@@ -72,7 +72,7 @@ if sys.platform == 'win32':
 		# Anaconda will setup the lib directories for us, but still
 		# link das2C statically.  Also anaconda and vcpkg use different
 		# names for expaxt library
-		lExObjs = ['%s/libdas2.3.lib'%sCLibDir]
+		lExObjs = ['%s/libdas3.0.lib'%sCLibDir]
 		lLibs = [ 
 			"fftw3", "expat", "libssl", "libcrypto",
 			"zlib", "pthreadVC3", "ws2_32"
@@ -111,14 +111,14 @@ elif sys.platform == 'darwin':
 			sys.exit(7)
 
 		lExObjs = [
-			'%s/libdas2.3.a'%sCLibDir,
+			'%s/libdas3.0.a'%sCLibDir,
 			'%s/opt/openssl/lib/libssl.a'%sBrewDir,
 			'%s/opt/openssl/lib/libcrypto.a'%sBrewDir,
 			'%s/lib/libfftw3.a'%sBrewDir
 		]
 		lLibs = ["expat", "z"]
 	else:
-		lExObjs = ['%s/libdas2.3.a'%sCLibDir]
+		lExObjs = ['%s/libdas3.0.a'%sCLibDir]
 		lLibs   = ["fftw3", "expat", "ssl", "crypto", "z"]
 
 
@@ -141,7 +141,7 @@ else:
 		,library_dirs=lLibDirs
 		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-		,extra_objects=['%s/libdas2.3.a'%sCLibDir]
+		,extra_objects=['%s/libdas3.0.a'%sCLibDir]
 	)
 
 # ... because import numpy at top level doesn't work anymore (yay)
@@ -164,7 +164,7 @@ class build_ext(_build_ext):
 setup(
 	cmdclass={'build_ext':build_ext},
 	name="das2py",
-	version="2.3.1",
+	version="3.0.0",
 	ext_modules=[ext],
 	packages=['das2', 'das2.pycdf', 'das2.xsd'],
 	author="C Piker",
