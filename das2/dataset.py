@@ -1196,7 +1196,7 @@ class Dataset(object):
 				lIdx[iSort] = numpy.argsort(aSortMe, kind="mergesort", axis=iSort)
 
 				for var in lVars:
-					var.array = var.array[lIdx]
+					var.array = var.array[tuple(lIdx)]
 
 
 			# Multiple index sorts:
@@ -1295,7 +1295,7 @@ class Dataset(object):
 # ########################################################################### #
 # libdas2 wrapper to high level interface conversion functions
 
-def _mk_prop_from_raw(tProp):
+def _mk_prop_from_raw(sProp, tProp):
 	"""Make a property dictionary value given a :mod:_das2 property string
 
 	Convertions are as follows:
@@ -1309,6 +1309,7 @@ def _mk_prop_from_raw(tProp):
 		- 'timerange' -> Quantity (2 elements) (DasTime, DasTime, 'UTC')
 
 	Args:
+		sProp (str): The name of the property (used in error messages)
 		tProp (str, str): The first string is the data type as used in libdas2,
 			the second string is the value.  The first string must be one of those
 			listed above in Conversions.
@@ -1317,7 +1318,7 @@ def _mk_prop_from_raw(tProp):
 		A python object representation of the given type an value stirings.
 	"""
 
-	#print("Checking: tProp[%s] = '%s'"%(key, prop))
+	#print("Checking: %s = '%s'"%(sProp, tProp))
 
 	sType = tProp[0].lower()
 
@@ -1328,6 +1329,9 @@ def _mk_prop_from_raw(tProp):
 		return tProp[1].lower() in ('true','1','yes')
 
 	if sType == 'double':
+		return float(tProp[1])
+
+	if sType == 'real':
 		return float(tProp[1])
 
 	if sType == 'datum':
@@ -1391,8 +1395,7 @@ def _mk_prop_from_raw(tProp):
 		return Quantity([beg, end], 'UTC')
 
 
-
-	raise ValueError("Unknown property data type: %s"%sType)
+	raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
 
 # #########################
 
@@ -1497,7 +1500,7 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 		elif sVar == 'props':
 			dRawProps = dRawDim['props']
 			for sProp in dRawProps:
-				dim.props[sProp] = _mk_prop_from_raw(dRawProps[sProp])
+				dim.props[sProp] = _mk_prop_from_raw(sProp, dRawProps[sProp])
 		else:
 			sExp = dRawDim[sVar]['expression']
 			sUnits = dRawDim[sVar]['units']
@@ -1520,7 +1523,7 @@ def ds_from_raw(dRawDs):
 	ds = Dataset(dRawDs['id'], dRawDs['group'])
 
 	for sProp in dRawDs['props']:
-		ds.props[sProp] = _mk_prop_from_raw(dRawDs['props'][sProp])
+		ds.props[sProp] = _mk_prop_from_raw(sProp, dRawDs['props'][sProp])
 
 	ds.shape = dRawDs['shape']
 

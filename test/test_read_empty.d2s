@@ -1,9 +1,9 @@
-[00]000359<stream version="2.2">
+[00]000358<stream version="2.2">
 <properties String:title="['cas_fpe']%{xCacheResInfo}"
             String:xLabel="SCET (UTC)"
             Datum:xTagWidth="10 s"
             String:yScaleType="log"
-            DatumRange:xCacheRange="2017-09-04T00:00:00.000000 to 2017-09-05T00:00:00.000000 UTC"
+            TimeRange:xCacheRange="2017-09-04T00:00:00.000000 to 2017-09-05T00:00:00.000000 UTC"
             String:xCacheResInfo=" (Intrinsic Resolution)"
 />
 </stream>
