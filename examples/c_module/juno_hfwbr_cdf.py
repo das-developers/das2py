@@ -22,7 +22,7 @@ import das2
 try:
 	import spacepy.pycdf as pycdf
 except ImportError:
-	import pycdf 	# Some groups use a stand-alone version of pycdf
+	import das2.pycdf as pycdf # Use included copy if spacepy not installed
 
 perr = sys.stderr.write
 pout = sys.stdout.write
@@ -33,9 +33,9 @@ pout = sys.stdout.write
 # form a file, whatever you feel is appropriate.
 g_sServer = 'http://jupiter.physics.uiowa.edu/das/server'
 g_sRealm = 'Juno Magnetospheric Working Group'
-g_sHash = base64.standard_b64encode("USERNAME:PASSWORD")
+g_sHash = base64.standard_b64encode(b"USERNAME:PASSWORD").decode('utf-8')
 
-das2._das2.set_auth(g_sServer, g_sRealm, g_sHash)
+das2.auth_set(g_sServer, g_sRealm, g_sHash, ('dataset','Juno/WAV/Uncalibrated/HRS'))
 
 # ########################################################################## #
 
@@ -49,7 +49,7 @@ def getIQ(sBeg, sEnd):
 	sUrl = g_sGetFmt%(g_sServer, g_sDataset, sBeg, sEnd, sParams)
 
 	print("Getting Reals from %s to %s"%(sBeg, sEnd))
-	lReal = das2._das2.read_server(sUrl)
+	(dHdr, lReal) = das2._das2.read_server(sUrl)
 	dsReal = lReal[0]
 
 	#print(dsReal['info'])
@@ -58,7 +58,7 @@ def getIQ(sBeg, sEnd):
 	sUrl = g_sGetFmt%(g_sServer, g_sDataset, sBeg, sEnd, sParams)
 
 	print("Getting Imaginary from %s to %s"%(sBeg, sEnd))
-	lImg = das2._das2.read_server(sUrl)
+	(dHdr, lImg) = das2._das2.read_server(sUrl)
 	dsImg = lImg[0]
 
 	#print(dsImg['info'])
@@ -114,19 +114,19 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
 
 	# Setup the output arrays, the number of output rows is per input row is:
 	# 1 + (waveform_len - dft)/slide
-	nOutPerIn = 1 + (aReal.shape[1] - nDFT) / nSlide
+	nOutPerIn = 1 + (aReal.shape[1] - nDFT) // nSlide
 	nOutRows = aReal.shape[0] * nOutPerIn
 
 	# The number of output put rows depends on our FFT size and slide fraction
 	# save output epoch array in same units as reference time arrays
-	aOutEpoch = numpy.empty(nOutRows, dtype=aRealRefTime.dtype) 
+	aOutEpoch = numpy.empty(nOutRows, dtype=aRealRefTime.dtype)
 
 	# Trim data outside the pass-band.  For Juno Waves HFWBR this is +/- 550 KHz
 	# off the mixing frequency.  Calculated the number of freqs we'll actually
 	# keep.  Use this to trim down aFreqOff
-	nDiffIdxRoll = int(0.550//rFreqDelta)
-	iMinFreqOut  = nDFT/2 - nDiffIdxRoll
-	iMaxFreqOut  = nDFT/2 + nDiffIdxRoll
+	nDiffIdxRoll = int(0.550/rFreqDelta)
+	iMinFreqOut  = nDFT//2 - nDiffIdxRoll
+	iMaxFreqOut  = nDFT//2 + nDiffIdxRoll
 
 	aFreqOff = aFreqOff[iMinFreqOut : iMaxFreqOut + 1]
 	nOutFreqs = (iMaxFreqOut - iMinFreqOut) + 1
@@ -134,9 +134,9 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
 	# ISTP CDFs don't have a reference and offset concept so we have to explicitly
 	# write each frequency value for each amplitude value.  Almost doubles the size
 	# of the output array, but I don't see any other good options.
-	aOutFreq  = numpy.empty((nOutRows, nOutFreqs), dtype='Float32')
+	aOutFreq  = numpy.empty((nOutRows, nOutFreqs), dtype='f4')
 
-	aOutPsd   = numpy.empty((nOutRows, nOutFreqs), dtype='Float64')
+	aOutPsd   = numpy.empty((nOutRows, nOutFreqs), dtype='f8')
 
 	# Loop running sliding power spectral density estimates over the given dataset.
 	# Since Waves I and Q channel data are not continuous across packet boundaries
@@ -176,7 +176,7 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
 
 			# Offset the start time to the middle index used in the snippet
 			aOutEpoch[iOut] = aRealRefTime[i] +  \
-			          numpy.timedelta64(long(rPeriod*(jStart + nDFT/2)), 'us')
+			          numpy.timedelta64(int(rPeriod*(jStart + nDFT/2)), 'us')
 
 			aOutFreq[iOut, :] = aFreqOff + aMixerMHz[i]
 			aOutPsd[iOut, : ] = aSpec[iMinFreqOut : iMaxFreqOut + 1]
@@ -205,7 +205,7 @@ def timeUnits(aSomeAry):
 def writeCdf(aEpoch, aFreq, aSpec, sBeg, sEnd, nDFT, nSlide):
 	"""Not a generic CDF writing function, specific to this program"""
 
-	sCdfFile = "wav_hfrIQ_psd%d_slide%d_%s_%s.cdf"%(nDFT, nDFT/nSlide, sBeg, sEnd)
+	sCdfFile = "wav_hfrIQ_psd%d_slide%d_%s_%s.cdf"%(nDFT, nDFT//nSlide, sBeg, sEnd)
 
 	pout("Finished generating spectra from %s to %s\n"%(sBeg, sEnd))
 	pout("Writing %s\n"%sCdfFile)

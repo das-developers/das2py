@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 import sys
-import matplotlib.pyplot as plot
+import matplotlib.pyplot as pyplot
 import numpy as N
 import das2
 
@@ -77,7 +77,7 @@ def main(argv):
 	       'end_time=2001-002&resolution=60'
 	
 	print("Reading Galileo PWS spectra for 2001-001 at intrinsic resolution")
-	lDs = das2._das2.read_server(sUrl)
+	(dHdr, lDs) = das2._das2.read_server(sUrl)
 	print("%d correlated dataset(s) downloaded\n"%len(lDs))
 	
 	# Here's how this will work in the near future
@@ -211,14 +211,14 @@ def main(argv):
 	
 	aY = N.log10(aY)
 	aZ = N.log10(aZ.transpose())
-	plot.pcolor(aX, aY, aZ, cmap='jet')
-	plot.axis([aX.min(), aX.max(), aY.min(), aY.max()])
-	cbar = plot.colorbar()
+	pyplot.pcolor(aX, aY, aZ, cmap='jet')
+	pyplot.axis([aX.min(), aX.max(), aY.min(), aY.max()])
+	cbar = pyplot.colorbar()
 	cbar.set_label("log(%s)"%unitsZ)
-	plot.xlabel(unitsX)
-	plot.ylabel("log(%s)"%unitsY)
-	plot.title(ds['props']['title'][1])
-	plot.show()
+	pyplot.xlabel(unitsX)
+	pyplot.ylabel("log(%s)"%unitsY)
+	pyplot.title(ds['props']['title'][1])
+	pyplot.savefig('galileo_pws_e-survey.png')
 
 
 if __name__ == '__main__':

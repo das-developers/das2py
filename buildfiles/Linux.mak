@@ -88,6 +88,8 @@ verify:
 
 # All the planet based test are broken right now
 examples:
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/c_module/galileo_pws_e-survey.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/c_module/juno_hfwbr_cdf.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex01_source_queries.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex03_cassini_rpws_multimode.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex04_voyager_pws_query_by_time.py
