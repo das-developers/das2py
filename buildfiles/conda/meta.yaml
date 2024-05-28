@@ -5,10 +5,10 @@
 #  openssl sha256 das2py-tmp.tar.gz | awk '{print $2}'
 
 {% set name = "das2py" %}
-{% set das2c_version = "2.3.0" %}
-{% set conda_version = "2.3.1" %}
-{% set git_version = "2.3.1" %}
-{% set bld_date = "20231108" %}
+{% set das2c_version = "3.0.0" %}
+{% set conda_version = "3.0.0" %}
+{% set git_version = "3.0.0" %}
+{% set bld_date = "20240527" %}
 # This sha-hash is not right, checkout next version of main to get correct one
 {% set sha256 = "f4a635898af682cf8cfb9e26d40418278e6d7a07c2e227033813fa4bda6e6b20" %}
 

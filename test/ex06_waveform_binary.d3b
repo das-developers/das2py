@@ -12,14 +12,14 @@
     <p name="xCacheResInfo"> </p>
   </properties>
 </stream>
-|Hx|1|46920|
+|Hx|1|46923|
 <dataset rank="2" name="LFR" index="*;6144">
   <coord axis="x" physDim="time">
-    <scalar use="reference" index="*;-" valType="datetime" units="UTC">
+    <scalar use="reference" index="*;-" semantic="datetime" units="UTC">
       <packet numItems="1" itemBytes="24" encoding="utf8" />
     </scalar>
 
-    <scalar use="offset" valType="int" units="μs" index="-;6144">
+    <scalar use="offset" semantic="int" units="μs" index="-;6144">
       <!-- 
       For linear intervals explicit value listings are not efficient, use
       sequences instead.  Explicit offsets are given below to illustrate
@@ -646,7 +646,7 @@
   </coord>
 
   <data physDim="Ey">
-    <scalar units="V m**-1" valType="real" index="*;6144">
+    <scalar units="V m**-1" semantic="real" index="*;6144">
       <packet numItems="6144" itemBytes="4" encoding="LEreal" />
     </scalar>
   </data>

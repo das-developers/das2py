@@ -1,18 +1,18 @@
-/* Copyright (C) 2015-2018 Chris Piker <chris-piker@uiowa.edu>
+/* Copyright (C) 2015-2024 Chris Piker <chris-piker@uiowa.edu>
  *
- * This file is part of libdas2, the Core Das2 C Library.
+ * This file is part of das2py, the Core Das2 C Library.
  * 
- * Libdas2 is free software; you can redistribute it and/or modify it under
+ * Das2py is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
  * by the Free Software Foundation.
  *
- * Libdas2 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * Das2py is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
  * more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * version 2.1 along with libdas2; if not, see <http://www.gnu.org/licenses/>. 
+ * version 2.1 along with das2py; if not, see <http://www.gnu.org/licenses/>. 
  */
 
 #include <Python.h>
@@ -41,6 +41,7 @@
 #include <das2/units.h>
 #include <das2/time.h>
 #include <das2/log.h>
+#include <das2/tt2000.h>
 #include <das2/units.h>
 #include <das2/credentials.h>
 #include <das2/operator.h>
@@ -314,6 +315,69 @@ static PyObject* pyd2_to_epoch(PyObject* self, PyObject* args)
 	rEpoch = Units_convertFromDt(units, &dt);
 	return Py_BuildValue("d", rEpoch);
 }
+
+const char pyd2help_tt2k_utc[] = 
+  "Special conversion from TT2000 integers without floating point round off\n"
+  "\n"
+  "Args:"
+  "   nTT2000 - a long integer (just int in python3)\n"
+  "\n"
+  "Returns: (nYear, nMonth, nDom, nHour, nMinute, dSeconds)\n"
+  "         which is suitable as a DasTime constructor value\n";
+
+static PyObject* pyd2_tt2k_utc(PyObject* self, PyObject* args)
+{
+	long long  tt = 0LL; 
+	if(!PyArg_ParseTuple(args, "L:tt2k_utc", &tt))
+		return NULL;
+
+	double yr, mt=1.0, dy=1.0, hr=0.0, mn=0.0, sc=0.0, ms=0.0, us=0.0, ns=0.0;
+
+	das_tt2K_to_utc(tt, &yr, &mt, &dy, &hr, &mn, &sc, &ms, &us, &ns);
+	
+	int iyr = (int)yr;
+	int imt = (int)mt;
+	int idy = (int)dy;
+	int ihr = (int)hr;
+	int imn = (int)mn;
+	double dSec = sc + ms*1e-3 + us*1e-6 + ns*1e-9;
+	
+	return Py_BuildValue("(iiiiiiiii)", iyr, imt, idy, ihr, imn, dSec);
+}
+
+const char pyd2help_utc_tt2k[] = 
+  "Special conversion to TT2000 integers without floating point round off\n"
+  "\n"
+  "Args:\n"
+  "   nYear, nMonth, nDom, nHour, nMinute, dSeconds\n"
+  "\n"
+  "Note that if 60.0 is allow for seconds if this is a leap second\n"
+  "\n"
+  "Returns (int) - A TT2000 value good to nanoseconds\n";
+
+static PyObject* pyd2_utc_tt2k(PyObject* self, PyObject* args)
+{
+	int nYr, nMn, nDom, nHr, nMin;
+	double dSec;
+
+	if(!PyArg_ParseTuple(args, "iiiiid:utc_tt2k", &nYr, &nMn, &nDom, &nHr, &nMin, &dSec))
+		return NULL;
+
+	double dSc = (int)dSec; 
+	double dMs = (int)( (dSec - dSc)*1e3 );
+	double dUs = (int)( ((dSec - dSc) - dMs*1e-3)*1e6 );
+	double dNs = (int)( ((dSec - dSc) - dMs*1e-3 - dUs*1e-6)*1e9 );
+		
+	/* CDF var-args function *requires* doubles and *can't* tell if it 
+	   doesn't get them! */
+	double dYr = nYr;  double dMn  = nMn;  double dDom = nDom;
+	double dHr = nHr;  double dMin = nMin;
+		
+	long long ntt2k = das_utc_to_tt2K(dYr, dMn, dDom, dHr, dMin, dSc, dMs, dUs, dNs);
+
+	return Py_BuildValue("L", ntt2k);
+}
+
 
 const char pyd2help_ttime[] = 
   "Converts time components to a double precision floating point value\n"
@@ -711,6 +775,8 @@ static PyMethodDef pyd2_methods[] = {
 	{"unit_invert", pyd2_unit_invert, METH_VARARGS, pyd2help_unit_invert },
 	{"convert",     pyd2_convert,     METH_VARARGS, pyd2help_convert     },
 	{"can_merge",   pyd2_can_merge,   METH_VARARGS, pyd2help_can_merge   },
+	{"tt2k_utc",    pyd2_tt2k_utc,    METH_VARARGS, pyd2help_tt2k_utc    },
+	{"utc_tt2k",    pyd2_utc_tt2k,    METH_VARARGS, pyd2help_utc_tt2k    },
 	
 	/* Stuff from py_builder.c */
 	{"read_file",   pyd2_read_file,   METH_VARARGS, pyd2help_read_file   },

@@ -14,13 +14,14 @@ def main(argv):
 	sFile = 'test/test_read_empty.d2s'
 
 	# Low level
-	lDs = das2._das2.read_file(sFile)
+	(dStream, lDs) = das2._das2.read_file(sFile)
+	print(dStream['info'])
 	for ds in lDs: 
 		print(ds['info'])
 	print("")
 
 	# High level
-	lDs = das2.read_file(sFile)
+	(dStream, lDs) = das2.read_file(sFile)
 	return 0
 
 	for ds in lDs:
@@ -41,12 +42,13 @@ def main(argv):
 			 'end_time=2001-002'
 			 
 	# First low level...
-	lDs = das2._das2.read_server(sUrl, 3.0)
+	(dStream, lDs) = das2._das2.read_server(sUrl, 3.0)
+	print(dStream['info'])
 	for ds in lDs: print(ds['info'])
 	print("")
 	
 	# Now high level			 
-	lDs = das2.read_http(sUrl)
+	(dStream, lDs) = das2.read_http(sUrl)
 	for ds in lDs: print(ds)
 
 	return 0

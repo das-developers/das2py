@@ -18,7 +18,7 @@
 	  <dir name="z"/>    
   </frame>
 </stream>
-|Hx|80|830|
+|Hx|80|832|
 <dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
   <properties>
     <p name="info">Fluxgate Magnetic Field 3-Vectors sampled at 128 Hz</p>
@@ -27,13 +27,13 @@
   
   <coord axis="x" physDim="time" >
     <properties><p name="label">UTC</p></properties>
-    <scalar use="center" valType="datetime" index="*" units="TT2000">
+    <scalar use="center" semantic="datetime" index="*" units="TT2000">
       <packet numItems="1" itemBytes="8" encoding="LEint" fill="-9223372036854775808"/>
     </scalar>
   </coord>
   <data name="EAC" physDim="E" frame="TSCS" >
     <properties><p name="label">EFI SCI @ 128 Hz</p></properties>
-    <vector use="center" valType="int" index="*" units="">
+    <vector use="center" semantic="int" index="*" units="">
       <component dir="x"/>
       <component dir="y"/>
       <packet numItems="2" itemBytes="4" encoding="LEint" fill="-2147483648"/>

@@ -1,18 +1,18 @@
-/* Copyright (C) 2017-2019 Chris Piker
+/* Copyright (C) 2017-2024 Chris Piker
  *
- * This file is part of libdas2, the Core Das2 C Library.
+ * This file is part of das2py, the das2C python wrapper
  * 
- * Libdas2 is free software; you can redistribute it and/or modify it under
+ * Das2py is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 2.1 as published
  * by the Free Software Foundation.
  *
- * Libdas2 is distributed in the hope that it will be useful, but WITHOUT ANY
+ * Das2py is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
  * more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * version 2.1 along with libdas2; if not, see <http://www.gnu.org/licenses/>. 
+ * version 2.1 along with das2py; if not, see <http://www.gnu.org/licenses/>. 
  */
 
 
@@ -657,6 +657,27 @@ static PyObject* _DasAryFillToObj(DasAry* pAry)
 }
 
 /* ************************************************************************* */
+/* Create a dictionary of frames, or return Py_None  */
+
+static PyObject* _frameDictionary(DasStream* pStream)
+{
+	int8_t uFrames = DasStream_getNumFrames(pStream);
+	if(uFrames == 0)
+		return Py_None;  /* caller takes ownership, I don't */
+
+	PyObject* pFrames = PyDict_New();
+
+	char sBuf[256] = {'\0'};
+	for(int8_t u = 0; u < uFrames; ++u){
+		const DasFrame* pFrame = DasStream_getFrame(pStream, u);
+		DasFrame_info(pFrame, sBuf, 255);
+		PyObject* pInfo = PyString_FromString( sBuf );
+		PyDict_SetItemString(pFrames, DasFrame_getName(pFrame), pInfo);
+	}
+	return pFrames;
+}
+
+/* ************************************************************************* */
 /* Convert DasDesc to Python dictionary of the form  name : (type, value)    */
 
 static PyObject* _props2PyDict(DasDesc* pDesc)
@@ -675,10 +696,19 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
 			sUnits = "";
 		else
 			sUnits = pProp->units;
+		char cSep = DasProp_sep(pProp);
+		const char* sSep = "";
+		if(cSep != '\0') sSep = &cSep;
 
-		pTup = Py_BuildValue("ss", DasProp_typeStr2(pProp), DasProp_value(pProp), sUnits);
-		/* soon... */
-		/* pTup = Py_BuildValue("sss", DasProp_typeStr3(pProp), DasProp_value(pProp), sUnits); */
+		int nMultiplicity = 1;
+		if(DasProp_isRange(pProp)) nMultiplicity = 2;
+		else if(DasProp_isSet(pProp)) nMultiplicity = 3;
+
+		pTup = Py_BuildValue("ssssi", 
+			DasProp_typeStr3(pProp), DasProp_value(pProp), sUnits, sSep,
+			nMultiplicity
+		);
+		
 		if(pTup == NULL){
 			Py_DECREF(pDict); return NULL;
 		}
@@ -708,6 +738,18 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  * C-wrapper around DasVar and keeping all data in our own arrays, even though
  * they can handle arbitrarily ragged items.
  *
+ * d = {
+ *   '_version': 	DasStream.version
+ *   '_props':    DasStream.properties
+ *   'frames':   {
+ *       DasFrame.id: { 
+ *         '_id':         DasFrame.id   (int)   
+ *         'expression':  DasFrame_info (string)
+ *         '_props':      DasFrame.properties (Dictionary)
+ *       }
+ *    }
+ * }
+ *
  * l =
  * [                        (list of dictionaries, 1 dict / dataset )
  *   {
@@ -728,7 +770,8 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  *            '_role'     : DasDim.aRole[i]
  *            '_units'    : DasVar.units
  *            '_idxmap'   : [ List of Ds.nRank ints ]
- *            '_array'    : sArray (key in array dictionary below)
+ *            '_isVec'    : True if last index is to be treated as geometric vector
+ *            'expression': [ concrete definition of variable, including arrays ]
  *           }
  *           ... (next variable)
  *        }
@@ -745,7 +788,8 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  *         DasDim.aRole[i] : {
  *            '_role'  :  DasDim.aRole[i]
  *            '_units' : DasVar.units
- *            'expression' : [ List of Ds.nRank ints ]
+ *            'expression' : [ concrete definition of variable includes arrays ]
+ *            '_isVec' : True for geometric vectors
  *            'array'  : sArray (key in array dictionary below)
  *         }
  *         ... (next variable)
@@ -820,6 +864,22 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 		pStr = PyString_FromString(DasVar_toStr(pVar, sBuf, 4095));
 		PyDict_SetItemString(pVarDict, "expression", pStr);
 		Py_DECREF(pStr);
+
+		/* Save the value type */
+		const char* sValType = das_vt_toStr(DasVar_valType(pVar));
+		pStr = PyString_FromString(sValType);
+		PyDict_SetItemString(pVarDict, "valtype", pStr);
+		Py_DECREF(pStr);
+
+		const char* sFrameName = DasVarVecAry_getFrameName(pVar);
+		if(sFrameName != NULL){
+			pStr = PyString_FromString(sFrameName);
+			PyDict_SetItemString(pVarDict, "frame", pStr);
+			Py_DECREF(pStr);
+		}
+		else{
+			PyDict_SetItemString(pVarDict, "frame", Py_None);
+		}
 		
 
 		/* Could save each sub-variable, don't know about this yet */
@@ -839,15 +899,15 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 }
 
 
-static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
+/* Takes in a DasStream object returns a 2-tuple of stream header plus datasets */
+static PyObject* _Stream2Tuple(DasStream* pStream)
 {
+	DasDesc* pDesc = NULL;
 	DasDs* pDs = NULL;
 	DasDim* pDim = NULL;
-	PyObject* pRetList = PyList_New(uDs);
 
-	/* Before going through all the setup, see if the Das Arrays can even be
-	 * converted to ndarrays with this extension.  Once code has been written
-	 * to generate ragged ndarrays, remove this check */
+	PyObject* pDsList = PyList_New( DasStream_getNPktDesc(pStream) );
+	PyObject* pHdrDict = PyDict_New();
 
 	/* Iteration variables used here */
 	size_t d = 0; /* Dataset index */
@@ -859,9 +919,22 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 	DasAry* pDasAry = NULL;
 
 	char sInfo[4096] = {'\0'};
-	for(d = 0; d < uDs; ++d){
-		pDs = lDs[d];
-		for(a = 0; a <pDs->uArrays; ++a){
+
+	/* Before going through all the setup, see if the Das Arrays can even be
+	 * converted to ndarrays with this extension.  Once code has been written
+	 * to generate ragged ndarrays, remove this check */
+	int nPktId = 0;
+	while((pDesc = DasStream_nextPktDesc(pStream, &nPktId)) != NULL){
+		
+		if(DasDesc_type(pDesc) != DATASET){
+			PyErr_Format(g_pPyD2Error,
+				"Error in das2C, invalid descriptor type returned by DasDsBldr: %d",
+				DasDesc_type(pDesc)
+			);
+		}
+		pDs = (DasDs*)pDesc;
+
+		for(a = 0; a < pDs->uArrays; ++a){
 			pDasAry = pDs->lArrays[a];
 
 			/* Make sure the das array does not contain a user defined type */
@@ -896,9 +969,11 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 				}
 			}
 		}
+		++d; // Increment the dataset index
 	}
 	memset(sInfo, 0, 64);
 
+	PyObject* pFrames = NULL;
 	PyObject* pDsDict = NULL;
 	PyObject* pProps = NULL;
 	PyObject* pStr = NULL;
@@ -913,6 +988,17 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 	PyObject* pAry = NULL;
 	PyObject* pObj = NULL;
 
+
+	/* Handle the stream header conversion */
+	pProps = _props2PyDict((DasDesc*)pStream);
+	PyDict_SetItemString(pHdrDict, "props", pProps);
+	pFrames = _frameDictionary(pStream);
+	PyDict_SetItemString(pHdrDict, "frames", pFrames);
+	DasStream_info(pStream, sInfo, 4095);
+	pStr = PyString_FromString(sInfo);
+	PyDict_SetItemString(pHdrDict, "info", pStr);
+	Py_DECREF(pStr);
+
 	/* Note: PyDict_SetItem and PyList_SetItem handle reference counts
 	 * differently.  Dicts increment the ref count when you hand them an
 	 * item.  So if you don't want to own the item you have to decrement the
@@ -920,9 +1006,17 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 	 * don't increment the count, but they do assume they can decrement it at
 	 * will.  So... call Py_DECREF for dicts, but not for lists.  */
 
+	nPktId = 0;
+	d = 0;
+	while((pDesc = DasStream_nextPktDesc(pStream, &nPktId)) != NULL){
 
-	for(d = 0; d < uDs; ++d){
-		pDs = lDs[d];
+		if(DasDesc_type(pDesc) != DATASET){
+			PyErr_Format(g_pPyD2Error,
+				"Error in das2C, invalid descriptor type returned by DasDsBldr: %d",
+				DasDesc_type(pDesc)
+			);
+		}
+		pDs = (DasDs*)pDesc;
 
 		/* Convert the properties */
 		pProps = _props2PyDict((DasDesc*)pDs);
@@ -1000,7 +1094,7 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 			pAry = _DasAryToNumpyAry(pDs->lArrays[a]);
 			if(pAry == NULL){
 				Py_DECREF(pdFill); Py_DECREF(pdArys); Py_DECREF(pDsDict);
-				Py_DECREF(pRetList);
+				Py_DECREF(pDsList);
 				return NULL;
 			}
 			PyDict_SetItemString(pdArys, pDs->lArrays[a]->sId, pAry);
@@ -1009,7 +1103,7 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 			pObj = _DasAryFillToObj(pDs->lArrays[a]);
 			if(pObj == NULL){
 				Py_DECREF(pdFill); Py_DECREF(pdArys); Py_DECREF(pDsDict);
-				Py_DECREF(pRetList);
+				Py_DECREF(pDsList);
 				return NULL;
 			}
 			PyDict_SetItemString(pdFill, pDs->lArrays[a]->sId, pObj);
@@ -1028,15 +1122,18 @@ static PyObject* _DsList2PyList(DasDs** lDs, size_t uDs)
 		Py_DECREF(pStr);
 
 		/* Attach correlated dataset converted to python objects */
-		PyList_SetItem(pRetList, d, pDsDict);
+		PyList_SetItem(pDsList, d, pDsDict);
+
+		++d; 
 	}
-	return pRetList;
+
+	return Py_BuildValue("(OO)", pHdrDict, pDsList);
 }
 
 /* ************************************************************************* */
 const char pyd2help_read_file[] =
-"Reads a Das2 stream from a disk file and returns a list of DasDs (das dataset)\n"
-"objects containing the data in the stream\n"
+"Reads a Das2 stream from a disk file and returns a stream header and a list\n"
+"of DasDs (das dataset) objects containing the data in the stream\n"
 "\n"
 "Thread Note:  This function releases the global interpreter lock during stream\n"
 "              reading\n"
@@ -1045,32 +1142,36 @@ const char pyd2help_read_file[] =
 "   sFile (str) : The filename to read\n"
 "\n"
 "Return:\n"
-"   A list of correlated datasets.  Each correlated dataset is a dictionary\n"
-"   with the following keys and items:\n"
+"   A two-tuple consisting of a stream header dictionary and a list of correlated\n"
+"   datasets.  The stream header is a dictionary with the following keys:\n"
+"\n"
+"     * 'props' - A list of dictionaries providing metadata about the overall stream\n"
+"     * 'frames' - A list of dictionaries providing vector frame definitions, if any.\n"
+"\n"
+"Each correlated dataset is a dictionary with the with the following keys and items:\n"
 "\n"
 "   * 'rank' - The number of array dimensions in each dataset\n"
 "   * 'id'   - A string containing an identifier token usable as a variable name\n"
-"   * 'groupId' - A string containing the join group for this Correlated dataset\n"
+"   * 'group' - A string containing the join group for this Correlated dataset\n"
 "   * 'shape' - An array containing the maximum index value in each dimension\n"
 "   * 'coords' - A list of coordinate dictionaries (defined below)\n"
 "   * 'datasets' - A list of datasets correlated in the given coordinates (see below)\n"
 "   * 'arrays' - A dictionary of all the backing ndarrays for the dataset (see below)\n"
-"   * 'properties' - A list of 3-tuples providing string properties for the dataste\n"
+"   * 'props' - A list of dictionaries providing metadata about the dataset\n"
+"   * 'info' - An information string about the dataset"
 "\n"
-"  Each coordinate is defined by a dictionary with the following keys and items\n"
+"  Each item in 'coords' or 'data' is a dimension object that has the following keys\n"
 "\n"
-"   * 'id' - A string contanining an identifier token usable as a variable name\n"
-"   * 'units' - A string containing the units of the coordinate\n"
-"   * 'array' - A string containing the id if the backing array\n"
-"   * 'idxmap' - A list of integers that is 'rank' long each entry given the\n"
-"     index number in the backing array that corresponds to a dataset\n"
-"     index (this can be abstract, see examples)\n"
-"   * 'properties' - A list of 3-tuples providing string properiets for the\n"
-"     coordinate\n"
+"   * 'type' - One of COORD_DIM or DATA_DIM\n"
+"   * 'props' - A string containing the units of the coordinate\n"
 "\n"
-"Each dataset is defined by a dictionary with the same keys as the coordinates\n"
+"  and one or more of the following optional keys:\n"
 "\n"
-"The array dictionary is a mapping of array ID names to backing ndarrays\n"
+"   * 'center' - A variable definition for data center values\n"
+"   * 'reference' - A variable definition for data reference point (ususally start) values\n"
+"   * 'offset' - A variable definition for data offset value, to be added to reference\n"
+"\n"
+"  Other variable definitions may follow for min, max, stddev etc. values in a dimension\n"
 "\n";
 
 static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
@@ -1081,7 +1182,7 @@ static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
 	if(!PyArg_ParseTuple(args, "s:read_file", &sFile))
 		return NULL;
 
-	DasIO* pIn = new_DasIO_file("libdas2", sFile, "r");
+	DasIO* pIn = new_DasIO_file("das2py", sFile, "r");
 	if(pIn == NULL) return pyd2_setException(g_pPyD2Error);
 
 	DasDsBldr* pBldr = new_DasDsBldr();
@@ -1100,18 +1201,12 @@ static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
 	}
 
 	/* Build python list of dataset objects here */
-	size_t uCorDs = 0;
-	DasDs** lDs = DasDsBldr_getDataSets(pBldr, &uCorDs);
-
+	DasStream* pStream = DasDsBldr_getStream(pBldr);
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
-	
-	PyObject* pRet = (lDs != NULL) ? _DsList2PyList(lDs, uCorDs) : PyList_New(0);
-
-	/* arrays don't own re-used data and may be freed */
-	for(size_t u = 0; u < uCorDs; ++u)
-		del_DasDs(lDs[u]);
-	
+	PyObject* pRet = (pStream != NULL) ? _Stream2Tuple(pStream) : NULL;
+	del_DasStream(pStream);  /* arrays don't own re-used data and may be freed */
 	del_DasIO(pIn);
+
 	return pRet;
 }
 
@@ -1132,14 +1227,14 @@ static const char pyd2help_read_server[] =
 "   sAgent (str,optional) : The user agent string you'd like to use\n"
 "\n"
 "Returns:\n"
-"   A list of datasets.  As defined in the section :ref:`Low-level Dataset Output`\n"
+"   This function has the same return as :ref:`read_file`.\n"
 "\n"
 ;
 
 /* Read in das2 stream from a server */
 static PyObject* pyd2_read_server(PyObject* self, PyObject* args)
 {
-	const char* sInitialUrl = "http://planet.physics.uiowa.edu/das/das2Server"
+	const char* sInitialUrl = "https://planet.physics.uiowa.edu/das/das2Server"
 	       "?server=dataset&dataset=Galileo/PWS/Survey_Electric"
 	       "&start_time=2001-001&end_time=2001-002";
 	const char* sUserAgent = NULL;
@@ -1176,9 +1271,11 @@ static PyObject* pyd2_read_server(PyObject* self, PyObject* args)
 	DasIO* pIn;
 
 	if(DasHttpResp_useSsl(&res))
-		pIn = new_DasIO_ssl("libdas2", res.pSsl, "r");
+		pIn = new_DasIO_ssl("das2py", res.pSsl, "r");
 	else
-		pIn = new_DasIO_socket("libdas2", res.nSockFd, "r");
+		pIn = new_DasIO_socket("das2py", res.nSockFd, "r");
+
+	DasIO_model(pIn, -1);  /* Allow all stream versions */
 
 	DasDsBldr* pBldr = new_DasDsBldr();
 	DasIO_addProcessor(pIn, (StreamHandler*)pBldr);
@@ -1201,22 +1298,14 @@ static PyObject* pyd2_read_server(PyObject* self, PyObject* args)
 	}
 
 	/* Build python list of dataset objects here */
-	size_t uDs = 0;
-	DasDs** lDs = DasDsBldr_getDataSets(pBldr, &uDs);
-
+	DasStream* pStream = DasDsBldr_getStream(pBldr);
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
-
-	PyObject* pDsList = (lDs != NULL) ? _DsList2PyList(lDs, uDs) : PyList_New(0);
-
-	for(size_t u = 0; u < uDs; ++u){
-		/* arrays don't own re-used data and may be freed */
-		/* CorDs_releaseArrays(lCorDs[u]); */
-		del_DasDs(lDs[u]);
-	}
-
+	pRet = (pStream != NULL) ? _Stream2Tuple(pStream) : NULL;
+	del_DasStream(pStream);  /* arrays don't own re-used data and may be freed */
 	DasHttpResp_clear(&res);
 	del_DasIO(pIn);
-	return pDsList;
+
+	return pRet;
 }
 
 
@@ -1235,7 +1324,7 @@ const char pyd2help_read_cmd[] =
 "      command is expected to be a das2 stream."
 "\n"
 "Returns:\n"
-"   A list of datasets, as defined in the section :ref:`Low-level Dataset Output`\n"
+"   This function has the same return as :ref:`read_file`.\n"
 "\n"
 ;
 
@@ -1247,7 +1336,7 @@ static PyObject* pyd2_read_cmd(PyObject* self, PyObject* args)
 	if(!PyArg_ParseTuple(args, "s:read_cmd", &sCmd))
 		return NULL;
 
-	DasIO* pIn = new_DasIO_cmd("libdas2", sCmd);
+	DasIO* pIn = new_DasIO_cmd("das2py", sCmd);
 	if(pIn == NULL )	return pyd2_setException(g_pPyD2Error);
 	
 	DasDsBldr* pBldr = new_DasDsBldr();
@@ -1272,17 +1361,11 @@ static PyObject* pyd2_read_cmd(PyObject* self, PyObject* args)
 	}
 
 	/* Build python list of dataset objects here */
-	size_t uDs = 0;
-	DasDs** lDs = DasDsBldr_getDataSets(pBldr, &uDs);
-
+	DasStream* pStream = DasDsBldr_getStream(pBldr);
 	DasDsBldr_release(pBldr); /* Free the correlated datasets from builder mem */
-
-	PyObject* pRet = (lDs != NULL) ? _DsList2PyList(lDs, uDs) : PyList_New(0);
-
-	for(size_t u = 0; u < uDs; ++u){
-		/* arrays don't own re-used data and may be freed */
-		del_DasDs(lDs[u]);
-	}
+	PyObject* pRet = (pStream != NULL) ? _Stream2Tuple(pStream) : NULL;
+	del_DasStream(pStream);  /* arrays don't own re-used data and may be freed */
 	del_DasIO(pIn);
+
 	return pRet;
 }

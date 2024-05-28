@@ -52,7 +52,7 @@ $(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
 build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 
 vars:
-	@echo $(INSTALLED_SCRIPTS)
+	@echo $(INSTALLED_SCRIPTS) $(PYVER)
 
 local: $(BD) src/*.c das2/*.py das2/pycdf/*.py das2/xsd/*.xsd
 	python$(PYVER) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)

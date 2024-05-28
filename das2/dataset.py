@@ -55,7 +55,6 @@ if g_bNumpy10Hacks:
 	os.environ['TZ'] = 'UTC'
 	time.tzset()
 
-
 # ########################################################################### #
 # Numpy timedelta64 and datetime64 are probably more trouble than they are
 # worth.  Common operations such as 1 / ns = GHz are outside the scope of
@@ -459,9 +458,7 @@ class Variable(object):
 	  - .unique - A list of indicies in which these values are (potentially)
 	        unique.
 
-	Variables are very similar to Quantities in AstroPy.  Users of both das2py
-	and astropy are encouraged to use the astrohelp.py to generate Quantity
-	objects from das2py Variables.
+	Variables are very similar to Quantities in AstroPy.
 	"""
 	def __init__(self, dim, role, values, units, axis=None, fill=None):
 		"""Create a new Variable.
@@ -1496,21 +1493,28 @@ class Dataset(object):
 
 
 # ########################################################################### #
-# libdas2 wrapper to high level interface conversion functions
+# das2C wrapper to high level interface conversion functions
 
 def _mk_prop_from_raw(tProp):
 	"""Make a property dictionary value given a :mod:_das2 property string
 
-	Convertions are as follows:
-		- 'string' -> str
-		- 'boolean' -> True | False
-		- 'double' -> float
-		- 'datum' -> Quantity (float, units)
-		- 'int' -> int
-		- 'time' -> DasTime
-		- 'datumrange' -> Quantity (2 elements) (float, float, units)
-		- 'timerange' -> Quantity (2 elements) (DasTime, DasTime, 'UTC')
+	Low level properties are the tuples:
 
+	 (sType, sValue, sUnits, sSep, nMultiFlag)
+
+	Conversions are as follows, anything with units becomes a quantity:
+		- 'string'          -> str,  Quantity(str, units)
+		- 'stringArray'     -> [str] Quantity([str], units)
+		- 'bool'            -> True | False
+		- 'boolArray'       -> [bool]
+		- 'int'             -> int,  Quantity(int, units)
+		- 'intrange,array'  -> [int], Quantity([int], units)
+		- 'realrange,array' -> [float], Quantity([float], units)
+		- 'datetime'        -> datetime64(ns), Quantity(datetime64(ns), units)
+		- 'dt range, array' -> [datetime64(ns)], Quantity([datetime64(ns)], units)
+		
+		- 'datumrange' -> Quantity (2 elements) ([float, float], units)
+		
 	Args:
 		tProp (str, str): The first string is the data type as used in libdas2,
 			the second string is the value.  The first string must be one of those
@@ -1522,79 +1526,95 @@ def _mk_prop_from_raw(tProp):
 
 	#print("Checking: tProp[%s] = '%s'"%(key, prop))
 
-	sType = tProp[0].lower()
+	sType  = tProp[0].lower()
+	sValue = tProp[1];
+	sUnits = tProp[2];
+	sSep   = tProp[3];
+	nMulti = tProp[4];
 
 	if sType == 'string':
-		return tProp[1]
+		if sUnits == "": return sValue
+		else:            return Quantity(sValue, sUnits);
 
 	if sType == 'boolean':
 		return tProp[1].lower() in ('true','1','yes')
 
-	if sType == 'double':
-		return float(tProp[1])
+	if sType == 'int':
+		if sUnits == "": return int(tProp[1]);
+		else:            return Quantity(int(tProp[1]), sUnits);
+
+	if sType == 'datetime':
+
+		# Special exception here.  UTC has been used to tag time values
+		# so if you see those units, return a datetime
+		if sUnits in ("", "UTC", "utc"):
+			val = numpy.datetime64(dastime.DasTime(sValue).isoc(9), 'ns')
+			return Quantity(val, 'UTC')
+
+		# Careful to preserve resolution here
+		if sUnits in ("TT2000"):
+			t = _das2.tt2k_utc(int(sValue))
+			val = numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
+			return Quantity( val, sUnits)
+		else:
+			return Quantity( float(sValue), sUnits)
 
 	if sType == 'real':
-		return float(tProp[1])
+		if sUnits == "": return float(tProp[1]);
+		else:            return Quantity(float(tProp[1]), sUnits);
 
-	if sType == 'datum':
-		lDatum = tProp[1].split()
 
-		if len(lDatum) > 1:
-			sUnits = ' '.join(lDatum[1:])
+	if nMulti == 1:
+		raise ValueError("Unknown property type %s of multiplicity 1"%sType)
 
-			# Special exception here.  UTC has been used to tag time values
-			# so if you see those units, return a datetime
-			if sUnits.lower() == 'utc':
-				val = numpy.datetime64(str(dastime.DasTime(lDatum[0])), 'ns')
-				return Quantity(val, 'UTC')
 
-			if len(sUnits) == 0: sUnits = None
+	# Split the items up, the multiplicity 2 items are ranges
+	if nMulti == 2:
+		lItems = [s.strip() for s in sValue.split(' to ') ]
+	elif nMulti == 3:
+		if sSep == "": lItems = sValue.split()
+		else:  lItems = sValue.split()
+	else:
+		raise ValueError("Unexpected property tuple from _das2, multiplicity = %d"%nMulti)
 
-			return Quantity( float(lDatum[0]), sUnits)
+	# Now for the range & set types
+	if sType == "stringarray":
+		if sUnits == "": return lItems
+		else:            return Quantity(lItems, sUnits);
+
+	if sType == "boolArray":
+		return [ s.lower() in ('true','1','yes') for s in lItems]
+
+	if sType in ("intarray","intrange"):
+		lInts = [int(s) for s in lItems ]
+		if sUnits == "": return lInts
+		else:            return Quantity(lInts, sUnits);
+
+	if sType in ("realarray","realrange"):
+		lFloats = [int(s) for s in lItems ]
+		if sUnits == "": return lFloats
+		else:            return Quantity(lFloats, sUnits);
+
+	if sType in ("datetimerange","datetimearray"):
+
+		# Conversions depend on units.  Shouldn't be the case, but is traditional
+		# at this point.
+		if sUnits in ("", "UTC", "utc"):
+			lDt = [ 
+				numpy.datetime64( dastime.DasTime(s).isoc(9), 'ns' ) 
+				for s in lItems
+			]
+			return Quantity(lDt, 'UTC')
+
+		if sUnits in ("TT2000"):
+			# TODO: Implement a flat lookup table similar to dastelem for 
+			#       this conversion.  It will be *MUCH* faster.
+			return Quantity( [
+				numpy.datetime64(dastime.DasTime(_das2.tt2k_utc(int(s))).isoc(9), 'ns')
+				for s in lItems
+			], sUnits)
 		else:
-			return Quantity( float(tProp[1]), None)
-
-	if sType == 'int':
-		return int(tProp[1])
-
-	if sType == 'time':
-		return numpy.datetime64( dastime.DasTime(tProp[1]), 'ns')
-
-	# We could make this work if the 'to' is missing
-	if sType == 'datumrange':
-		l = tProp[1].split()
-		if len(l) < 3:
-			raise ValueError("Can't parse DatumRange: %s"%tProp[1])
-
-		sBeg = l[0]
-		sEnd = l[2]
-		sUnits = ' '.join(l[3:])
-
-		# Add UTC exception here as well
-		if sUnits.lower() == 'utc':
-			beg = numpy.datetime64(str(dastime.DasTime(sBeg)), 'ns')
-			end = numpy.datetime64(str(dastime.DasTime(sEnd)), 'ns')
-			return Quantity([beg, end], 'UTC')
-		else:
-			if len(sUnits) == 0:
-				return Quantity([float(sBeg), float(sEnd)], None)
-			else:
-				return Quantity([float(sBeg), float(sEnd)], sUnits)
-
-	# Same as above but force time usage and ignore the units
-	if sType == 'timerange':
-		l = tProp[1].split()
-		if len(l) < 3:
-			raise ValueError("Can't parse TimeRange: %s"%tProp[1])
-
-		sBeg = l[0]
-		sEnd = l[2]
-		sUnits = ' '.join(l[3:])
-
-		# Add UTC exception here as well
-		beg = numpy.datetime64(str(dastime.DasTime(l[0])), 'ns')
-		end = numpy.datetime64(str(dastime.DasTime(l[2])), 'ns')
-		return Quantity([beg, end], 'UTC')
+			return Quantity( [float(s) for s in lItems], sUnits)
 
 
 	raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
@@ -1608,7 +1628,7 @@ def _mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask=False):
 	#       waveforms which are of type a[i] + b[j].
 	#
 	#       This code will need to be significantly reworked to handle
-	#       das 2.3 streams.
+	#       das 3 streams.
 
 	# Expression parts: array_lookup units "|" index_range
 	#

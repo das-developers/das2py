@@ -47,32 +47,27 @@
          is a movie.  A plotter could put a time slider below a 3-D cube plot
          to allow for scrolling in time -->
     <coord physDim="time" axis="t">
-      <scalar use="center" valType="real" units="t1970" index="*;-">
+      <scalar use="center" semantic="real" units="t1970" index="*;-">
         <packet numItems="1"/>
       </scalar>
     </coord>
 
     <!-- display the Y direction of the room in the X plot direction just to show
          that these aren't intrinsically linked. -->
-    <coord physDim="spaceY" axis="x" frame="lab601" dir="Y_601">
-      <scalar use="center" valType="real" units="m" index="-;4">
-        <values>1;2;1;2</values>
-      </scalar>
-    </coord>
-
-    <coord physDim="spaceX" axis="y" frame="lab601" dir="X_601">
-      <scalar use="center" valType="real" units="m" index="-;4">
-        <values>1;1;2;2</values>
-      </scalar>
-    </coord>    
+	 <coord physDim="space" axis="y;x" frame="lab601">
+	 	<vector semantic="real" units="m" index="-;4">
+			<component dir="X_601" /><component dir="Y_601"/>
+			<values>1 1 2 1 1 2 2 2</values>
+		</vector>
+	 </coord>
     
     <data physDim="B" name="calibrated" frame="lab601">
       <properties>
         <p name="label">Rotated and scaled data from the 4 sensors</p>
-        <p name="componentLabel" type="stringArray" sep=";">Bx_cal;By_cal;Bz_cal</p>
+        <p name="componentLabel" type="stringArray">Bx_cal By_cal Bz_cal</p>
       </properties>
       
-      <vector use="center" valType="real" units="nT" index="*;4">
+      <vector use="center" semantic="real" units="nT" index="*;4">
         <component dir="X_601"/><component dir="Y_601"/><component dir="Z_601"/>
         <packet numItems="12" valTerm=";"/>
       </vector>
@@ -92,13 +87,13 @@
         </p>
       </properties>
       
-      <vector use="center" valType="real" units="nT" index="*;4">
+      <vector use="center" semantic="real" units="nT" index="*;4">
         <component dir="x"/><component dir="y"/><component dir="z"/>
         <packet numItems="12" valTerm=";"/>
       </vector>
     </data>
   </dataset>
-<d id="1">1657223019.5375;4.953124E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03</d>
+<d id="1">1657223019.5375;4.953124E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03;4.954014E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03</d>
 <d id="1">1657223019.5400;4.954014E+04;-1.120865E+05;-3.529543E+04;-2.534174E+04;-5.227079E+04;-1.212828E+05;1.470473E+03;4.620215E+04;1.475737E+04;1.434963E+04;-5.088306E+04;6.943523E+03;4.954014E+04;-1.120865E+05;-3.529543E+04;-2.534174E+04;-5.227079E+04;-1.212828E+05;1.470473E+03;4.620215E+04;1.475737E+04;1.434963E+04;-5.088306E+04;6.943523E+03</d>
 <d id="1">1657223019.5425;4.953842E+04;-1.121039E+05;-3.529789E+04;-2.533422E+04;-5.229595E+04;-1.212895E+05;1.478799E+03;4.618652E+04;1.477262E+04;1.434640E+04;-5.089331E+04;6.933145E+03;4.953842E+04;-1.121039E+05;-3.529789E+04;-2.533422E+04;-5.229595E+04;-1.212895E+05;1.478799E+03;4.618652E+04;1.477262E+04;1.434640E+04;-5.089331E+04;6.933145E+03</d>
 <d id="1">1657223019.5450;4.953184E+04;-1.121189E+05;-3.529036E+04;-2.534171E+04;-5.230769E+04;-1.213002E+05;1.482242E+03;4.618036E+04;1.475938E+04;1.433949E+04;-5.090488E+04;6.940134E+03;4.953184E+04;-1.121189E+05;-3.529036E+04;-2.534171E+04;-5.230769E+04;-1.213002E+05;1.482242E+03;4.618036E+04;1.475938E+04;1.433949E+04;-5.090488E+04;6.940134E+03</d>

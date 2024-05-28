@@ -23,9 +23,10 @@
 
 FILL = -1.0e+31
 
-__version__ = '2.3.1'
+__version__ = '3.0.0'
 
 import sys
+from typing import Tuple
 import _das2
 from _das2 import Psd as PSD
 from das2.dastime   import *
@@ -50,7 +51,7 @@ import das2.cli as cli
 # ########################################################################### #
 # The basic data reading functions
 
-def read_cmd(sCmd):
+def read_cmd(sCmd) -> Tuple[dict, list]:
 	"""Run a das2 reader command line and output a list of das2 datasets
 
 	Args:
@@ -59,15 +60,14 @@ def read_cmd(sCmd):
 			constructs.  It is the callers responsibility to check for dangerous
 			shell escapes.
 
-	Returns: list
-		A list of Dataset objects created from the message body, or None if
-		in error occured.  The return datasets may or may not have data depending
-		on if data packetes were part of the response.
-
+	Returns: (dict, list)
+		A stream header followed by a list of dataset objects created from the
+		message body, or None if an error occured.  The return datasets may or
+		may not have data depending on if data packetes were part of the response.
 	"""
 
 	try:
-		lDs = _das2.read_cmd(sCmd)
+		(dHdr, lDs) = _das2.read_cmd(sCmd)
 	except Exception as e:
 		sys.stderr.write("Error running '%s': %s\n"%(sCmd, str(e)))
 		return None
@@ -76,26 +76,26 @@ def read_cmd(sCmd):
 		lOut = []
 		for ds in lDs:
 			lOut.append(ds_from_raw(ds))
-		return lOut
+		return (dHdr, lOut)
 
 	raise _das2.Error("Unable to retrieve data using %s"%sUrl)
 
 
 
-def read_file(sFileName):
+def read_file(sFileName) -> Tuple[dict, list]:
 	"""Read datasets from a file
 
 	Args:
 		sFileName (str) : the name of the file to read
 
-	Returns: list
-		A list of Dataset objects created from the message body, or None if
-		in error occured.  The return datasets may or may not have data depending
-		on if data packetes were part of the response.
+	Returns: (dict, list)
+		A stream header followed by a list of dataset objects created from the
+		message body, or None if an error occured.  The return datasets may or
+		may not have data depending on if data packetes were part of the response.
 	"""
 
 	try:
-		lDs = _das2.read_file(sFileName)
+		(dHdr, lDs) = _das2.read_file(sFileName)
 	except Exception as e:
 		sys.stderr.write("Error reading '%s': %s\n"%(sFileName, str(e)))
 		return None
@@ -104,12 +104,12 @@ def read_file(sFileName):
 		lOut = []
 		for ds in lDs:
 			lOut.append(ds_from_raw(ds))
-		return lOut
+		return (dHdr, lOut)
 
 	raise _das2.Error("Unable to retrieve data using %s"%sUrl)
 
 
-def read_http(sUrl, rTimeOut=3.0, sAgent=None):
+def read_http(sUrl, rTimeOut=3.0, sAgent=None) -> Tuple[dict, list]:
 	"""Issue an HTTP GET command to a remote server and output a list of
 	datasets.
 
@@ -130,17 +130,17 @@ def read_http(sUrl, rTimeOut=3.0, sAgent=None):
 		sAgent (str, options) : The user-agent string to set in the HTTP/HTTPs
 			header.  If not specified a default string will be sent.
 
-	Returns: list
-		A list of Dataset objects created from the message body, or None if
-		in error occured.  The return datasets may or may not have data depending
-		on if data packetes were part of the response.
+	Returns: (dict, list)
+		A stream header followed by a list of dataset objects created from the
+		message body, or None if an error occured.  The return datasets may or
+		may not have data depending on if data packetes were part of the response.
 	"""
 
 	try:
 		if sAgent:
-			lDs = _das2.read_server(sUrl, rTimeOut, sAgent)
+			(dHdr, lDs) = _das2.read_server(sUrl, rTimeOut, sAgent)
 		else:
-			lDs = _das2.read_server(sUrl, rTimeOut)
+			(dHdr, lDs) = _das2.read_server(sUrl, rTimeOut)
 	except Exception as e:
 		sys.stderr.write("Error retrieving '%s': %s\n"%(sUrl, str(e)))
 		return None
@@ -149,10 +149,9 @@ def read_http(sUrl, rTimeOut=3.0, sAgent=None):
 		lOut = []
 		for ds in lDs:
 			lOut.append(ds_from_raw(ds))
-		return lOut
+		return (dHdr, lOut)
 
 	raise _das2.Error("Unable to retrieve data using %s"%sUrl)
-
 
 g_sDefDas2SrcTag = 'tag:das2.org,2012:'
 

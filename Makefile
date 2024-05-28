@@ -34,11 +34,11 @@ INST_DOC=$(INST_SHARE)/doc
 endif
 
 ifeq ($(PYVER),)
-PYVER=$(shell python -c "import sys; print('.'.join( sys.version.split()[0].split('.')[:2] ))")
+PYVER:=$(shell python3 -c "import sys; print('.'.join( sys.version.split()[0].split('.')[:2] ))")
 endif
 
 ifeq ($(H_ARCH),)
-H_ARCH=python$(PYVER)
+H_ARCH:=python$(PYVER)
 endif
 
 ifeq ($(INST_HOST_BIN),)

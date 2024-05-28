@@ -27,7 +27,7 @@ extended data object.  It is sufficent to merely parse past them.
     <p name="title">Cassini RPWS Survey</p>
   </properties>
 </stream>
-|Hx|1|3961|
+|Hx|1|3965|
 <dataset rank="1" name="FR_regions" index="*">
 
   <properties>
@@ -120,19 +120,19 @@ extended data object.  It is sufficent to merely parse past them.
   </extension>
   
   <coord physDim="time" axis="x">
-    <scalar use="min" valType="real" units="t1970" index="*">
+    <scalar use="min" semantic="real" units="t1970" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-    <scalar use="max" valType="real" units="t1970" index="*">
+    <scalar use="max" semantic="real" units="t1970" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
   </coord>
 
   <coord physDim="frequency" axis="y">
-    <scalar use="min" valType="real" units="Hz" index="*">
+    <scalar use="min" semantic="real" units="Hz" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
-    <scalar use="max" valType="real" units="Hz" index="*">
+    <scalar use="max" semantic="real" units="Hz" index="*">
       <packet itemBytes="*" valTerm=";" encoding="utf8" numItems="1" />
     </scalar>
   </coord>

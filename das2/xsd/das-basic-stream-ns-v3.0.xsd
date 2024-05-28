@@ -12,7 +12,7 @@
   See the file das2-basic-doc-v3.0.xsd for a single-root schema definition
   suitable for validating standard (i.e. non-packitized) documents.
 
-  version 3.0, release candidate 1, 2023-07-16.
+  version 3.0, release candidate 2, 2024-05-27.
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   version="3.0"
@@ -68,18 +68,37 @@
   </xs:simpleContent>
 </xs:complexType>
 
-<!-- The data types for properties. Same as ValueType below with ranges -->
+<!-- The data types for properties. Same as "Semantic" but with ranges -->
 <xs:simpleType name="PropType">
   <xs:restriction base="xs:string">
     <xs:enumeration value="bool" />
+    <xs:enumeration value="boolArray" />
     <xs:enumeration value="datetime" />
     <xs:enumeration value="datetimeRange" />
-    <xs:enumeration value="int" />
-    <xs:enumeration value="intRange" />
+    <xs:enumeration value="datetimeArray" />
+    <xs:enumeration value="integer" />
+    <xs:enumeration value="integerRange" />
+    <xs:enumeration value="integerArray" />
     <xs:enumeration value="real" />
     <xs:enumeration value="realRange" />
+    <xs:enumeration value="realArray" />
     <xs:enumeration value="string" />
+    <xs:enumeration value="stringArray" />
    </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Bool">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[tTfF01]|true|false" />
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="Terminator" >
+  <xs:restriction base="xs:string" >
+    <!-- Anything but a pipe, higher level parsing may disqualify many patterns -->
+    <xs:pattern value="([ -{]|[}~];)+" />
+    <xs:pattern value="\\n" />
+  </xs:restriction>
 </xs:simpleType>
 
 <!-- Single property -->
@@ -90,6 +109,7 @@
    <xs:attribute name="name"  type="StructName" use="required" />
    <xs:attribute name="type"  type="PropType" default="string" />
    <xs:attribute name="units" type="xs:token" />
+   <xs:attribute name="sep"   type="Terminator" default=" " />
 </xs:complexType>
 
 <!-- Properties grouping -->
@@ -99,6 +119,30 @@
   </xs:sequence>
 </xs:complexType>
 
+<!-- Coordinate Frames =================================================== -->
+
+<!-- These are independent of any particular values and assign DIRECTIONALTY
+     ONLY!  Frame components have no units.  These are not to be confused with
+     the "axis" values from <coord>.  The attribute "axis" is a graphical display
+     directive and refers to a display axis, not a physical axis.  
+
+     The two can be made to coincide by using the optional "frame" and "component"
+     attributes of <coord>
+-->
+
+<xs:complexType name="FrameDirection">
+  <xs:attribute name="name"  type="VarName" use="required" />
+</xs:complexType>
+
+<xs:complexType name="Frame" >
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
+    <xs:element name="dir" type="FrameDirection" minOccurs="1" maxOccurs="9" />
+  </xs:sequence>
+  <xs:attribute name="name" type="StructName" use="required"/>
+  <xs:attribute name="type" type="VarName" use="required" />
+  <xs:attribute name="inertial" type="Bool"/>
+</xs:complexType>
 
 <!-- Extensions ========================================================== -->
 
@@ -149,6 +193,7 @@
                  |- Quantities   <values> <sequence> <i>
 -->
 
+
 <!-- The understood plot type strings -->
 <xs:simpleType name="PlotType">
   <xs:restriction base="xs:string">
@@ -158,16 +203,18 @@
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="Direction">
+<!-- This has to be multi-valued because breaking natural vector coordinates
+     into individual scalars makes parsing and plotting code more convoluted.
+     See description of each plot axis name in "Dataset" type definition below.
+-->
+<xs:simpleType name="PlotDirection">
   <xs:restriction base="xs:string">
-    <xs:enumeration value="x" />
-    <xs:enumeration value="y" />
-    <xs:enumeration value="z" />
-    <xs:enumeration value="ρ" /> <!-- radius cylindrical -->
-    <xs:enumeration value="r" /> <!-- radius spherical & polar -->
-    <xs:enumeration value="θ" /> <!-- polar angle -->
-    <xs:enumeration value="φ" /> <!-- azimuthal angle in x-y plane -->
-    <xs:enumeration value="t" /> <!-- for movies, not time on a space axis -->
+    <xs:pattern value="[xyzρrθφt](;[xyzρrθφt])*" />
+    <!-- ρ: radius cylindrical -->
+    <!-- r: radius spherical & polar -->
+    <!-- θ: polar angle -->
+    <!-- φ: azimuthal angle in x-y plane -->
+    <!-- t: for movies, not time on a space axis -->
   </xs:restriction>
 </xs:simpleType>
 
@@ -224,6 +271,7 @@
   </xs:restriction>
 </xs:simpleType>
 
+
 <xs:simpleType name="Star" final="restriction">
   <xs:restriction base="xs:string">
     <xs:enumeration value="*" />
@@ -258,18 +306,31 @@
   <xs:union memberTypes="IntTwoOrMore Empty" />
 </xs:simpleType>
 
-<!-- The data types for values, does not support ranges -->
-<xs:simpleType name="ValueType">
+
+<!-- The understanding of what kind of value this is, is it a countable (int), 
+     a state (bool), a floating point number (real), a calendar date (datetime),
+     or just some information (string) -->
+<xs:simpleType name="Semantic">
   <xs:restriction base="xs:string">
       <xs:pattern value="bool|datetime|int|real|string" />
    </xs:restriction>
+</xs:simpleType>
+
+<!-- What kind of arrays and values in memory should be used for this item
+     Since some languages don't support unsigned types and can use the next
+     larger signed type
+-->
+<xs:simpleType name="Storage">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="byte|ubyte|short|ushort|int|uint|long|ulong|float|double|string|struct" />
+  </xs:restriction>
 </xs:simpleType>
 
 <!-- Data value types in packets, sizes and formats -->
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
     <xs:pattern 
-      value="none|byte|ubyte|utf8|BEint|BEuint|BEreal|LEint|LEuint|LEreal" />
+      value="byte|ubyte|BEint|BEuint|BEreal|LEint|LEuint|LEreal|utf8|none" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -291,25 +352,22 @@
 <!-- Variable length data values
 
   By default no terminators are defined and an app must rely on itemBytes in
-  <packet> is used to determine where fields end.  Alternatively fexible width
-  fields may be used in one of two ways:
+  <packet> is used to determine where fields end. 
 
-     1. Provide a length tag before each value, ex: "|17|Some event string"
+  The terminator is interpreted according to the valType.  So for a real item
+  a terminator of:
 
-     2. Provide a value terminator.  Unlike separators in most languages, 
-        terminators MUST follow each value, even the last value.
+     0
 
-  In either case, specify that values are variable length using itemsBytes="*"
-  and if terminators are in use, give the terminator character which must be 
-  from the set | \ ? : ; ~ # ^ @ $.
+  is taken to be the floating point value 0.0.  For text encoding the terminator
+  is taken to be a single byte.
 
-  The suggested value terminator is ";" though no default is given.
+  The special values \n, and NaN are understood.  Note that for ragged arrays
+  in more then one index a DIFFERENT terminator is needed for each array dimension.
 -->
-<xs:simpleType name="Terminator" >
+<xs:simpleType name="TermList" >
   <xs:restriction base="xs:string" >
-    <xs:pattern value="[\|/\\\?:;~#\^@$]" />
-    <xs:pattern value="\\n" />
-    <!-- <xs:pattern value="[\|\\/\?:;~\^$#@]" /> -->
+    <xs:pattern value="([; -{]|[}~])+(\|([ -{]|[}~])+)*" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -321,14 +379,13 @@
       <xs:attribute name="repetitions" type="xs:positiveInteger"/>
 
       <!-- Since values elements have a natural end point, no terminator
-        is needed for the last value, so they are called separators here -->
+        is needed for the last value -->
       <xs:attribute name="valSep" type="Terminator" default=";" />
     </xs:extension>
   </xs:simpleContent>
 </xs:complexType>
 
 <xs:complexType name="Sequence">
-  <xs:attribute name="use"      type="VarRole"  default="center" />
   <xs:attribute name="minval"   type="xs:double" use="required"/>
   <xs:attribute name="interval" type="xs:double" use="required"/>
   <xs:attribute name="repeat"   type="ValRepeat" default="none"/>
@@ -339,8 +396,9 @@
   <xs:attribute name="numItems"  type="NonZeroStar" use="required" />
   <xs:attribute name="itemBytes" type="NonZeroStar" use="required" />
   <xs:attribute name="encoding"  type="EncodingType" use="required" />
-  <xs:attribute name="valTerm"   type="Terminator" />
   <xs:attribute name="fill"      type="xs:string" />
+  <xs:attribute name="valTerm"   type="Terminator" />
+  <xs:attribute name="itemsTerm" type="TermList" />
 </xs:complexType>
 
 <!-- The purposes for values of a variable -->
@@ -367,19 +425,20 @@
     <xs:element name="sequence" type="Sequence" />
     <xs:element name="packet" type="Packet" />
   </xs:choice>
-  <xs:attribute name="use"     type="VarRole" default="center" />
-  <xs:attribute name="units"   type="xs:token" use="required" />
-  <xs:attribute name="valType" type="ValueType" use="required" />
-  <xs:attribute name="index"   type="VarIndexShape" use="required" />
+  <xs:attribute name="use"      type="VarRole" default="center" />
+  <xs:attribute name="units"    type="xs:token" use="required" />
+  <xs:attribute name="storage"  type="Storage" />
+  <xs:attribute name="semantic" type="Semantic" use="required" />
+  <xs:attribute name="index"    type="VarIndexShape" use="required" />
+
 </xs:complexType>
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
 
-<xs:complexType name="Component">
-  <xs:attribute name="name"  type="VarName" use="required" />
+<xs:complexType name="VecComponent">
+  <xs:attribute name="dir"  type="VarName" use="required" />
   <xs:attribute name="units" type="xs:token" />
 </xs:complexType>
-
 
 <xs:simpleType name="VectorClass">
   <xs:restriction base="xs:string">
@@ -392,18 +451,20 @@
 
 <xs:complexType name="VectorVar" >
   <xs:sequence>
-    <xs:element name="component" type="Component" minOccurs="2" maxOccurs="3" />
+    <xs:element name="component" type="VecComponent" minOccurs="1" maxOccurs="3" />
     <xs:choice>
       <xs:element name="values" type="Values" />
       <xs:element name="sequence" type="Sequence" />
       <xs:element name="packet" type="Packet" />
     </xs:choice>
   </xs:sequence>
-  <xs:attribute name="use"     type="VarRole" default="center" />
-  <xs:attribute name="units"   type="xs:token" use="required" />
-  <xs:attribute name="valType" type="ValueType" use="required" />
-  <xs:attribute name="index"   type="VarIndexShape" use="required" />
-  <xs:attribute name="vecClass"   type="VectorClass" use="required" />
+  <xs:attribute name="use"      type="VarRole" default="center" />
+  <xs:attribute name="units"    type="xs:token" use="required" />
+  <xs:attribute name="semantic" type="Semantic" use="required" />
+  <xs:attribute name="storage"  type="Storage" />
+  <xs:attribute name="index"    type="VarIndexShape" use="required" />
+  <!-- deprecated -->
+  <xs:attribute name="vecClass" type="VectorClass" />
 </xs:complexType>
 
 <!-- Physical Dimensions ================================================= -->
@@ -419,8 +480,10 @@
     <!-- </xs:choice> -->
 
   </xs:sequence>
-  <xs:attribute name="physDim" type="PhysDimName" use="required"/>
-  <xs:attribute name="axis"    type="Direction"   use="required" />
+  <xs:attribute name="physDim"  type="PhysDimName"   use="required"/>
+  <xs:attribute name="axis"     type="PlotDirection" use="required"/>
+  <xs:attribute name="frame"    type="StructName" />
+  <!-- <xs:attribute name="dir" type="VarName"  /> -->
 </xs:complexType>
 
 <xs:complexType name="DataDim">
@@ -438,7 +501,8 @@
   dataset name.  So if you only have one <data> or <extData> element, the name
   isn't needed
   -->
-  <xs:attribute name="name" type="StructName" />
+  <xs:attribute name="name"  type="StructName" />
+  <xs:attribute name="frame" type="StructName" />
 </xs:complexType>
 
 <!-- Extended data objects in an extended data section -->
@@ -451,6 +515,7 @@
   <xs:attribute name="objType" type="xs:string" use="required" />
   <xs:attribute name="index"   type="VarIndexShape" use="required" />
   <xs:attribute name="content" type="xs:string" />
+
 </xs:complexType>
 
 <xs:complexType name="ExtendedData">
@@ -523,8 +588,8 @@
 
   </xs:sequence>
 
-  <xs:attribute name="rank" type="DatasetRank" use="required" />
-  <xs:attribute name="name" type="DatasetName" use="required"/>
+  <xs:attribute name="rank"  type="DatasetRank" use="required" />
+  <xs:attribute name="name"  type="DatasetName" use="required"/>
   <xs:attribute name="index" type="DsIndexShape" use="required" />
   <xs:attribute name="plot"  type="PlotType" />
 
@@ -548,6 +613,7 @@
 <xs:complexType name="Stream">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:element name="frame" type="Frame" minOccurs="0" maxOccurs="unbounded"/>
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
   <xs:attribute name="type" type="StreamType" use="required" />
