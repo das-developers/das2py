@@ -1591,7 +1591,7 @@ def _mk_prop_from_raw(tProp):
 		else:            return Quantity(lInts, sUnits);
 
 	if sType in ("realarray","realrange"):
-		lFloats = [int(s) for s in lItems ]
+		lFloats = [float(s) for s in lItems ]
 		if sUnits == "": return lFloats
 		else:            return Quantity(lFloats, sUnits);
 

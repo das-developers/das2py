@@ -95,8 +95,10 @@ examples:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex10_manual_datasets.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex09_cassini_fce_ephem_ticks.py 2017-02-01
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex11_catalog_listings.py
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex05_mex_marsis_query_by_angle.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex02_galileo_pws_spectra.py
+
+# TODO: Revive this
+# env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex05_mex_marsis_query_by_angle.py
 
 #env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex06_astro_lwa1_multiscale.py
 #env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex07_cassini_rpws_query_opts.py

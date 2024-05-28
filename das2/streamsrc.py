@@ -393,7 +393,7 @@ class HttpStreamSrc(Source):
 			try:
 				#print("Reading %s"%sUrl)
 				if verbose: perr("Requesting: %s\n"%sUrl)
-				lDs = _das2.read_server(sUrl)
+				(dHdr, lDs) = _das2.read_server(sUrl)
 			except Exception as e:
 				sys.stderr.write("Couldn't read URL '%s', %s\n"%(sUrl, str(e)))
 				# put this URL on the naughty list
