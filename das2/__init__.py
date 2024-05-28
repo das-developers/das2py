@@ -23,7 +23,7 @@
 
 FILL = -1.0e+31
 
-__version__ = '3.0.0'
+__version__ = '3.0-pre1'
 
 import sys
 from typing import Tuple

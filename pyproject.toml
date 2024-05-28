@@ -1,10 +1,10 @@
 [project]
 name = "das2py"
-version = "3.0.0-pre1"
+version = "3.0-pre1"
 dependencies = [ "numpy", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
-requires-python = ">=2.7"
+requires-python = ">=3.5"
 license = {file = "LICENSE"}
 authors = [
    {name = "C Piker", email = "cpiker@users.noreply.github.com"}
