@@ -34,8 +34,9 @@ else: lLibDirs = []
 #if sCHdrDir: lInc = [sCHdrDir, numpy.get_include()]
 #else: lInc = [numpy.get_include()]
 
-if sCHdrDir: lInc = [sCHdrDir, "./src"]
-else: lInc = ["./src"]
+if sCHdrDir: lInc = [ sCHdrDir ]
+else: lInc = [ ]
+
 
 lSrc = ["src/_das2.c"]
 

@@ -1,1 +1,2 @@
 include das2/xsd/*.xsd
+include src/*.h
