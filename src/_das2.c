@@ -342,7 +342,7 @@ static PyObject* pyd2_tt2k_utc(PyObject* self, PyObject* args)
 	int imn = (int)mn;
 	double dSec = sc + ms*1e-3 + us*1e-6 + ns*1e-9;
 	
-	return Py_BuildValue("(iiiiiiiii)", iyr, imt, idy, ihr, imn, dSec);
+	return Py_BuildValue("(iiiiid)", iyr, imt, idy, ihr, imn, dSec);
 }
 
 const char pyd2help_utc_tt2k[] = 
