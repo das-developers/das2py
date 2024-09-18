@@ -21,8 +21,7 @@
 #define _POSIX_C_SOURCE 200112L
 #endif
 
-/* Can't do this until we drop support for CentOS 6 */
-/* #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
 /*#ifdef _XOPEN_SOURCE

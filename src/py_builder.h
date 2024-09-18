@@ -27,6 +27,10 @@
 
 #include <numpy/ndarrayobject.h>
 
+/*
+#include <numpy/npy2_compat.h>
+*/
+
 #if PY_MAJOR_VERSION >= 3
 #define PyString_FromString PyUnicode_FromString
 #define PyInt_FromLong      PyLong_FromLong
@@ -128,11 +132,18 @@ PyObject* _DasCalAryToNumpyAry(DasAry* pAry)
 	Py_DECREF(pType);
 
 	npy_intp npLen = (npy_intp)uLen;
-	PyObject* pNdAry = PyArray_SimpleNewFromDescr(1, &npLen, pDesc);
-	if(pNdAry == NULL){
+	PyObject* pObj = PyArray_SimpleNewFromDescr(1, &npLen, pDesc);
+	if(pObj == NULL){
 		PyErr_Format(g_pPyD2Error, "Couldn't generate new datetime64 array ");
 		return NULL;
 	}
+	if(!PyArray_Check(pObj)){
+		PyErr_SetString(PyExc_TypeError, "Unexpected type in _DasCalAryToNumpyAry()");
+		Py_DECREF(pObj);
+		return NULL;
+	}
+
+	PyArrayObject* pNdAry = (PyArrayObject*)pObj;
 
 	if(! PyArray_ISBEHAVED(pNdAry) || !(PyArray_IS_C_CONTIGUOUS(pNdAry))){
 		PyErr_Format(g_pPyD2Error, "New NDArray is not contiguous, aligned, and "
@@ -260,11 +271,12 @@ PyObject* _DasTimeAryToNumpyAry(DasAry* pAry)
 	Py_DECREF(pType);
 
 	npy_intp npLen = (npy_intp)uLen;
-	PyObject* pNdAry = PyArray_SimpleNewFromDescr(1, &npLen, pDesc);
-	if(pNdAry == NULL){
+	PyObject* pObj = PyArray_SimpleNewFromDescr(1, &npLen, pDesc);
+	if(pObj == NULL){
 		PyErr_Format(g_pPyD2Error, "Couldn't generate new timedelta64 array ");
 		return NULL;
 	}
+	PyArrayObject* pNdAry = (PyArrayObject*)pObj;
 
 	if(! PyArray_ISBEHAVED(pNdAry) || !(PyArray_IS_C_CONTIGUOUS(pNdAry))){
 		PyErr_Format(g_pPyD2Error, "New NDArray is not contiguous, aligned, and "
@@ -403,14 +415,15 @@ PyObject* _DasTextAryToNumpyAry(DasAry* pAry)
 	for(i = 0; i < nAsRank; ++i) np_shape[i] = shape[i];
 
 	/* Create the array allocating space for the pointers */
-	PyObject* pNdAry = PyArray_SimpleNew(nAsRank, np_shape, NPY_OBJECT);
+	PyObject* pObj = PyArray_SimpleNew(nAsRank, np_shape, NPY_OBJECT);
+	PyArrayObject* pNdAry = (PyArrayObject*)pObj;
 
 	if(! PyArray_ISCONTIGUOUS(pNdAry) || ! PyArray_ISBEHAVED(pNdAry)){
 		PyErr_Format(g_pPyD2Error, "New NDArray is not behaved");
 		Py_DECREF(pNdAry);
 		return NULL;
 	}
-	if(! PyDataType_REFCHK(  ((PyArrayObject*)pNdAry)->descr ) ){
+	if(! PyDataType_REFCHK( PyArray_DESCR(pNdAry) ) ){
 		PyErr_Format(g_pPyD2Error, "New NDArray is not handling reference "
 				       "counting for us");
 		Py_DECREF(pNdAry);
@@ -437,7 +450,7 @@ PyObject* _DasTextAryToNumpyAry(DasAry* pAry)
 		if(vt == vtText) sStr = *( (const char**) pItem);
 		else sStr = (const char*) pItem;
 
-		ppSet = (PyObject**) PyArray_GetPtr((PyArrayObject*)pNdAry, np_index);
+		ppSet = (PyObject**) PyArray_GetPtr(pNdAry, np_index);
 
 		if((sStr != NULL)&&(sStr[0] != '\0')){
 			pStr = PyString_FromString(sStr);
@@ -465,7 +478,7 @@ PyObject* _DasTextAryToNumpyAry(DasAry* pAry)
 			}
 		}
 	}
-	return pNdAry;
+	return (PyObject*)pNdAry; /* Cast it back */
 }
 
 /* ************************************************************************ */
@@ -871,7 +884,7 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 		PyDict_SetItemString(pVarDict, "valtype", pStr);
 		Py_DECREF(pStr);
 
-		const char* sFrameName = DasVarVecAry_getFrameName(pVar);
+		const char* sFrameName = DasVar_getFrameName(pVar);
 		if(sFrameName != NULL){
 			pStr = PyString_FromString(sFrameName);
 			PyDict_SetItemString(pVarDict, "frame", pStr);
@@ -924,7 +937,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	 * converted to ndarrays with this extension.  Once code has been written
 	 * to generate ragged ndarrays, remove this check */
 	int nPktId = 0;
-	while((pDesc = DasStream_nextPktDesc(pStream, &nPktId)) != NULL){
+	while((pDesc = DasStream_nextDesc(pStream, &nPktId)) != NULL){
 		
 		if(DasDesc_type(pDesc) != DATASET){
 			PyErr_Format(g_pPyD2Error,
@@ -1008,7 +1021,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 
 	nPktId = 0;
 	d = 0;
-	while((pDesc = DasStream_nextPktDesc(pStream, &nPktId)) != NULL){
+	while((pDesc = DasStream_nextDesc(pStream, &nPktId)) != NULL){
 
 		if(DasDesc_type(pDesc) != DATASET){
 			PyErr_Format(g_pPyD2Error,

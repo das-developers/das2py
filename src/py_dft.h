@@ -125,8 +125,8 @@ const char das2help_Dft_calculate[] =
 static PyObject* pyd2_Dft_calculate(pyd2_Dft* self, PyObject* args) {
 	PyObject* pReal = NULL;
 	PyObject* pImg = Py_None;
-	PyObject* arrReal = NULL;
-	PyObject* arrImg = NULL;
+	PyObject* pObjReal = NULL;
+	PyObject* pObjImg = NULL;
 	double* dReal;
 	double* dImg;
 	size_t uLen;
@@ -139,50 +139,64 @@ static PyObject* pyd2_Dft_calculate(pyd2_Dft* self, PyObject* args) {
 		return NULL;
 	}
 
-	arrReal = PyArray_FROM_OTF(pReal, NPY_DOUBLE, NPY_IN_ARRAY);
-	if (arrReal == NULL) {
+	pObjReal = PyArray_FROM_OTF(pReal, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	if (pObjReal == NULL) {
 		return NULL;
 	}
 
 	if (pImg == Py_None) {
-		arrImg = Py_None;
+		pObjImg = Py_None;
 		Py_INCREF(Py_None);
 	}
 	else {
-		arrImg = PyArray_FROM_OTF(pImg, NPY_DOUBLE, NPY_IN_ARRAY);
-		if (arrImg == NULL) {
-			Py_DECREF(arrReal);
+		pObjImg = PyArray_FROM_OTF(pImg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+		if (pObjImg == NULL) {
+			Py_DECREF(pObjReal);
 			return NULL;
 		}
 	}
 
-	if ( PyArray_NDIM(arrReal) != 1 ) {
+	if((! PyArray_Check(pObjReal)) || (! PyArray_Check(pObjImg))){
+		PyErr_SetString(PyExc_TypeError, "Unexpected type in pyd2_Dft_calculate()");
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
+		return NULL;
+	}
+
+	/* Make to pointers that are the exact same address as the generic 
+	   object pointers, except they have be cast to the expected type to
+	   make the compiler happy.  The PyArray_Check function above make
+	   sure this is okay. */
+	PyArrayObject* pAryReal = (PyArrayObject*)pObjReal;
+	PyArrayObject* pAryImg = (PyArrayObject*)pObjImg;
+
+	if ( PyArray_NDIM(pAryReal) != 1 ) {
 		PyErr_SetString(PyExc_ValueError, "pReal is not 1-dimensional");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
-	if ( arrImg != Py_None && PyArray_NDIM(arrImg) != 1 ) {
+	if ( pObjImg != Py_None && PyArray_NDIM(pAryImg) != 1 ) {
 		PyErr_SetString(PyExc_ValueError, "pImg is not 1-dimensional");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
 
-	uLen = PyArray_Size(arrReal);
-	if ( arrImg != Py_None && ((ptrdiff_t)uLen) != PyArray_Size(arrImg) ) {
+	uLen = PyArray_Size(pObjReal);
+	if ( pObjImg != Py_None && ((ptrdiff_t)uLen) != PyArray_Size(pObjImg) ) {
 		PyErr_SetString(PyExc_ValueError, "pReal and pImg must be the same length");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
 
-	dReal = (double*)PyArray_DATA(arrReal);
-	if (arrImg == Py_None) {
+	dReal = (double*)PyArray_DATA(pAryReal);
+	if (pObjImg == Py_None) {
 		dImg = NULL;
 	}
 	else {
-		dImg = (double*)PyArray_DATA(arrImg);
+		dImg = (double*)PyArray_DATA(pAryImg);
 	}
 
 	err = Dft_calculate(self->das2dft,dReal,dImg);
@@ -197,8 +211,8 @@ static PyObject* pyd2_Dft_calculate(pyd2_Dft* self, PyObject* args) {
 		PyErr_SetString(PyExc_ValueError, tmp);
 	}
 
-	Py_DECREF(arrReal);
-	Py_DECREF(arrImg);
+	Py_DECREF(pObjReal);
+	Py_DECREF(pObjImg);
 	
 	Py_RETURN_NONE;
 }
@@ -207,29 +221,37 @@ const char das2help_Dft_getReal[] =
 	"Return the real component after a calculation.";
 
 static PyObject* pyd2_Dft_getReal(pyd2_Dft* self, PyObject* noargs) {
-	PyObject* arrReal;
+	PyObject* pObjReal;
 	size_t pLen;
-	const double* real;
+	const double* pReal;
 	npy_intp dims;
 
-	real = Dft_getReal(self->das2dft,&pLen);
+	pReal = Dft_getReal(self->das2dft,&pLen);
 
 	dims = pLen;
-	arrReal = (PyObject*)PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
-	if (arrReal==NULL) {
+	pObjReal = PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
+	if (pObjReal==NULL) {
 		return NULL;
 	}
 
-	memcpy(PyArray_DATA(arrReal),real,sizeof(double)*pLen);
+	/* Hey NumPy! Why does simpleNew return pyObject when every
+	   other function is going to want a pyArrayObject? */
+	if(! PyArray_Check(pObjReal) ){
+		PyErr_SetString(PyExc_TypeError, "Unexpected type in pyd2_Dft_getReal()");
+		Py_DECREF(pObjReal);
+		return NULL;
+	}
 
-	return arrReal;
+	memcpy(PyArray_DATA((PyArrayObject*)pObjReal),pReal,sizeof(double)*pLen);
+
+	return pObjReal;
 }
 
 const char das2help_Dft_getImg[] =
 	"Return the imaginary component after a calculation.";
 
 static PyObject* pyd2_Dft_getImg(pyd2_Dft* self, PyObject* noargs) {
-	PyObject* arrImg;
+	PyObject* pObjImg;
 	size_t pLen;
 	const double *img;
 	npy_intp dims;
@@ -237,14 +259,19 @@ static PyObject* pyd2_Dft_getImg(pyd2_Dft* self, PyObject* noargs) {
 	img = Dft_getImg(self->das2dft,&pLen);
 
 	dims = pLen;
-	arrImg = (PyObject*)PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
-	if (arrImg==NULL) {
+	pObjImg = PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
+	if (pObjImg==NULL) {
+		return NULL;
+	}
+	if(! PyArray_Check(pObjImg) ){
+		PyErr_SetString(PyExc_TypeError, "Unexpected type in pyd2_Dft_getImg()");
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
 
-	memcpy(PyArray_DATA(arrImg),img,sizeof(double)*pLen);
+	memcpy(PyArray_DATA((PyArrayObject*)pObjImg),img,sizeof(double)*pLen);
 
-	return arrImg;
+	return pObjImg;
 }
 
 const char das2help_Dft_getMagnitude[] =
@@ -258,7 +285,7 @@ const char das2help_Dft_getMagnitude[] =
 	"Nyquist frequency have meaningful information.";
 
 static PyObject* pyd2_Dft_getMagnitude(pyd2_Dft* self, PyObject* noargs) {
-	PyObject* arrMagn;
+	PyObject* pObjMagn;
 	size_t pLen;
 	const double *magn;
 	npy_intp dims;
@@ -266,14 +293,18 @@ static PyObject* pyd2_Dft_getMagnitude(pyd2_Dft* self, PyObject* noargs) {
 	magn = Dft_getMagnitude(self->das2dft,&pLen);
 
 	dims = pLen;
-	arrMagn = (PyObject*)PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
-	if (arrMagn==NULL) {
+	pObjMagn = (PyObject*)PyArray_SimpleNew(1,&dims,NPY_DOUBLE);
+	if(pObjMagn==NULL) 
+		return NULL;
+	if(! PyArray_Check(pObjMagn) ){
+		PyErr_SetString(PyExc_TypeError, "Unexpected type in pyd2_Dft_getImg()");
+		Py_DECREF(pObjMagn);
 		return NULL;
 	}
 
-	memcpy(PyArray_DATA(arrMagn),magn,sizeof(double)*pLen);
+	memcpy(PyArray_DATA((PyArrayObject*)pObjMagn),magn,sizeof(double)*pLen);
 
-	return arrMagn;
+	return pObjMagn;
 }
 
 const char das2help_Dft_getLength[] =
@@ -433,8 +464,8 @@ const char das2help_Psd_calculate[] =
 static PyObject* pyd2_Psd_calculate(pyd2_Psd* self, PyObject* args) {
 	PyObject* pReal = NULL;
 	PyObject* pImg = Py_None;
-	PyObject* arrReal = NULL;
-	PyObject* arrImg = NULL;
+	PyObject* pObjReal = NULL;
+	PyObject* pObjImg = NULL;
 	double* dReal;
 	double* dImg;
 	size_t uLen;
@@ -446,50 +477,50 @@ static PyObject* pyd2_Psd_calculate(pyd2_Psd* self, PyObject* args) {
 		return NULL;
 	}
 
-	arrReal = PyArray_FROM_OTF(pReal, NPY_DOUBLE, NPY_IN_ARRAY);
-	if (arrReal == NULL) {
+	pObjReal = PyArray_FROM_OTF(pReal, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	if (pObjReal == NULL) {
 		return NULL;
 	}
 
 	if (pImg == Py_None) {
-		arrImg = Py_None;
+		pObjImg = Py_None;
 		Py_INCREF(Py_None);
 	}
 	else {
-		arrImg = PyArray_FROM_OTF(pImg, NPY_DOUBLE, NPY_IN_ARRAY);
-		if (arrImg == NULL) {
-			Py_DECREF(arrReal);
+		pObjImg = PyArray_FROM_OTF(pImg, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+		if (pObjImg == NULL) {
+			Py_DECREF(pObjReal);
 			return NULL;
 		}
 	}
 
-	if ( PyArray_NDIM(arrReal) != 1) {
+	if ( PyArray_NDIM((PyArrayObject*)pObjReal) != 1) {
 		PyErr_SetString(PyExc_ValueError, "pReal is not 1-dimensional");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
-	if ( arrImg != Py_None && PyArray_NDIM(arrImg) != 1) {
+	if ( pObjImg != Py_None && PyArray_NDIM((PyArrayObject*)pObjImg) != 1) {
 		PyErr_SetString(PyExc_ValueError, "pImg is not 1-dimensional");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;\
 	}
 
-	uLen = PyArray_Size(arrReal);
-	if ( arrImg != Py_None && ((ptrdiff_t)uLen) != PyArray_Size(arrImg) ) {
+	uLen = PyArray_Size(pObjReal);
+	if ( pObjImg != Py_None && ((ptrdiff_t)uLen) != PyArray_Size(pObjImg) ) {
 		PyErr_SetString(PyExc_ValueError, "pReal and pImg must be the same length");
-		Py_DECREF(arrReal);
-		Py_DECREF(arrImg);
+		Py_DECREF(pObjReal);
+		Py_DECREF(pObjImg);
 		return NULL;
 	}
 
-	dReal = (double*)PyArray_DATA(arrReal);
-	if (arrImg == Py_None) {
+	dReal = (double*)PyArray_DATA((PyArrayObject*)pObjReal);
+	if (pObjImg == Py_None) {
 		dImg = NULL;
 	}
 	else {
-		dImg = (double*)PyArray_DATA(arrImg);
+		dImg = (double*)PyArray_DATA((PyArrayObject*)pObjImg);
 	}
 
 	err = Psd_calculate(self->das2psd,dReal,dImg);
@@ -504,8 +535,8 @@ static PyObject* pyd2_Psd_calculate(pyd2_Psd* self, PyObject* args) {
 		PyErr_SetString(PyExc_ValueError, tmp);
 	}
 
-	Py_DECREF(arrReal);
-	Py_DECREF(arrImg);
+	Py_DECREF(pObjReal);
+	Py_DECREF(pObjImg);
 
 	Py_RETURN_NONE;
 }
@@ -605,7 +636,7 @@ static PyObject* pyd2_Psd_get(const pyd2_Psd* self, PyObject* noargs) {
 		return NULL;
 	}
 
-	memcpy(PyArray_DATA(arrPsd),psd,sizeof(double)*pLen);
+	memcpy(PyArray_DATA((PyArrayObject*)arrPsd),psd,sizeof(double)*pLen);
 
 	return arrPsd;
 }
