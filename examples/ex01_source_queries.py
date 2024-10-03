@@ -75,7 +75,7 @@ print(src.info())
 
 dQuery = { 'time':('2008-223T09:06', '2008-223T09:13'), 
            'frequency':{'band':'80 kHz'}  }
-lDatasets = src.get(dQuery)
+streamHdr, lDatasets = src.get(dQuery)
 
 # Print dataset info. Actually using the datasets returned via these queries
 # is the subject of subsequent examples

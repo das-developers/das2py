@@ -34,11 +34,12 @@ def test_load_data(tBeg, tEnd, SrcId):
    try:
       src = das2.get_source(SrcId)
       dQuery = {'time':(tBeg, tEnd), 'hfr_i':True}
-      dsReal = src.get(dQuery)[0]
-	
+      (hdr, lDs) = src.get(dQuery)
+      dsReal = lDs[0]
+   
    except (IndexError):
       return False
-	
+   
    else:
       return True
 
@@ -51,12 +52,14 @@ def getIQ(sSrcId, sBeg, sEnd):
 
    print("Getting Reals from %s to %s"%(sBeg, sEnd))
    dQuery = {'time':(sBeg, sEnd), 'hfr_i':True}
-   dsReal = src.get(dQuery)[0]
+   (hdr, lDs) = src.get(dQuery)
+   dsReal = lDs[0]
    print(dsReal)
 
    print("Getting Imaginary from %s to %s"%(sBeg, sEnd))
    dQuery = {'time':(sBeg, sEnd), 'hfr_q':True}
-   dsImg = src.get(dQuery)[0]
+   (hdr, lDs) = src.get(dQuery)
+   dsImg = lDs[0]
    #print(dsImg)
 
    return (dsReal, dsImg, src)

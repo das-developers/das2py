@@ -121,8 +121,8 @@
 
 <!-- Coordinate Frames =================================================== -->
 
-<!-- These are independent of any particular values and assign DIRECTIONALTY
-     ONLY!  Frame components have no units.  These are not to be confused with
+<!-- These are independent of any particular values and often assign directionality
+     only.  Frame components have no units.  These are not to be confused with
      the "axis" values from <coord>.  The attribute "axis" is a graphical display
      directive and refers to a display axis, not a physical axis.  
 
@@ -130,18 +130,13 @@
      attributes of <coord>
 -->
 
-<xs:complexType name="FrameDirection">
-  <xs:attribute name="name"  type="VarName" use="required" />
-</xs:complexType>
-
 <xs:complexType name="Frame" >
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
-    <xs:element name="dir" type="FrameDirection" minOccurs="1" maxOccurs="9" />
   </xs:sequence>
   <xs:attribute name="name" type="StructName" use="required"/>
-  <xs:attribute name="type" type="VarName" use="required" />
   <xs:attribute name="inertial" type="Bool"/>
+  <xs:attribute name="body" type="xs:string" />
 </xs:complexType>
 
 <!-- Extensions ========================================================== -->
@@ -209,7 +204,7 @@
 -->
 <xs:simpleType name="PlotDirection">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[xyzρrθφt](;[xyzρrθφt])*" />
+    <xs:pattern value="[xyzρrθφt](;[xyzρrθφat])*" />
     <!-- ρ: radius cylindrical -->
     <!-- r: radius spherical & polar -->
     <!-- θ: polar angle -->
@@ -312,7 +307,7 @@
      or just some information (string) -->
 <xs:simpleType name="Semantic">
   <xs:restriction base="xs:string">
-      <xs:pattern value="bool|datetime|int|real|string" />
+      <xs:pattern value="bool|datetime|int|real|string|pixel" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -330,7 +325,7 @@
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
     <xs:pattern 
-      value="byte|ubyte|BEint|BEuint|BEreal|LEint|LEuint|LEreal|utf8|none" />
+      value="byte|ubyte|BEint|BEuint|BEreal|LEint|LEuint|LEreal|utf8|png|jpeg|none" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -380,7 +375,7 @@
 
       <!-- Since values elements have a natural end point, no terminator
         is needed for the last value -->
-      <xs:attribute name="valTerm" type="Terminator" default=" " />
+      <xs:attribute name="valSep" type="Terminator" default=";" />
     </xs:extension>
   </xs:simpleContent>
 </xs:complexType>
@@ -420,11 +415,14 @@
 </xs:simpleType>
 
 <xs:complexType name="ScalarVar" >
-  <xs:choice>
-    <xs:element name="values" type="Values" />
-    <xs:element name="sequence" type="Sequence" />
-    <xs:element name="packet" type="Packet" />
-  </xs:choice>
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:choice>
+      <xs:element name="values" type="Values" />
+      <xs:element name="sequence" type="Sequence" />
+      <xs:element name="packet" type="Packet" />
+    </xs:choice>
+  </xs:sequence>
   <xs:attribute name="use"      type="VarRole" default="center" />
   <xs:attribute name="units"    type="xs:token" use="required" />
   <xs:attribute name="storage"  type="Storage" />
@@ -435,23 +433,26 @@
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
 
-<xs:complexType name="VecComponent">
-  <xs:attribute name="dir"  type="VarName" use="required" />
-  <xs:attribute name="units" type="xs:token" />
-</xs:complexType>
+<xs:simpleType  name="ComponentList">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="[0-2](;[0-2]){0,2}" />
+  </xs:restriction>
+</xs:simpleType>
 
-<xs:simpleType name="VectorClass">
+<xs:simpleType name="ComponentSystem">
   <xs:restriction base="xs:string">
     <xs:enumeration value="cartesian" />
     <xs:enumeration value="polar" />
     <xs:enumeration value="spherical" />
+    <xs:enumeration value="centric" />
+    <xs:enumeration value="detic" />
     <!-- More?? -->
   </xs:restriction>
 </xs:simpleType>
 
 <xs:complexType name="VectorVar" >
   <xs:sequence>
-    <xs:element name="component" type="VecComponent" minOccurs="1" maxOccurs="3" />
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
     <xs:choice>
       <xs:element name="values" type="Values" />
       <xs:element name="sequence" type="Sequence" />
@@ -463,8 +464,9 @@
   <xs:attribute name="semantic" type="Semantic" use="required" />
   <xs:attribute name="storage"  type="Storage" />
   <xs:attribute name="index"    type="VarIndexShape" use="required" />
-  <!-- deprecated -->
-  <xs:attribute name="vecClass" type="VectorClass" />
+  <xs:attribute name="system"   type="ComponentSystem" default="cartesian"/>
+  <xs:attribute name="components" type="ComponentList" use="required" />
+  <xs:attribute name="refSurface"  type="xs:string" /> <!-- 0 = SPICE default for frame body -->
 </xs:complexType>
 
 <!-- Physical Dimensions ================================================= -->
@@ -474,17 +476,28 @@
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
     <xs:choice minOccurs="1" maxOccurs="unbounded">
-      <xs:element name="scalar" type="ScalarVar" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:element name="scalar" type="ScalarVar" />
       <xs:element name="vector" type="VectorVar" />
     </xs:choice>
 
   </xs:sequence>
   <xs:attribute name="physDim"  type="PhysDimName"   use="required"/>
-  <xs:attribute name="axis"     type="PlotDirection" use="required"/>
-  <xs:attribute name="frame"    type="StructName" />
+
+  <!-- Coordinate dims should have names, and if there is more the one for the same
+       physical dimension (say space in two different coordinate systems) then names
+       are a must -->
+  <xs:attribute name="name"     type="StructName" />
+
+  <!-- The use of axes is required for primary coordinates -->
+  <xs:attribute name="axis"     type="PlotDirection"/>
+
+  <!-- The use of annotation is recommened for secondard coordinates -->
+  <xs:attribute name="annotation" type="PlotDirection"/>  
+
+  <xs:attribute name="frame"    type="StructName"   />
   <!-- No need to provide for single component coordinates, if they are
        vectors, put them together as a vector so that they can be transform
-       as a vector, using things like SPICE -->
+       as a vector, using systems like SPICE -->
   <!-- <xs:attribute name="dir" type="VarName"  /> -->
 </xs:complexType>
 

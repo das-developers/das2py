@@ -22,7 +22,7 @@ src = das2.get_source(sId)
 # Get data from the source.  Note, if no parameters are specifed the default
 # range and resolution in the source definition will be used
 print("Reading default example Galileo PWS E-Survey data...")
-lDs = src.get()
+(header, lDs) = src.get()
 ds = lDs[0]     # simple example, real code should check dataset list size
 print("%d datasets returned"%len(lDs))
 
@@ -83,6 +83,6 @@ ax0.set_xlabel(das2.mpl.range_label(time) )
 ax0.set_ylabel(das2.mpl.label(freq.props['label']))
 cbar.set_label(das2.mpl.label(specDens.props['label']) )
 
-ax0.set_title(das2.mpl.label(ds.props['title']) )
+ax0.set_title(das2.mpl.label(header['props']['title']) )
 
 pyplot.savefig('ex02_galileo_pws_spectra.png')

@@ -20,7 +20,7 @@ print("Getting data source definition for %s"%sId)
 src = das2.get_source(sId)
 
 print("Reading default example Cassini RPWS E-Survey data...")
-lDs = src.get()
+(hdr, lDs) = src.get()
 
 # Combining multiple spectra into one overall array set
 print("Combining arrays...")

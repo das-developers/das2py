@@ -367,6 +367,7 @@ class HttpStreamSrc(Source):
 			self.lBadBase = []
 
 		# Change this up when the definition changes
+		dHdr = None
 		lDs = None
 		for i in range(0, len(dProto['base_urls'])):
 			sBaseUrl = dProto['base_urls'][i]
@@ -403,7 +404,16 @@ class HttpStreamSrc(Source):
 			lOut = []
 			for ds in lDs:
 				lOut.append(ds_from_raw(ds))
-			return lOut
+
+			# Adapt the header properties 
+			dRawProps = dHdr['props']
+			dDictProps = {}
+			for sProp in dRawProps:
+				dDictProps[sProp] = mk_prop_from_raw(dRawProps[sProp])
+			
+			dHdr['props'] = dDictProps    # Now replace them
+
+			return (dHdr, lOut)
 
 		raise SourceError(sUrl, "Unable to retrieve data")
 
