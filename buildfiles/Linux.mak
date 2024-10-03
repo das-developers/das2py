@@ -91,13 +91,14 @@ examples:
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/c_module/galileo_pws_e-survey.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/c_module/juno_hfwbr_cdf.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex01_source_queries.py
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex02_galileo_pws_spectra.py	
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex03_cassini_rpws_multimode.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex04_voyager_pws_query_by_time.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex08_juno_waves_wfrm_to_cdf.py
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex10_manual_datasets.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex09_cassini_fce_ephem_ticks.py 2017-02-01
+	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex10_manual_datasets.py
 	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex11_catalog_listings.py
-	env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex02_galileo_pws_spectra.py
+	
 
 # TODO: Revive this
 # env PYTHONPATH=$(PWD)/$(BD) python$(PYVER) examples/ex05_mex_marsis_query_by_angle.py

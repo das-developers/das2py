@@ -52,7 +52,8 @@ def dayLabels(sDay, sEphemSrc):
 	
 	# Here I'm using the Coordinate subset query shortcut as described
 	# in "shortcuts" section of the help above
-	dsEphem = ephem_src.get({'time':(str(dtBeg), str(dtEnd), 60*60*4)})[0]
+	(hdr, lDs) = ephem_src.get({'time':(str(dtBeg), str(dtEnd), 60*60*4)})
+	dsEphem = lDs[0]
 	print(dsEphem)             # Print dev info about the dataset
 	
 	
@@ -103,7 +104,8 @@ def main(lArgs):
 	print(fce_src.info())      # Print dev info about the source
 	
 	
-	dsFce = fce_src.get({'time':(sBeg, sEnd)})[0]
+	hdrFce, lDs = fce_src.get({'time':(sBeg, sEnd)})
+	dsFce = lDs[0]
 	print(dsFce)             # Print dev info about the dataset
 
 
@@ -143,7 +145,8 @@ def main(lArgs):
 	
 	# das2.mpl module provides das2 -to-> mpl text formatting
 	ax0.set_ylabel(das2.mpl.label(dsFce['Fce'].props['label']))
-	ax0.set_title(das2.mpl.label(dsFce.props['title']))
+	print(hdrFce['props']['title'])
+	ax0.set_title(das2.mpl.label(hdrFce['props']['title']))
 	
 	pyplot.savefig('cas_mag_fce_%s.png'%sDate)
 	

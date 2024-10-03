@@ -1,4 +1,4 @@
-|Sx||597|
+|Sx||529|
 <stream version="3.0" type="das-basic-stream">
   <properties>
     <p name="instrument">EFI</p>
@@ -9,33 +9,34 @@
     <p name="modelLabel">FM-2</p>
     <p name="title">EFI FM2 - Level 1</p>
   </properties>
-  <frame name="TSCS" type="cartesian">
+  <frame name="TSCS" body="TS1">
     <properties>
-      <p name="label">Tracers Spocecraft Coordinate Frame</p>
+      <p name="label">Tracers Spacecraft Coordinate Frame</p>
     </properties>
-    <dir name="x"/>
-	  <dir name="y"/>
-	  <dir name="z"/>    
   </frame>
 </stream>
-|Hx|80|832|
+|Hx|80|915|
 <dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
   <properties>
-    <p name="info">Fluxgate Magnetic Field 3-Vectors sampled at 128 Hz</p>
+    <p name="info">Electric Field, 2D-Vectors in spin plane sampled at 128 Hz</p>
     <p name="label">Magnetic Field, 128 Hz</p>
   </properties>
   
   <coord axis="x" physDim="time" >
     <properties><p name="label">UTC</p></properties>
-    <scalar use="center" semantic="datetime" index="*" units="TT2000">
+    <scalar semantic="datetime" storage="long" index="*" units="TT2000">
       <packet numItems="1" itemBytes="8" encoding="LEint" fill="-9223372036854775808"/>
     </scalar>
   </coord>
+
   <data name="EAC" physDim="E" frame="TSCS" >
-    <properties><p name="label">EFI SCI @ 128 Hz</p></properties>
-    <vector use="center" semantic="int" index="*" units="">
-      <component dir="x"/>
-      <component dir="y"/>
+    <properties>
+      <p name="label">EFI SCI @ 128 Hz</p>
+    </properties>
+    <vector semantic="int" index="*" units="" system="cartesian" components="0;1">
+      <properties>
+        <p name="label" type="stringArray">Ex Ey</p>
+      </properties>
       <packet numItems="2" itemBytes="4" encoding="LEint" fill="-2147483648"/>
     </vector>
   </data>

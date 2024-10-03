@@ -27,7 +27,8 @@ else:
 sId = 'site:/uiowa/voyager/1/pws/specanalyzer-4s-efield/das2'
 src = das2.get_source(sId)
 
-ds = src.get({'time':subset})[0]
+(hdr,lDs) = src.get({'time':subset})
+ds = lDs[0]
 print(ds)
 
 time = ds['time']

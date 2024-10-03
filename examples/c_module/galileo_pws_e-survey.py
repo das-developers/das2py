@@ -217,7 +217,7 @@ def main(argv):
 	cbar.set_label("log(%s)"%unitsZ)
 	pyplot.xlabel(unitsX)
 	pyplot.ylabel("log(%s)"%unitsY)
-	pyplot.title(ds['props']['title'][1])
+	pyplot.title(dHdr['props']['title'][1])
 	pyplot.savefig('galileo_pws_e-survey.png')
 
 

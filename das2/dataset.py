@@ -1495,7 +1495,7 @@ class Dataset(object):
 # ########################################################################### #
 # das2C wrapper to high level interface conversion functions
 
-def _mk_prop_from_raw(tProp):
+def mk_prop_from_raw(tProp):
 	"""Make a property dictionary value given a :mod:_das2 property string
 
 	Low level properties are the tuples:
@@ -1722,7 +1722,7 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 		elif sVar == 'props':
 			dRawProps = dRawDim['props']
 			for sProp in dRawProps:
-				dim.props[sProp] = _mk_prop_from_raw(dRawProps[sProp])
+				dim.props[sProp] = mk_prop_from_raw(dRawProps[sProp])
 		else:
 			sExp = dRawDim[sVar]['expression']
 			sUnits = dRawDim[sVar]['units']
@@ -1745,7 +1745,7 @@ def ds_from_raw(dRawDs):
 	ds = Dataset(dRawDs['id'], dRawDs['group'])
 
 	for sProp in dRawDs['props']:
-		ds.props[sProp] = _mk_prop_from_raw(dRawDs['props'][sProp])
+		ds.props[sProp] = mk_prop_from_raw(dRawDs['props'][sProp])
 
 	ds.shape = dRawDs['shape']
 

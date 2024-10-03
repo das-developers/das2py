@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
 import das2.verify
 
-das2.verify.main()
+nRet = das2.verify.main()
+if nRet != 0:
+	sys.exit(nRet)

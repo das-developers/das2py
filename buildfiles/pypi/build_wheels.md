@@ -26,7 +26,7 @@ cd ..\
 
 rem build das2C
 cd das2C
-git checkout tags/v2.3.0
+git checkout tags/v3.0-pre1
 set VCPKG_ROOT=C:\Users\you\git\vcpkg # Adjust as needed
 set LIBRARY_INC=%VCPKG_ROOT%\installed\x64-windows-static\include
 set LIBRARY_LIB=%VCPKG_ROOT%\installed\x64-windows-static\lib
@@ -37,7 +37,7 @@ cd ..\
 
 rem build das2py (reuses VCPKG_ROOT setting from above)
 cd das2py
-git checkout tags/v2.3.0  # Or stay on main if testing
+git checkout tags/v3.0-pre1  # Or stay on main if testing
 python -m pip install numpy
 python -m pip install wheel
 python -m pip install --upgrade build
@@ -57,4 +57,6 @@ rem OTHER TESTS HERE
 rem upload to pypi
 cd das2py
 python -m twine upload dist/*
+username: __token__
+password: (the 170+ character token value that you saved somewhere)
 ```
