@@ -53,7 +53,7 @@
     <!-- display the Y direction of the room in the X plot direction just to show
          that these aren't intrinsically linked. -->
 	 <coord physDim="space" axis="y;x" frame="lab601">
-	 	<vector semantic="real" units="m" index="-;4" system="cartesian" components="1;0">
+	 	<vector components="2" semantic="real" units="m" index="-;4" system="cartesian" sysorder="1;0">
 			<values>1 1 2 1 1 2 2 2</values>
 		</vector>
 	 </coord>
@@ -64,7 +64,7 @@
         <p name="componentLabel" type="stringArray">Bx_cal By_cal Bz_cal</p>
       </properties>
       
-      <vector use="center" semantic="real" units="nT" index="*;4" system="cartesian" components="0;1;2">
+      <vector components="3" use="center" semantic="real" units="nT" index="*;4" system="cartesian" sysorder="0;1;2">
         <packet numItems="12" valTerm=";"/>
       </vector>
     </data>
@@ -83,7 +83,7 @@
         </p>
       </properties>
       
-      <vector use="center" semantic="real" units="nT" index="*;4" system="cartesian" components="0;1;2">
+      <vector components="3" use="center" semantic="real" units="nT" index="*;4" system="cartesian" sysorder="0;1;2">
         <packet numItems="12" valTerm=";"/>
       </vector>
     </data>

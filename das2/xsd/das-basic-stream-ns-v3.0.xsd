@@ -135,7 +135,7 @@
     <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
   </xs:sequence>
   <xs:attribute name="name" type="StructName" use="required"/>
-  <xs:attribute name="inertial" type="Bool"/>
+  <xs:attribute name="fixed" type="Bool"/>
   <xs:attribute name="body" type="xs:string" />
 </xs:complexType>
 
@@ -433,6 +433,12 @@
 
 <!-- Vectors, Inherit from scalars and add elements ======== -->
 
+<xs:simpleType  name="NumComps">
+  <xs:restriction base="xs:nonNegativeInteger">
+    <xs:maxInclusive value="3"/>
+  </xs:restriction>
+</xs:simpleType>
+
 <xs:simpleType  name="ComponentList">
   <xs:restriction base="xs:string">
     <xs:pattern value="[0-2](;[0-2]){0,2}" />
@@ -464,8 +470,9 @@
   <xs:attribute name="semantic" type="Semantic" use="required" />
   <xs:attribute name="storage"  type="Storage" />
   <xs:attribute name="index"    type="VarIndexShape" use="required" />
+  <xs:attribute name="components" type="NumComps"    use="required" />
   <xs:attribute name="system"   type="ComponentSystem" default="cartesian"/>
-  <xs:attribute name="components" type="ComponentList" use="required" />
+  <xs:attribute name="sysorder" type="ComponentList"/>
   <xs:attribute name="refSurface"  type="xs:string" /> <!-- 0 = SPICE default for frame body -->
 </xs:complexType>
 

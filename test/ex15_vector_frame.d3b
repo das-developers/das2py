@@ -15,7 +15,7 @@
     </properties>
   </frame>
 </stream>
-|Hx|80|915|
+|Hx|80|891|
 <dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
   <properties>
     <p name="info">Electric Field, 2D-Vectors in spin plane sampled at 128 Hz</p>
@@ -32,11 +32,9 @@
   <data name="EAC" physDim="E" frame="TSCS" >
     <properties>
       <p name="label">EFI SCI @ 128 Hz</p>
+      <p name="compLabel" type="stringArray">Ex Ey</p>
     </properties>
-    <vector semantic="int" index="*" units="" system="cartesian" components="0;1">
-      <properties>
-        <p name="label" type="stringArray">Ex Ey</p>
-      </properties>
+    <vector components="2" semantic="int" index="*" units="" system="cartesian" sysorder="0;1">
       <packet numItems="2" itemBytes="4" encoding="LEint" fill="-2147483648"/>
     </vector>
   </data>
