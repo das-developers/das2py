@@ -27,7 +27,7 @@ INSTALLED_PYSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/%.py,$(PYSRC))
 INSTALLED_CDFSRC=$(patsubst %.py,$(INST_HOST_LIB)/das2/pycdf/%.py,$(CDFSRC))
 
 # Treat schemas as package data
-INSTALLED_SCHEMA=$(patsubst %.xsd,$(INST_HOST_LIB)/das2/xsd/%.xsd,$(SCHEMA))
+INSTALLED_SCHEMA=$(patsubst %.xsd,$(INST_HOST_LIB)/das2/%.xsd,$(SCHEMA))
 
 INSTALLED_SCRIPTS=$(patsubst %,$(INST_HOST_BIN)/%, $(SCRIPTS))
 
@@ -39,7 +39,7 @@ $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 $(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
 	install -D -m 664 $< $@
 	
-$(INST_HOST_LIB)/das2/xsd/%.xsd:$(BD)/das2/xsd/%.xsd
+$(INST_HOST_LIB)/das2/%.xsd:$(BD)/das2/%.xsd
 	install -D -m 664 $< $@
 
 $(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
@@ -54,7 +54,7 @@ build: $(BD) $(BD)/_das2.so $(DAS2C_LIBDIR)/lib$(LIBDAS).a
 vars:
 	@echo $(INSTALLED_SCRIPTS) $(PYVER)
 
-local: $(BD) src/*.c das2/*.py das2/pycdf/*.py das2/xsd/*.xsd
+local: $(BD) src/*.c das2/*.py das2/pycdf/*.py das2/*.xsd
 	python$(PYVER) buildfiles/du_setup.py build -g -b $(BD) -t $(BD) --build-lib=$(BD)
 	@if [ ! -e "$(BD)/_das2.so" ]; then mv $(BD)/_das2.cpython-*.so $@ ; fi
 	

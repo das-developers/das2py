@@ -97,7 +97,7 @@ def loadSchema(sContent, sVersion, bNameSpace=False):
 		location - Where the schema was loaded from
 	"""
 	sMyDir = dname(os.path.abspath( __file__))
-	sSchemaDir = pjoin(sMyDir, 'xsd')
+	sSchemaDir = pjoin(sMyDir)
 	
 	# If a fixed schema is given we have to load that
 	sFile = getSchemaName(sContent, sVersion, bNameSpace)

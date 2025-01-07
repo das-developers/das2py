@@ -60,6 +60,9 @@ env N_ARCH=/ make
 env N_ARCH=/ make test
 cd ../
 
+# make sure the build and venv packages are installed
+apt install python3-build python3-venv  #<-- Or use PIP
+
 # Now build das2py using the PIP of your choice in an adjacent directory
 git clone git@github.com:das-developers/das2py.git
 cd das2py

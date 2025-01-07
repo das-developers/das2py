@@ -1,10 +1,10 @@
 [project]
 name = "das2py"
-version = "3.0-pre1"
+version = "3.0-pre2"
 dependencies = [ "numpy>=1.16.6", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
-requires-python = ">=3.5"
+requires-python = ">=3.7"
 license = {file = "LICENSE"}
 authors = [
    {name = "C Piker", email = "cpiker@users.noreply.github.com"}
@@ -27,4 +27,5 @@ requires = [ "setuptools", "numpy>=2.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tools.setuptools]
-packages = ["das2", "das2.pycdf", "das2.xsd"]
+include-package-data = true
+packages = ["das2", "das2.pycdf"]
