@@ -39,11 +39,12 @@ $(INST_HOST_LIB)/das2/%.py:$(BD)/das2/%.py
 $(INST_HOST_LIB)/das2/pycdf/%.py:$(BD)/das2/pycdf/%.py
 	install -D -m 664 $< $@
 	
-$(INST_HOST_LIB)/das2/%.xsd:$(BD)/das2/%.xsd
+$(INST_HOST_LIB)/das2/%.xsd:das2/%.xsd
 	install -D -m 664 $< $@
 
 $(INST_HOST_BIN)/%:$(BD)/scripts-$(PYVER)/%
-	install -D -m 775 $< $@	
+	install -D -m 775 $< $@
+	
 
 # Explicit Rules #############################################################
 
