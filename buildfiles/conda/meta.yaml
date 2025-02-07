@@ -10,7 +10,7 @@
 {% set git_version = "3.0.2" %}
 {% set bld_date = "20250206" %}
 # This sha-hash is not right, checkout next version of main to get correct one
-{% set sha256 = "7635b567991783ad59d7e1a0f551cdea19bb425c1a9e3cbb70f7eda517dcc538" %}
+{% set sha256 = "7b708994e08ce382d45766852ddfa8872526909dcfadecd0fa9deb0db2e4edae" %}
 
 package:
    name: {{ name }} 
