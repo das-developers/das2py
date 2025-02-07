@@ -1,6 +1,7 @@
 :: set PYVER=%PY_VER%
-:: set N_ARCH=/
+set N_ARCH=\
 
+set VCPKG_ROOT=C:\Users\pikerc\git\vcpkg
 set DAS2C_LIBDIR=%BUILD_PREFIX%\lib
 set DAS2C_INCDIR=%BUILD_PREFIX%\include
 

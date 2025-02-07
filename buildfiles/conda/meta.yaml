@@ -5,12 +5,12 @@
 #  openssl sha256 das2py-tmp.tar.gz | awk '{print $2}'
 
 {% set name = "das2py" %}
-{% set das2c_version = "3.0.0" %}
-{% set conda_version = "3.0.0" %}
-{% set git_version = "3.0.0" %}
-{% set bld_date = "20240527" %}
+{% set das2c_version = "3.0.2" %}
+{% set conda_version = "3.0.2" %}
+{% set git_version = "3.0.2" %}
+{% set bld_date = "20250206" %}
 # This sha-hash is not right, checkout next version of main to get correct one
-{% set sha256 = "f4a635898af682cf8cfb9e26d40418278e6d7a07c2e227033813fa4bda6e6b20" %}
+{% set sha256 = "7635b567991783ad59d7e1a0f551cdea19bb425c1a9e3cbb70f7eda517dcc538" %}
 
 package:
    name: {{ name }} 
@@ -57,6 +57,36 @@ test:
    imports:
       - das2
       - _das2
+   source_files:
+      - test/TestRead.py
+      - test/test_read_empty.d2s
+      - test/TestDasTime.py
+      - test/TestCatalog.py
+      - test/TestSortMinimal.py
+      - test/ex08_dynaspec_namespace.d3t
+      - test/ex05_waveform_extra.d3t
+      - test/ex06_waveform_binary.d3b
+      - test/ex08_dynaspec_namespace.d3t
+      - test/ex12_sounder_xyz.d3t
+      - test/ex13_object_annotation.d3t
+      - test/ex14_object_tfcat.d3t
+      - test/ex15_vector_frame.d3b
+      - test/ex16_mag_grid_doc.d3x
+      - test/ex96_yscan_multispec.d2t
+   commands:
+      - python test/TestRead.py
+      - python test/TestDasTime.py
+      - python test/TestCatalog.py
+      - python test/TestSortMinimal.py
+      - das_verify test/ex05_waveform_extra.d3t
+      - das_verify test/ex06_waveform_binary.d3b
+      - das_verify test/ex08_dynaspec_namespace.d3t
+      - das_verify test/ex12_sounder_xyz.d3t
+      - das_verify test/ex13_object_annotation.d3t
+      - das_verify test/ex14_object_tfcat.d3t
+      - das_verify test/ex15_vector_frame.d3b
+      - das_verify test/ex16_mag_grid_doc.d3x
+      - das_verify test/ex96_yscan_multispec.d2t
 
 about:
    home: https://das2.org/das2py
