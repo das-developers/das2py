@@ -71,7 +71,7 @@ def auth_set(sBaseUrl, sRealm, sHash, tGetParam=(None,None)):
 
 
 def auth_load(sFile=None):
-	"""Load authentication hashes from a semicolon delimited disk file.  
+	"""Load authentication hashes from a pipe delimited disk file.
 	
 	Each line of the file should contain a single hash to load.  Lines are
 	formated with pipe, '|',  delimiters.  The hash itself may contain
@@ -92,7 +92,6 @@ def auth_load(sFile=None):
 	"""
 	
 	if sFile is None:
-		import os
 		sHome = os.getenv('HOME')
 		if sHome == None:
 			sHome = os.getenv('USERPROFILE')
