@@ -1,6 +1,6 @@
 [project]
 name = "das2py"
-version = "3.0-pre2"
+version = "3.0-pre4"
 dependencies = [ "numpy>=1.16.6", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
@@ -28,4 +28,4 @@ build-backend = "setuptools.build_meta"
 
 [tools.setuptools]
 include-package-data = true
-packages = ["das2", "das2.pycdf"]
+packages = ["das2", "das2.pycdf", "_das2"]

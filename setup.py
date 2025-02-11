@@ -70,14 +70,13 @@ if sys.platform == 'win32':
 			"User32", "Crypt32", "zlib", "pthreadVC3", "ws2_32"
 		]
 	else:
-		# Anaconda will setup the lib directories for us, but still
-		# link das2C statically.  Also anaconda and vcpkg use different
-		# names for expaxt library
-		lExObjs = ['%s/libdas3.0.lib'%sCLibDir]
-		lLibs = [ 
-			"fftw3", "expat", "libssl", "libcrypto",
-			"zlib", "pthreadVC3", "ws2_32"
+		# Do as much static linking as you can. Removes run-time dependencies
+		lTmp = [ 
+			"libdas3.0", "fftw3", "expat", "libssl", "libcrypto", "zlib", 
+			"libpthreadVC3"
 		]
+		lExObjs = [ '%s/%s.lib'%(sCLibDir, s) for s in lTmp ]
+		lLibs = ["ws2_32"]
 
 	print("setup.py: Using Headers from %s"%lInc)
 	print("setup.py: Using Libs from %s"%lLibDirs)
@@ -165,7 +164,7 @@ class build_ext(_build_ext):
 setup(
 	cmdclass={'build_ext':build_ext},
 	name="das2py",
-	version="3.0.0",
+	version="3.0.4",
 	ext_modules=[ext],
 	packages=['das2', 'das2.pycdf'],
 	author="C Piker",
