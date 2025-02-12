@@ -1,4 +1,4 @@
-# Building and installing das2py without PIP
+# Building and installing das2py without a python wheel
 
 
 First setup the system prerequisites as defined in the main [ReadMe.md](../README.md),
