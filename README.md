@@ -35,7 +35,7 @@ head straight the example program below.
 Compilation and installation of das2py has been tested on Linux, Windows, MacOS using
 both Python 2 and Python 3.  The following packages are required to build das2py:
 
-  * [Das2C](https://github.com/das-developers/das2C) - Version 2.3 or above.  Need not be installed, but must be built
+  * [Das2C](https://github.com/das-developers/das2C) - Version 3.0 or above.  Need not be installed, but must be built
   * **NumPy** - Version 1.10.1 or above
   * **MatplotLib++** - For plotting data (optional, recommended)
   * **[CDF](https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf38_1/cdf38_1-dist-cdf.tar.gz)** - For writing CDF files (optional)
@@ -90,38 +90,9 @@ python3.9 das2py/examples/ex09_cassini_fce_ephem_ticks.py 2017-09-14
 okular cas_mag_fce_2017-09-14.png # Or whatever PNG viewer you like
 ```
 
-## Old Build and Install
+## Building without PIP
 
-*The old makefile based build and install wrapper is still supported.  It's 
-based on distutils, and it works for Python 2.7 and up.  For newer versions 
-of python the pip-wheel build is recommended, for Python2 support read on...*
-
-Decide where you want to install das2py.  In the example below I've selected 
-`/usr/local/lib/python3.9/site-packages` but any location is fine so long as
-it is on the `PYTHONPATH` or you are willing to add it to your PYTHONPATH.
-
-```bash
-# Where to find the das2C static library
-$ export DAS2C_INCDIR=$HOME/git/das2C
-$ export DAS2C_LIBDIR=$HOME/git/das2C/build.  #last dot is not a typo
-
-# Which python version to use
-$ export PYVER=3.9
-
-# Where you want to install the files
-$ export INST_HOST_LIB=/usr/local/lib/python3.9
-$ export INST_EXT_LIB=/usr/local/lib/python3.9
-
-# Build and test
-$ make           # <-- If only using system packages
-$ make local     # <-- If using numpy or others from $HOME/.local
-                 #     Do not use for RPM/DEB builds
-$ make test
-
-# Check install location, then install
-$ make -n install
-$ make install
-```
+See older instructions in [buildfiles/ReadMe.md](buildfiles/ReadMe.md)
 
 ## First program
 

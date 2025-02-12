@@ -12,7 +12,7 @@ authors = [
 maintainers = [
 	{name = "K Steele", email = "KaiwenS7@users.noreply.github.com"}
 ]
-keywords = ["space-physics", "magneosphere", "das2"]
+keywords = ["space-physics", "magnetosphere", "das2"]
 
 [project.urls]
 Homepage = "https://das2.org/das2py"
@@ -26,6 +26,6 @@ das_verify = "das2.verify:main"
 requires = [ "setuptools", "numpy>=2.0.0"]
 build-backend = "setuptools.build_meta"
 
-[tools.setuptools]
-include-package-data = true
-packages = ["das2", "das2.pycdf", "_das2"]
+#[tool.setuptools]
+#include-package-data = true
+#packages = ["das2", "das2.pycdf", "_das2"]

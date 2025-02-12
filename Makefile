@@ -1,64 +1,60 @@
-##############################################################################
-# Generic definitions for: Native Programs + Hosted Python
+# Simple wrapper around PIP so that higher level tools can invoke using
+# make, make test, make install etc.
 #
-ifeq ($(PREFIX),)
-ifeq ($(HOME),)
-PREFIX:=$(USERPROFILE)
-else
-PREFIX=$(HOME)
-endif
-endif
+# Asumes the following are set:
+#
+#  PYVENV
+#  DAS2C_INCDIR
+#  DAS2C_LIBDIR
 
-ifeq ($(INST_BIN),)
-INST_BIN=$(PREFIX)/bin/$(N_ARCH)
-endif
-
-ifeq ($(N_ARCH),)
-N_ARCH=$(shell uname -s).$(shell uname -p)
+ifeq ($(PYVENV),)
+$(error Please set PYVENV to the root of your python virtual environment.  To use system python set PYVENV=/usr and PYVER=3.7 or similar)
 endif
 
 ifeq ($(DAS2C_INCDIR),)
-DAS2C_INCDIR=$(PREFIX)/include
+$(error Please set DAS2C_INCDIR to the das2C include directory)
 endif
 
 ifeq ($(DAS2C_LIBDIR),)
-DAS2C_LIBDIR=$(PREFIX)/lib/$(N_ARCH)
+$(error Please set DAS2C_LIBDIR to the das2C archive library name aka: /path/to/libdas3.0.a )
 endif
 
-ifeq ($(INST_SHARE),)
-INST_SHARE=$(PREFIX)/share
-endif
+SRC:= \
+das2/__init__.py \
+das2/auth.py \
+das2/cdf.py \
+das2/cli.py \
+das2/container.py \
+das2/das-basic-doc-ns-v3.0.xsd \
+das2/das-basic-stream-ns-v3.0.xsd \
+das2/das-basic-stream-v2.2.xsd \
+das2/das-basic-stream-v3.0.xsd \
+das2/dastime.py \
+das2/dataset.py \
+das2/mpl.py \
+das2/node.py \
+das2/pkt.py \
+das2/reader.py \
+das2/source.py \
+das2/streamsrc.py \
+das2/toml.py \
+das2/util.py \
+das2/verify.py \
+das2/pycdf/__init__.py \
+das2/pycdf/const.py \
+das2/pycdf/LICENSE.md
 
-ifeq ($(INST_DOC),)
-INST_DOC=$(INST_SHARE)/doc
-endif
+build: dist/das2py-3.0rc4.tar.gz
 
-ifeq ($(PYVER),)
-PYVER:=$(shell python3 -c "import sys; print('.'.join( sys.version.split()[0].split('.')[:2] ))")
-endif
+dist/das2py-3.0rc4.tar.gz:$(SRC)
+	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PYVENV)/bin/python -m build
 
-ifeq ($(H_ARCH),)
-H_ARCH:=python$(PYVER)
-endif
+install:
+	$(PYVENV)/bin/python$(PYVER) -m pip install ./dist/das2py*whl
 
-ifeq ($(INST_HOST_BIN),)
-INST_HOST_BIN=$(PREFIX)/bin/$(H_ARCH)
-endif
+clean:
+	-rm -r dist *.egg-info
 
-ifeq ($(INST_HOST_LIB),)
-INST_HOST_LIB=$(PREFIX)/lib/$(H_ARCH)
-endif
+distclean:
+	-rm -r dist *.egg-info
 
-ifeq ($(INST_EXT_LIB),)
-INST_EXT_LIB=$(PREFIX)/lib/$(N_ARCH)/$(H_ARCH)
-endif
-
-
-BUILD_DIR:=build.$(N_ARCH)
-
-##############################################################################
-# Native Platform specific include
-
-UNAME = $(shell uname)
-
-include buildfiles/$(UNAME).mak
