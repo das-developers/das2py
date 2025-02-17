@@ -275,7 +275,7 @@ def main():
 	# insertion in help output is the most requested feature of argparse.)
 		
 	psr = argparse.ArgumentParser(
-		description="das2 stream identifier and validator"
+		description="dasStream identifier and validator"
 	)
 	
 	psr.add_argument(

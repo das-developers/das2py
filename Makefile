@@ -3,12 +3,20 @@
 #
 # Asumes the following are set:
 #
-#  PYVENV
+#  PY_BIN
 #  DAS2C_INCDIR
 #  DAS2C_LIBDIR
 
-ifeq ($(PYVENV),)
-$(error Please set PYVENV to the root of your python virtual environment.  To use system python set PYVENV=/usr and PYVER=3.7 or similar)
+ifeq ($(PY_BIN),)
+PY_BIN=$(which python)
+
+ifeq ($(PY_BIN),)
+PY_BIN=$(which python3)
+endif
+
+ifeq ($(PY_BIN),)
+$(error Neither python nor python3 were found, set PY_BIN to the path to your python interpreter)
+endif
 endif
 
 ifeq ($(DAS2C_INCDIR),)
@@ -47,10 +55,10 @@ das2/pycdf/LICENSE.md
 build: dist/das2py-3.0rc4.tar.gz
 
 dist/das2py-3.0rc4.tar.gz:$(SRC)
-	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PYVENV)/bin/python -m build
+	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
 
 install:
-	$(PYVENV)/bin/python$(PYVER) -m pip install ./dist/das2py*whl
+	$(PY_BIN) -m pip install ./dist/das2py*whl
 
 clean:
 	-rm -r dist *.egg-info
