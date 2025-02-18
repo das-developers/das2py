@@ -932,6 +932,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	DasAry* pDasAry = NULL;
 
 	char sInfo[4096] = {'\0'};
+	/* char sInfo[32768] = {'\0'}; */
 
 	/* Before going through all the setup, see if the Das Arrays can even be
 	 * converted to ndarrays with this extension.  Once code has been written
@@ -1129,8 +1130,24 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 		
 		/* okay, now it's safe to save the dataset info string, AFTER any unit
 		 * conversions that may have taken place */
-		DasDs_toStr(pDs, sInfo, 4095);
-		pStr = PyString_FromString(sInfo);
+		char* pInfo = DasDs_toStr(pDs, sInfo, 4095);
+		if(pInfo == NULL){
+			char* pTmp = (char*) calloc(65536, sizeof(char));
+			pInfo = DasDs_toStr(pDs, pTmp, 65535);
+			if(pInfo == NULL){
+				free(pTmp);
+				PyErr_Format(g_pPyD2Error,
+					"Dataset description is > 64 KB, update py_builder.h if you want to "
+					"handle datasets with this many variables."
+				);
+				return NULL;
+			}
+			pStr = PyString_FromString(sInfo);
+			free(pTmp);
+		}
+		else{
+			pStr = PyString_FromString(sInfo);
+		}
 		PyDict_SetItemString(pDsDict, "info", pStr);
 		Py_DECREF(pStr);
 

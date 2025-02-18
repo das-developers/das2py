@@ -58,6 +58,7 @@ dist/das2py-3.0rc4.tar.gz:$(SRC)
 	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
 
 install:
+	$(PY_BIN) -m pip uninstall -y das2py
 	$(PY_BIN) -m pip install ./dist/das2py*whl
 
 clean:

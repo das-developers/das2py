@@ -1507,7 +1507,7 @@ def mk_prop_from_raw(tProp):
 		- 'stringArray'     -> [str] Quantity([str], units)
 		- 'bool'            -> True | False
 		- 'boolArray'       -> [bool]
-		- 'int'             -> int,  Quantity(int, units)
+		- 'integer'         -> int,  Quantity(int, units)
 		- 'intrange,array'  -> [int], Quantity([int], units)
 		- 'realrange,array' -> [float], Quantity([float], units)
 		- 'datetime'        -> datetime64(ns), Quantity(datetime64(ns), units)
@@ -1515,6 +1515,10 @@ def mk_prop_from_raw(tProp):
 		
 		- 'datumrange' -> Quantity (2 elements) ([float, float], units)
 		
+	The datatype strings are defined in the PropType element of das-basic-stream-v3.0.xsd
+	which is authoritative but datatype strings from das-basic-stream-v2.2.xsd are also
+	acceptable.
+
 	Args:
 		tProp (str, str): The first string is the data type as used in libdas2,
 			the second string is the value.  The first string must be one of those
@@ -1539,7 +1543,7 @@ def mk_prop_from_raw(tProp):
 	if sType == 'boolean':
 		return tProp[1].lower() in ('true','1','yes')
 
-	if sType == 'int':
+	if (sType == 'int') or (sType == 'integer'):
 		if sUnits == "": return int(tProp[1]);
 		else:            return Quantity(int(tProp[1]), sUnits);
 
@@ -1585,7 +1589,7 @@ def mk_prop_from_raw(tProp):
 	if sType == "boolArray":
 		return [ s.lower() in ('true','1','yes') for s in lItems]
 
-	if sType in ("intarray","intrange"):
+	if sType in ("integerarray","integerrange"):
 		lInts = [int(s) for s in lItems ]
 		if sUnits == "": return lInts
 		else:            return Quantity(lInts, sUnits);
