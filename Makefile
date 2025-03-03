@@ -7,6 +7,9 @@
 #  DAS2C_INCDIR
 #  DAS2C_LIBDIR
 
+# Find a way to get this from the manifest
+DAS_PY_VER:=3.0rc5
+
 ifeq ($(PY_BIN),)
 PY_BIN=$(which python)
 
@@ -52,7 +55,7 @@ das2/pycdf/__init__.py \
 das2/pycdf/const.py \
 das2/pycdf/LICENSE.md
 
-build: dist/das2py-3.0rc4.tar.gz
+build: dist/das2py-$(DAS_PY_VER).tar.gz
 
 dist/das2py-3.0rc4.tar.gz:$(SRC)
 	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
