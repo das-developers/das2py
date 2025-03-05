@@ -23,10 +23,14 @@
 
 FILL = -1.0e+31
 
-__version__ = '3.0-pre1'
+__version__ = '3.0-pre5'
 
 import sys
-from typing import Tuple
+try:
+	from typing import Tuple
+except:
+	pass
+	
 import _das2
 from _das2 import Psd as PSD
 from das2.dastime   import *
@@ -51,7 +55,8 @@ import das2.cli as cli
 # ########################################################################### #
 # The basic data reading functions
 
-def read_cmd(sCmd) -> Tuple[dict, list]:
+def read_cmd(sCmd):
+	# type: (str) -> Tuple[dict, list]
 	"""Run a das2 reader command line and output a list of das2 datasets
 
 	Args:
@@ -82,7 +87,8 @@ def read_cmd(sCmd) -> Tuple[dict, list]:
 
 
 
-def read_file(sFileName) -> Tuple[dict, list]:
+def read_file(sFileName):
+	# type: (str)  -> Tuple[dict, list]
 	"""Read datasets from a file
 
 	Args:
@@ -109,7 +115,8 @@ def read_file(sFileName) -> Tuple[dict, list]:
 	raise _das2.Error("Unable to retrieve data using %s"%sUrl)
 
 
-def read_http(sUrl, rTimeOut=3.0, sAgent=None) -> Tuple[dict, list]:
+def read_http(sUrl, rTimeOut=3.0, sAgent=None):
+	#type: (str, float, str) -> Tuple[dict, list]
 	"""Issue an HTTP GET command to a remote server and output a list of
 	datasets.
 

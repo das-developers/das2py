@@ -164,7 +164,7 @@ class build_ext(_build_ext):
 setup(
 	cmdclass={'build_ext':build_ext},
 	name="das2py",
-	version="3.0.5",
+	version="3.0rc5",
 	ext_modules=[ext],
 	packages=['das2', 'das2.pycdf'],
 	author="C Piker",

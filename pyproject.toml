@@ -1,6 +1,6 @@
 [project]
 name = "das2py"
-version = "3.0-pre5"
+version = "3.0rc5"
 dependencies = [ "numpy>=1.16.6", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
@@ -23,7 +23,7 @@ das_verify = "das2.verify:main"
 
 [build-system]
 #requires = [ "setuptools", "numpy>=2.0.0" ]
-requires = [ "setuptools", "numpy>=2.0.0"]
+requires = [ "setuptools", "numpy>=1.16.0"]
 build-backend = "setuptools.build_meta"
 
 #[tool.setuptools]

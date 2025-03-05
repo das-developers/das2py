@@ -31,7 +31,10 @@ from os.path import join as pjoin
 from os.path import dirname as dname  
 from io import BytesIO
 import re
-from typing import Union
+try:
+	from typing import Union
+except:
+	pass
 
 import xml.parsers.expat  # Switch das2C to use libxml2 as well?
 from lxml import etree
@@ -162,7 +165,8 @@ def _getDas2PktLen(elDs, nPktId, bThrow=True):
 	
 	return nSize
 
-def _getDas3PktLen(elDs, nPktId, bThrow=True) -> Union[int, None]:
+def _getDas3PktLen(elDs, nPktId, bThrow=True):
+	#type: (object, int, bool) -> Union[int, None]
 	
 	# Das v3.0 data can have variable length array values in each packet
 	# If the higher dimensional sizes are "*" then just return None
@@ -435,7 +439,8 @@ class DataHdrPkt(HdrPkt):
 		super(DataHdrPkt, self).__init__(sver, tag, id, length, content)
 		self.nDatLen = None
 
-	def dataLen(self) -> Union[int,None]:
+	def dataLen(self):
+		# type: () -> Union[int,None]
 		"""The das v2 parsable data length of each packet.  Das v3 streams
 		require that all packets have an explicit length and thus allows
 		for variable length arrays in packets.

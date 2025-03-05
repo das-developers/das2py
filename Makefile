@@ -30,6 +30,24 @@ ifeq ($(DAS2C_LIBDIR),)
 $(error Please set DAS2C_LIBDIR to the das2C archive library name aka: /path/to/libdas3.0.a )
 endif
 
+# ########################################################################### #
+# Try to predict the wheel name.  This is a fools game but most standard tools
+# will skip this makefile anyway and jump straight to a python -m build style
+# command.
+
+PY_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print('%d%d'%sys.version_info[0:2])")
+PY_MAJ_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print(sys.version_info[0])")
+
+ifeq ($(PY_MAJ_VER_TOK),3)
+WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)-linux_x86_64.whl
+VENV_MOD:=venv
+else
+WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)m-linux_x86_64.whl
+VENV_MOD:=virtualenv
+endif
+
+# ########################################################################### #
+
 SRC:= \
 das2/__init__.py \
 das2/auth.py \
@@ -55,18 +73,30 @@ das2/pycdf/__init__.py \
 das2/pycdf/const.py \
 das2/pycdf/LICENSE.md
 
-build: dist/das2py-$(DAS_PY_VER).tar.gz
+.PHONY: build dist test install clean distclean
 
-dist/das2py-3.0rc4.tar.gz:$(SRC)
+build:dist/$(WHEEL_FILE)
+
+dist/$(WHEEL_FILE):$(SRC)
 	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
 
+test:
+	# Creating temporary environment for testing
+	$(PY_BIN) -m $(VENV_MOD) dist_venv
+	./dist_venv/bin/python -m pip install --isolated --no-python-version-warning dist/$(WHEEL_FILE)
+	./dist_venv/bin/python test/TestCatalog.py
+	./dist_venv/bin/python test/TestDasTime.py
+	./dist_venv/bin/python test/TestSortMinimal.py
+	./dist_venv/bin/python test/TestRead.py
+	rm -r dist_venv
+
 install:
-	$(PY_BIN) -m pip uninstall -y das2py
-	$(PY_BIN) -m pip install ./dist/das2py*whl
+	$(PY_BIN) -m pip uninstall -y --isolated --no-python-version-warning das2py
+	$(PY_BIN) -m pip install --isolated --no-python-version-warning ./dist/$(WHEEL_FILE)
 
 clean:
-	-rm -r dist *.egg-info
+	-rm -r dist dist_venv *.egg-info
 
 distclean:
-	-rm -r dist *.egg-info
+	-rm -r dist dist_venv *.egg-info
 
