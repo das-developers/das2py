@@ -155,10 +155,14 @@ class build_ext(_build_ext):
 			__builtins__.__NUMPY_SETUP__ = False
 		except AttributeError:
 			pass # Newer numpy versions don't define this
-
 		import numpy
-		self.include_dirs.append(numpy.get_include())
+		print("===================================")
+		print("   Numpy Build Version is %s"%numpy.__version__)
+		print("===================================")
 
+		# Force numpy include to the front, might be some old version
+		# backed by the system python that is there too.  Ignore it.
+		self.include_dirs.insert(0, numpy.get_include())
 
 
 setup(

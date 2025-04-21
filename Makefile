@@ -78,12 +78,13 @@ das2/pycdf/LICENSE.md
 build:dist/$(WHEEL_FILE)
 
 dist/$(WHEEL_FILE):$(SRC)
-	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
+	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build -v
 
 test:
 	# Creating temporary environment for testing
 	$(PY_BIN) -m $(VENV_MOD) dist_venv
 	./dist_venv/bin/python -m pip install --isolated --no-python-version-warning dist/$(WHEEL_FILE)
+	@./dist_venv/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
 	./dist_venv/bin/python test/TestCatalog.py
 	./dist_venv/bin/python test/TestDasTime.py
 	./dist_venv/bin/python test/TestSortMinimal.py
