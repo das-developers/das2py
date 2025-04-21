@@ -5,7 +5,7 @@ dependencies = [ "numpy>=1.16.6", "lxml" ]
 description = "An efficient space physics data client for python"
 readme = "README.md"
 requires-python = ">=3.7"
-license = {file = "LICENSE"}
+license = "MIT"
 authors = [
    {name = "C Piker", email = "cpiker@users.noreply.github.com"}
 ]
