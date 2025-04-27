@@ -34,10 +34,10 @@ from os.path import basename as bname
 from . dataset import *
 
 try:
-	import spacepy.pycdf as pycdf
-except ImportError:
-	# If spacepy is not installed, use the embedded copy
 	import das2.pycdf as pycdf
+except ImportError:
+	# If CDF support not installed, try falling back to spacepy
+	import spacepy.pycdf as pycdf
 
 perr = sys.stderr.write
 
@@ -467,7 +467,7 @@ def main():
 	for sFile in opts.lFiles:	
 		try:
 
-			f = das2.pycdf.CDF(sFile)
+			f = pycdf.CDF(sFile)
 			print("Structure of: %s"%bname(sFile))
 
 			for k in f.attrs:

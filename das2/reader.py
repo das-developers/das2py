@@ -1,6 +1,6 @@
 # The MIT License
 #
-# Copyright 2022 Chris Piker
+# Copyright 2022-2025 Chris Piker
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -113,7 +113,11 @@ def loadSchema(sContent, sVersion, bNameSpace=False):
 
 	#print(sContent, sVersion, "-->", sPath)
 	
-	fSchema = open(sPath, encoding='utf-8')
+	try:
+		fSchema = open(sPath, encoding='utf-8')
+	except:
+		fSchema = open(sPath)
+
 	schema_doc = etree.parse(fSchema)
 	schema = etree.XMLSchema(schema_doc)
 	

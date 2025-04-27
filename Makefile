@@ -90,7 +90,9 @@ test:
 	./dist_venv/bin/python test/TestSortMinimal.py
 	./dist_venv/bin/python test/TestRead.py
 	./dist_venv/bin/das_verify -h
-	./dist_venv/bin/das_cdf_info -h
+	./dist_venv/bin/das_verify test/ex05_waveform_extra.d3t
+	./dist_venv/bin/das_cdf_info -h 
+	./dist_venv/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
 	rm -r dist_venv
 
 install:
