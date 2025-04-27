@@ -174,7 +174,7 @@ setup(
 	author="C Piker",
 	author_email="das-developers@uiowa.edu",
 	url="https://das2.org/das2py",
-	scripts=['scripts/das_verify'],
+	scripts=['scripts/das_verify','scripts/das_cdf_info'],
 	include_package_data=True,
 	#package_data={'das2':['xsd/*.xsd']},
 	install_requires=['lxml','numpy>=1.16.6']

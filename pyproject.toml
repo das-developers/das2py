@@ -20,6 +20,7 @@ Repository = "https://github.com/das-developers/das2py"
 
 [project.scripts]
 das_verify = "das2.verify:main"
+das_cdf_info = "das2.cdf:main"
 
 [build-system]
 #requires = [ "setuptools", "numpy>=2.0.0" ]

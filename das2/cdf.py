@@ -28,6 +28,8 @@ import numpy
 import datetime
 import os
 import _das2
+import argparse
+from os.path import basename as bname
 
 from . dataset import *
 
@@ -319,7 +321,6 @@ def _solve_depends(ds, cdf, lIdxMap):
 			
 		
 
-
 # ########################################################################## #
 def write(ds, path, src=None, derived=False):
 	"""Write a das2 Dataset to a CDF file.
@@ -446,4 +447,60 @@ def write(ds, path, src=None, derived=False):
 				cdf.attrs[sUriKey] = src.props['uris']
 		
 	return cdf
+	
+# ########################################################################## #
+
+def main():
+	"""A little utility to print the structure of a CDF file"""
+	
+	psr = argparse.ArgumentParser(
+		description="A CDF info printer based on pycdf from Triad National Security, LLC"
+	)
+		
+	# End command line with list of files to validate...
+	psr.add_argument(
+		'lFiles', help='The file(s) to validate', nargs='+', metavar='file'
+	)
+	
+	opts = psr.parse_args()	
+	
+	for sFile in opts.lFiles:	
+		try:
+
+			f = das2.pycdf.CDF(sFile)
+			print("Structure of: %s"%bname(sFile))
+
+			for k in f.attrs:
+				print(k, "=", f.attrs[k])
+	
+			print()
+
+			for k in f.keys():
+				print(k)
+				print(f[k])
+				print(f[k].attrs)
+	
+				# Now print the first record
+				print( f[k].shape)
+				if len(f[k].shape) == 1:
+					print( f[k][:] )
+				else:
+					if f[k].shape[0] > 0:
+						print( f[k][0,:] )
+	
+				print()
+				
+			f.close()
+
+		except (ValueError, IOError) as e:
+			pout("%s [ERROR]"%str(e))
+			return 13
+			
+	return 0	
+
+# ########################################################################## #
+if __name__ == "__main__":
+	sys.exit(main())
+
+
 

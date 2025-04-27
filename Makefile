@@ -78,7 +78,7 @@ das2/pycdf/LICENSE.md
 build:dist/$(WHEEL_FILE)
 
 dist/$(WHEEL_FILE):$(SRC)
-	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build -v
+	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
 
 test:
 	# Creating temporary environment for testing
@@ -89,6 +89,8 @@ test:
 	./dist_venv/bin/python test/TestDasTime.py
 	./dist_venv/bin/python test/TestSortMinimal.py
 	./dist_venv/bin/python test/TestRead.py
+	./dist_venv/bin/das_verify -h
+	./dist_venv/bin/das_cdf_info -h
 	rm -r dist_venv
 
 install:
