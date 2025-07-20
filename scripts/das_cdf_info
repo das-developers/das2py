@@ -13,8 +13,19 @@ from os.path import basename as bname
 # Get verision v3.9.
 
 import das2.pycdf
+import das2.pycdf.const
 
+def compStr(nUnhashable):
+	""" 
+	The CDF c_long types are not hashable, can't use a direct dictionary lookup
+	"""
+	if nUnhashable == das2.pycdf.const.NO_COMPRESSION : return "No Compression"
+	if nUnhashable == das2.pycdf.const.RLE_COMPRESSION : return "RLE Compression"
+	if nUnhashable == das2.pycdf.const.HUFF_COMPRESSION : return "Huffman Compression"
+	if nUnhashable == das2.pycdf.const.AHUFF_COMPRESSION : return "Adaptive Huffman Compression"
+	if nUnhashable == das2.pycdf.const.GZIP_COMPRESSION : return "GZip Compression"
 
+	return str(nUnhashable)
 
 # ########################################################################## #
 
@@ -38,23 +49,23 @@ def main():
 			f = das2.pycdf.CDF(sFile)
 			print("Structure of: %s"%bname(sFile))
 
-			for k in f.attrs:
-				print(k, "=", f.attrs[k])
+			for ak in f.attrs:
+				print(ak, "=", f.attrs[ak])
 	
 			print()
 
-			for k in f.keys():
-				print(k)
-				print(f[k])
-				print(f[k].attrs)
+			for vk in f.keys():
+				print("%s  (%s)"%(vk, compStr( f[vk].compress()[0] ) ))
+				print(f[vk])
+				print(f[vk].attrs)
 	
 				# Now print the first record
-				print( f[k].shape)
-				if len(f[k].shape) == 1:
-					print( f[k][:] )
+				print( f[vk].shape)
+				if len(f[vk].shape) == 1:
+					print( f[vk][:] )
 				else:
-					if f[k].shape[0] > 0:
-						print( f[k][0,:] )
+					if f[vk].shape[0] > 0:
+						print( f[vk][0,:] )
 	
 				print()
 				
