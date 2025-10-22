@@ -410,7 +410,8 @@
     <xs:enumeration value="width" />
     <xs:enumeration value="std_dev" />
     <xs:enumeration value="min_error" />
-    <xs:enumeration value="max_error" />    
+    <xs:enumeration value="max_error" />
+    <xs:enumeration value="norm" />  
   </xs:restriction>
 </xs:simpleType>
 
