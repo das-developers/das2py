@@ -53,8 +53,14 @@ class TestDasTime(unittest.TestCase):
 		self.assertEqual(dt1, dt2)
 
 	def test_tt2000(self):
-		# Can't use dastime with tt2000 conversions due to the implicit call to 
-		# tnorm.  Have to do something about that...
+		
+		# Make sure a leap second time flows through DasTime un-altered
+		# to the nano-second.  Note: 
+		# 536500868184000001 = 2016-12-31T23:59:60.000000001 
+		nTime1 = 536500868184000001
+		dt = das2.DasTime(536500868184000001, 'TT2000')
+		nTime2 = dt.epoch('TT2000')
+		self.assertEqual(nTime1, nTime2)
 
 		# Convert a leap second time to a floating point time
 		rTime = das2.to_epoch('TT2000', 2016, 12, 31, 23, 59, 60.0)

@@ -16,6 +16,7 @@
  */
 
 #include <Python.h>
+#include <math.h>
 
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
@@ -361,18 +362,26 @@ static PyObject* pyd2_utc_tt2k(PyObject* self, PyObject* args)
 
 	if(!PyArg_ParseTuple(args, "iiiiid:utc_tt2k", &nYr, &nMn, &nDom, &nHr, &nMin, &dSec))
 		return NULL;
-
-	double dSc = (int)dSec; 
-	double dMs = (int)( (dSec - dSc)*1e3 );
-	double dUs = (int)( ((dSec - dSc) - dMs*1e-3)*1e6 );
-	double dNs = (int)( ((dSec - dSc) - dMs*1e-3 - dUs*1e-6)*1e9 );
 		
 	/* CDF var-args function *requires* doubles and *can't* tell if it 
 	   doesn't get them! */
 	double dYr = nYr;  double dMn  = nMn;  double dDom = nDom;
 	double dHr = nHr;  double dMin = nMin;
+
+	int nSc = (int)dSec;           /* seconds field */
+
+	double dMs = (dSec - nSc)*1e3; /* All milliseconds */
+	int nMs = (int)dMs;            /* Millisec field */
+
+	double dUs = (dMs - nMs)*1e3;  /* All microseconds */
+	int nUs = (int)dUs;            /* Microsec field */
+
+	double dNs = round( (dUs - nUs)*1e3);  /* All nanoseconds */
+	int nNs = (int)dNs;                    /* Nanosec field */
 		
-	long long ntt2k = das_utc_to_tt2K(dYr, dMn, dDom, dHr, dMin, dSc, dMs, dUs, dNs);
+	long long ntt2k = das_utc_to_tt2K(
+		dYr, dMn, dDom, dHr, dMin, (double)nSc, (double)nMs, (double)nUs, (double)nNs
+	);
 
 	return Py_BuildValue("L", ntt2k);
 }

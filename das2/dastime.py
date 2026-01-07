@@ -79,11 +79,27 @@ class DasTime(object):
 	)		
 			
 	def __init__(self, nYear=0, nMonth=0, nDom=0, nHour=0, nMin=0, fSec=0.0):
-		"""Initalize from field values
+		"""Initalize a DasTime
+
+		The inputs are flexible, standard input is a:
+
+		  (year, month, day-of-month, hour, minute, float_seconds)
+
+		tuple, where missing items are assigned zero.
+
+		Other inputs are:
+		  ("string_time") -> handled by parse_time()
+		  (float, string_units) -> handled by parse_epoch()
+		  (int, "TT2000") -> special case handled by tt2k_utc()
 		
-		Note: If nYear is a string, and all other values are zero, then 
-		      parsetime is called to generate the field values from the time
-				string.
+		Params:
+			nYear (int,float,str) - Either an integer year, a time string, a
+			  floating point value or an integer TT2000 value.
+			nMonth (int, str) - Either an integer month, or a units string.
+			nDom (int) - The day of month (1 - 31)
+			nHour (int) - The hour of day (0 - 23)
+			nMin (int) - The minute of the hour (0 - 59)
+			fSec (float) - The floating point seconds of the minute
 		"""
 		
 		# Handle bytes to string conversion up front
@@ -125,8 +141,21 @@ class DasTime(object):
 			
 		# Initialize float plus das2 epoch units 
 		elif isinstance(nMonth, str):
-			tTmp = _das2.parse_epoch(nYear, nMonth)
-			(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
+
+			# Special long integer handling for TT2000 times
+			if isinstance(nYear, int) and (nMonth == "TT2000"):
+				tTmp = _das2.tt2k_utc(nYear)
+				(nYear, nMonth, nDom, nHour, nMin, fSec) = tTmp
+				tWithDoy = _das2.tnorm(nYear, nMonth, nDom)
+				nDoy = tWithDoy[3]
+			else:
+				tTmp = _das2.parse_epoch(nYear, nMonth)
+				(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
+
+			# Don't normalize time incase we are on a leap second
+			self.t = list((nYear, nMonth, nDom, nDoy, nHour, nMin, fSec))
+			#print(self.t)
+			return
 			
 		elif isinstance(nYear, DasTime):
 			# Just work as a copy constructor
@@ -339,20 +368,24 @@ class DasTime(object):
 
 		Args:
 			sUnits - The time offset units.  One of: 
-			'mj1958' - Floating point days since midnight, Jan. 1st 1958 (no leapseconds)
-			't1970'  - POSIX Time, non-leap seconds since midnight, Jan. 1st 1970
-			'ns1970' - NumPy Time, non-leap nanoseconds since midnight, Jan. 1st 1970
-			't2000'	- Non-leap Seconds since midnight, Jan. 1st 2000
-			'us2000' - Non-leap microseconds since midnight, Jan. 1st 2000
-			'TT2000' - ALL nanoseconds since 2000-01-01T11:58:55.816
+			'mj1958' - (float) Days since midnight, Jan. 1st 1958 (no leapseconds)
+			't1970'  - (float) POSIX Time, non-leap seconds since midnight, Jan. 1st 1970
+			'ns1970' - (float) NumPy Time, non-leap nanoseconds since midnight, Jan. 1st 1970
+			't2000'	- (float) Non-leap Seconds since midnight, Jan. 1st 2000
+			'us2000' - (float) Non-leap microseconds since midnight, Jan. 1st 2000
+			'TT2000' - (int) ALL nanoseconds since 2000-01-01T11:58:55.816
+			'ET2000' - (float) ALL Solar System Barycenter seconds since 2000-01-01T11:58:55.816
 
 		Note: Of the systems above, *only* TT2000 is leap-second aware.
 		"""
-		return _das2.to_epoch(
-			sUnits, self.t[0], self.t[1], self.t[2], 
-			        self.t[4], self.t[5], self.t[6]
-		)
-		
+		if sUnits == 'TT2000':
+			return _das2.utc_tt2k(
+				self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], self.t[6]
+			)
+		else:
+			return _das2.to_epoch(
+				sUnits, self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], self.t[6]
+			)
 		
 	def adjust(self, nYear, nMonth=0, nDom=0, nHour=0, nMin=0, fSec=0.0):
 		"""Adjust one or more of the field, either positive or negative,
