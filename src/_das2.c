@@ -92,7 +92,7 @@ static PyObject* pyd2_setExceptFromLog(PyObject* pExcept){
 	}
 	else
 		PyErr_SetString(pExcept, 
-			"Uh Oh! :o\nYou've encountered an unlogged error in libdas2, this "
+			"Uh Oh! :o\nYou've encountered an unlogged error in das2C, this "
 			"shouldn't happen.  Please contact das-developers @ uiowa.edu and "
 			"let them know about the problem along with any steps that may be "
 			"taken to reproduce the bug.\n"
@@ -531,6 +531,14 @@ static PyObject* pyd2_convertible(PyObject* self, PyObject* args){
 	
 	das_units from = Units_fromStr(sFrom);
 	das_units to = Units_fromStr(sTo);
+	if(from == NULL){
+		PyErr_Format(PyExc_ValueError, "un-parsable units '%s'", sFrom);
+		return NULL;
+	}
+	if(to == NULL){
+		PyErr_Format(PyExc_ValueError, "un-parsable units '%s'", sTo);
+		return NULL;
+	}
 	
 	if(Units_canConvert(from, to))  Py_RETURN_TRUE;
 	else Py_RETURN_FALSE;

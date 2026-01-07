@@ -75,6 +75,19 @@ class TestDasTime(unittest.TestCase):
 		r2 = dt2.epoch('TT2000')
 		self.assertEqual(r2 - r1, 2e9) # 2 seconds, not 1
 
+	def test_convertable(self):
+		# Test the the is convertable function
+		self.assertEqual(True, das2.convertible('us2000','t1970'))
+
+		# tt2000 aren't real units, TT2000 are, but it's a common mistake,
+		# check to see that convertible throws
+		try:
+			das2.convertible('us2000','tt2000')
+			self.assertEqual(True, False)
+		except ValueError:
+			pass
+		self.assertEqual(True, das2.convertible('us2000','TT2000'))
+		self.assertEqual(False, das2.convertible('doggy','us2000'))
 
 if __name__ == '__main__':
 	unittest.main()
