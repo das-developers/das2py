@@ -56,8 +56,8 @@ is built adjacent to das2py so that it can be included in das2py.
 # First build and test das2C, installation is not necessary
 git clone git@github.com:das-developers/das2C.git
 cd das2C
-env N_ARCH=/ make 
-env N_ARCH=/ make test
+env make CDF=yes SPICE=yes
+env make CDF=yes SPICE=yes test
 cd ../
 
 # make sure the build and venv packages are installed
@@ -66,7 +66,7 @@ apt install python3-build python3-venv  #<-- Or use PIP
 # Now build das2py using the PIP of your choice in an adjacent directory
 git clone git@github.com:das-developers/das2py.git
 cd das2py
-env DAS2C_LIBDIR=$PWD/../das2C/build. DAS2C_INCDIR=$PWD/../das2C python3.9 -m build
+env DAS_LIBDIR=$PWD/../das2C/build. DAS_INCDIR=$PWD/../das2C python3.11 -m build
 ```
 That's it!  Now you have a wheel file that can be installed where ever you
 like.  The included setup.py instructs the python setuptools module to staticlly

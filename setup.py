@@ -8,16 +8,16 @@ import sys
 
 # Assume das2C is in a parallel directory and that N_ARCH=/ if no
 # other option is set.
-sCLibDir = os.getenv("DAS2C_LIBDIR")
+sCLibDir = os.getenv("DAS_LIBDIR")
 if not sCLibDir:
 	sCLibDir = "../das2C/build."
 	
-sCHdrDir = os.getenv("DAS2C_INCDIR")
+sCHdrDir = os.getenv("DAS_INCDIR")
 if not sCHdrDir:
 	sCHdrDir = "../das2C"
 
-print('(setup.py) DAS2C_LIBDIR = %s'%sCLibDir)
-print('(setup.py) DAS2C_INCDIR = %s'%sCHdrDir)
+print('(setup.py) DAS_LIBDIR = %s'%sCLibDir)
+print('(setup.py) DAS_INCDIR = %s'%sCHdrDir)
 
 # Under conda we can dependend on shared objects, under system builds we can't
 if os.getenv("CONDA_PREFIX"):
@@ -64,7 +64,7 @@ if sys.platform == 'win32':
 
 		lLibDirs.append( sVcLibDir )
 		lInc.append( sVcIncDir )
-		lExObjs = ['%s/libdas3.0.lib'%sCLibDir]
+		lExObjs = ['%s/libdas3.lib'%sCLibDir]
 		lLibs = [ 
 			"fftw3", "libexpatMD", "libssl", "libcrypto", "Advapi32",
 			"User32", "Crypt32", "zlib", "pthreadVC3", "ws2_32"
@@ -72,7 +72,7 @@ if sys.platform == 'win32':
 	else:
 		# Do as much static linking as you can. Removes run-time dependencies
 		lTmp = [ 
-			"libdas3.0", "fftw3", "expat", "libssl", "libcrypto", "zlib", 
+			"libdas3", "fftw3", "expat", "libssl", "libcrypto", "zlib", 
 			"libpthreadVC3"
 		]
 		lExObjs = [ '%s/%s.lib'%(sCLibDir, s) for s in lTmp ]
@@ -111,14 +111,14 @@ elif sys.platform == 'darwin':
 			sys.exit(7)
 
 		lExObjs = [
-			'%s/libdas3.0.a'%sCLibDir,
+			'%s/libdas3.a'%sCLibDir,
 			'%s/opt/openssl/lib/libssl.a'%sBrewDir,
 			'%s/opt/openssl/lib/libcrypto.a'%sBrewDir,
 			'%s/lib/libfftw3.a'%sBrewDir
 		]
 		lLibs = ["expat", "z"]
 	else:
-		lExObjs = ['%s/libdas3.0.a'%sCLibDir]
+		lExObjs = ['%s/libdas3.a'%sCLibDir]
 		lLibs   = ["fftw3", "expat", "ssl", "crypto", "z"]
 
 
@@ -141,7 +141,7 @@ else:
 		,library_dirs=lLibDirs
 		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-		,extra_objects=['%s/libdas3.0.a'%sCLibDir]
+		,extra_objects=['%s/libdas3.a'%sCLibDir]
 	)
 
 # ... because import numpy at top level doesn't work anymore (yay)

@@ -2,58 +2,36 @@
 
 
 First setup the system prerequisites as defined in the main [ReadMe.md](../README.md),
-then proceed.  The following should work back to python 2.7.
+then proceed.  The following should work all the way back to python 2.7.
 
 Decide where you want to install das2py.  In the example below I've selected 
 `/usr/local/lib/python3.9/site-packages` but any location is fine so long as
 it is on the `PYTHONPATH` or you are willing to add it to your PYTHONPATH.
 
-First install LIB CDF and NAIF CSpice from:
+First build das2C with CDF and SPICE support
 ```
-https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf39_1/linux/cdf39_1-dist-cdf.tar.gz
-https://naif.jpl.nasa.gov/pub/naif/toolkit/C/PC_Linux_GCC_64bit/packages/cspice.tar.Z
-```
-The rest assumes you've unzipped these in /usr/local, so adjust paths as necessary.
-
-```bash
-# First build and test das2C, installation is not necessary
 git clone git@github.com:das-developers/das2C.git
 cd das2C
-
-export N_ARCH=/
-export PREFIX=/usr/local
-export CSPICE_INC=/usr/local/cspice/include
-export CSPICE_LIB=/usr/local/cspice/lib/cspice.a
-export CDF_INC=/usr/local/cdf/include
-export CDF_LIB=/usr/local/cdf/lib/libcdf.a
-env make SPICE=yes CDF=yes
-env make SPICE=yes CDF=yes test
+env make CDF=yes SPICE=yes
+env make CDF=yes SPICE=yes test
 cd ../
+```
+Now call python build through the makefile.  This has the advantage of providing a `make test`
+target.  Note that other versions of python may be specified.
 
-# Where to find the das2C static library
-$ export DAS2C_INCDIR=${PWD}/das2C
-$ export DAS2C_LIBDIR=${PWD}/das2C/build.  #last dot is not a typo
-
-# Which python version to use
-$ export PYVER=3.9
-
-# Where you want to install the files
-$ export INST_HOST_LIB=/usr/local/lib/python3.9
-$ export INST_EXT_LIB=/usr/local/lib/python3.9
-
-# Build and test
-$ make -f buildfiles/Makefile           # <-- If only using system packages
-$ make -f buildfiles/Makefile local     # <-- If using numpy or others from $HOME/.local
-$ make -f buildfiles/Makefile test
-
-# Check install location, then install
-$ make -f buildfiles/Makefile -n install
-$ make -f buildfiles/Makefile install
+```bash
+make DAS_INCDIR=${PWD}/../das2C DAS_LIBDIR=${PWD}/../das2C/build. PY_BIN=$(which python3.9)
+make DAS_INCDIR=${PWD}/../das2C DAS_LIBDIR=${PWD}/../das2C/build. PY_BIN=$(which python3.9) test
 ```
 
-To run das2py you'll have to insure that
+At the end of the build you'll have a `*.whl` file in `dist` similar to the standard build, but
+the code will have been tested first.
+
+To install it, make sure the desired version of python is first in your path, then issue:
 ```
-PYTHONPATH=/usr/local/lib/python3.9
+python3 -m pip install ./dist/*.whl
 ```
-or equivalent is set in your environment.
+
+TODO: Figure out where to put libcdf.so
+
 

@@ -4,17 +4,17 @@
 # Asumes the following are set:
 #
 #  PY_BIN
-#  DAS2C_INCDIR
-#  DAS2C_LIBDIR
+#  DAS_INCDIR
+#  DAS_LIBDIR
 
 # Find a way to get this from the manifest
 DAS_PY_VER:=3.0rc5
 
 ifeq ($(PY_BIN),)
-PY_BIN=$(which python)
+PY_BIN=$(shell which python)
 
 ifeq ($(PY_BIN),)
-PY_BIN=$(which python3)
+PY_BIN=$(shell which python3)
 endif
 
 ifeq ($(PY_BIN),)
@@ -22,12 +22,27 @@ $(error Neither python nor python3 were found, set PY_BIN to the path to your py
 endif
 endif
 
-ifeq ($(DAS2C_INCDIR),)
-$(error Please set DAS2C_INCDIR to the das2C include directory)
+ifeq ($(DAS_INCDIR),)
+ifneq ($(DAS2C),)
+DAS_INCDIR:=$(DAS2C)
+else
+$(error Please set DAS_INCDIR to the das2C include directory)
+endif
 endif
 
-ifeq ($(DAS2C_LIBDIR),)
-$(error Please set DAS2C_LIBDIR to the das2C archive library name aka: /path/to/libdas3.0.a )
+# Realpath is part of the POSIX standard, hopefully it's available here
+ifeq ($(DAS_LIBDIR),)
+ifneq ($(DAS2C),)
+DAS_LIBDIR:=$(shell realpath $(DAS2C)/build.$(N_ARCH))
+else
+$(error Please set DAS_LIBDIR to the das2C archive library name aka: /path/to/libdas3.0.a )
+endif
+endif
+
+ifeq ($(CDF_LIB),)
+CDF_LIB:=$(shell realpath $(DAS_LIBDIR))
+export CDF_LIB
+$(info CDF_LIB set to $(shell realpath $(CDF_LIB)))
 endif
 
 # ########################################################################### #
@@ -80,7 +95,7 @@ das2/pycdf/LICENSE.md
 build:dist/$(WHEEL_FILE)
 
 dist/$(WHEEL_FILE):$(SRC)
-	DAS2C_INCDIR=$(DAS2C_INCDIR) DAS2C_LIBDIR=$(DAS2C_LIBDIR) $(PY_BIN) -m build
+	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) $(PY_BIN) -m build
 
 test:
 	# Creating temporary environment for testing
