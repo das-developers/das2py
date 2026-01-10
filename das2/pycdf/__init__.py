@@ -9,7 +9,12 @@ das2 developers note:
   a small standalone module.
   
   --cwp 2018-10-18
-  
+
+  Added lookup of libcdf.so in current module's directory first before
+  system locations, and made libcdf.so a re-distributable for the .whl
+  package.
+
+  --cwp 2026-01-10
 
 This package provides a Python interface to the Common Data Format (CDF)
 library used for many NASA missions, available at http://cdf.gsfc.nasa.gov/.
@@ -516,6 +521,11 @@ class Library(object):
         search_dir = lambda x: \
             [os.path.join(x, fname) for fname in names
              if os.path.exists(os.path.join(x, fname))]
+
+        # Search my own module directory first, should be the best version match.
+        for p in search_dir(os.path.dirname(__file__)):
+            yield p
+
         #Search the environment-specified places first
         if 'CDF_LIB' in os.environ:
             for p in search_dir(os.environ['CDF_LIB']):

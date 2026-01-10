@@ -1,6 +1,8 @@
 from setuptools import Extension, setup
 import os
+import shutil
 from os.path import dirname as dname
+from os.path import basename as bname
 from os.path import join as pjoin
 # import numpy  # <-- forced to be hacky with custom build_ext
 from setuptools.command.build_ext import build_ext as _build_ext
@@ -18,6 +20,16 @@ if not sCHdrDir:
 
 print('(setup.py) DAS_LIBDIR = %s'%sCLibDir)
 print('(setup.py) DAS_INCDIR = %s'%sCHdrDir)
+
+# Package is not complete without libcdf.so, include it
+dName = {'win32':'dllcdf.dll','linux':'libcdf.so','darwin': 'libcdf.dylib'}
+sCdfSo = pjoin(sCLibDir, dName[sys.platform])
+if os.path.isfile(sCdfSo):
+	print('(setup.py) Adding %s to module'%sCdfSo)
+	shutil.copy2(sCdfSo, pjoin('.','das2','pycdf'))
+else:
+	print('(setup.py) ERROR: %s missing, build das2C with CDF support'%sCdfSo)
+	sys.exit(3)
 
 # Under conda we can dependend on shared objects, under system builds we can't
 if os.getenv("CONDA_PREFIX"):
@@ -78,8 +90,8 @@ if sys.platform == 'win32':
 		lExObjs = [ '%s/%s.lib'%(sCLibDir, s) for s in lTmp ]
 		lLibs = ["ws2_32"]
 
-	print("setup.py: Using Headers from %s"%lInc)
-	print("setup.py: Using Libs from %s"%lLibDirs)
+	print("(setup.py) Using Headers from %s"%lInc)
+	print("(setup.py) Using Libs from %s"%lLibDirs)
 
 	ext = Extension(
 		"_das2"
@@ -176,6 +188,7 @@ setup(
 	url="https://das2.org/das2py",
 	scripts=['scripts/das_verify','scripts/das_cdf_info'],
 	include_package_data=True,
-	#package_data={'das2':['xsd/*.xsd']},
+	#package_data={'das2':['xsd/*.xsd']}, # <-- in das2C now
+	package_data={'das2.pycdf':[bname(sCdfSo)]},
 	install_requires=['lxml','numpy>=1.16.6']
 )

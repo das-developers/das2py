@@ -5,4 +5,10 @@ das2/*.pyc
 build
 dist
 *.egg-info
+dist_venv
+wav*.cdf
+ex*.cdf
+das2/pycdf/libcdf.so
+das2/pycdf/libcdf.dynlib
+das2/pycdf/dllcdf.dll
 

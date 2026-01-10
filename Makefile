@@ -39,11 +39,8 @@ $(error Please set DAS_LIBDIR to the das2C archive library name aka: /path/to/li
 endif
 endif
 
-ifeq ($(CDF_LIB),)
-CDF_LIB:=$(shell realpath $(DAS_LIBDIR))
-export CDF_LIB
-$(info CDF_LIB set to $(shell realpath $(CDF_LIB)))
-endif
+# Just depend on das2C providing a working libcdf.so and copy it in, don't 
+# worry about CDF_LIB
 
 # ########################################################################### #
 # Try to predict the wheel name.  This is a fools game but most standard tools
@@ -110,9 +107,9 @@ test:
 	./dist_venv/bin/das_verify test/ex05_waveform_extra.d3t
 	./dist_venv/bin/das_cdf_info -h 
 	./dist_venv/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
-	rm -r dist_venv
+	@echo "All tests ran without an error return"
 
-test_more:
+examples:
 	# Creating temporary environment for testing, verify more streams, re-gen all example plots
 	$(PY_BIN) -m $(VENV_MOD) dist_venv
 	./dist_venv/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
@@ -136,6 +133,8 @@ test_more:
 	./dist_venv/bin/python examples/ex09_cassini_fce_ephem_ticks.py 2017-01-02
 	./dist_venv/bin/python examples/ex10_manual_datasets.py
 	./dist_venv/bin/python examples/ex11_catalog_listings.py
+	@echo "All examples ran without an error return"
+
 
 install:
 	$(PY_BIN) -m pip uninstall -y --isolated --no-python-version-warning das2py

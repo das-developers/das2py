@@ -17,12 +17,20 @@ env make CDF=yes SPICE=yes test
 cd ../
 ```
 Now call python build through the makefile.  This has the advantage of providing a `make test`
-target.  Note that other versions of python may be specified.
+target, and it allows you to specify the exact version of python you are using.
 
 ```bash
-make DAS_INCDIR=${PWD}/../das2C DAS_LIBDIR=${PWD}/../das2C/build. PY_BIN=$(which python3.9)
-make DAS_INCDIR=${PWD}/../das2C DAS_LIBDIR=${PWD}/../das2C/build. PY_BIN=$(which python3.9) test
+make DAS2C=${PWD}/../das2C          # Just get's python3 from path
+make DAS2C=${PWD}/../das2C test
+make DAS2C=${PWD}/../das2C examples # Insures all examples work successfully
 ```
+or for a specific python version:
+```bash
+make DAS2C=${PWD}/../das2C PY_BIN=$(which python3.9)
+make DAS2C=${PWD}/../das2C PY_BIN=$(which python3.9) test
+make DAS2C=${PWD}/../das2C PY_BIN=$(which python3.9) examples
+```
+To build against python2 you'll have to provide the path to the interpreter.
 
 At the end of the build you'll have a `*.whl` file in `dist` similar to the standard build, but
 the code will have been tested first.
@@ -31,7 +39,9 @@ To install it, make sure the desired version of python is first in your path, th
 ```
 python3 -m pip install ./dist/*.whl
 ```
-
-TODO: Figure out where to put libcdf.so
+or for a specific version of python:
+```
+$PY_BIN -m pip install ./dist/*.whl
+```
 
 
