@@ -6,8 +6,11 @@ projects.
 
 ## Building Wheels on Windows
 
-First get a compiler, see das2C project file
-[install_visual_studio](https://github.com/das-developers/das2C/blob/master/notes/install_visual_studio.txt) for help on this error prone task.
+First get a compiler.  **Stop** reading here and go follow the instructions
+in the das2C project file
+[install_visual_studio](https://github.com/das-developers/das2C/blob/master/notes/install_visual_studio.txt)
+for help on this error prone task.
+When you have a working compiler, linker, etc.  Come back.
 
 ```batch
 rem clone repos
@@ -62,7 +65,7 @@ username: __token__
 password: (the 170+ character token value that you saved somewhere)
 ```
 
-## Linux RPMs
+## Linux RPMs (outdated)
 
 Wheels and virtual environments are recommended, but if you want to build packages
 for the system python RPM instructions are provided here.  Note that these are
@@ -128,30 +131,22 @@ $ python3 /usr/lib64/python3.6/site-packages/das2/examples/ex02_galileo_pws_spec
 $ eog ex02_galileo_pws_spectra.png
 ```
 
-<a id="building_py2"></a></a>
-## Building Python2
+## Building the Python2 Interpreter from Source
 
 Regardless of anyone's ideology, it is a fact of life in Space Physics
 that many old programs exist which are useful but for which there are no
 maintenence resources (i.e. time/money/talent). This library depends on
 numpy 1.11 or higher, but does not need python 3. If you have to run older,
-unported software that requires python 2, see [Building Python2](#building_py2)
-below. It's rather straighforward to build the interpreter on Linux
-and MacOS.
-
+unported software that requires python 2, try building the interpreter
+from sources.  It's relatively straightforward on Linux and MacOS.  
 
 ### Building Python2 from source on Linux
 
-TODO: Add notes from Juno/Waves support here
-
-### Building Python2 from source on Windows
-
-TODO: Add Windows version
+*TODO: Add notes from Juno/Waves support here*
 
 ### Building Python2 from source on MacOS
 
-
-**Get a compiler**
+#### Get a compiler
 You will need a C compiler.  To see if one is already installed open a terminal
 and run:
 ```bash
@@ -164,6 +159,7 @@ xcode-select --install
 ```
 to install it if needed.
 
+#### Select an install location
 There a few places you don't want to install your legacy version of python.
 *Don't* put it under `/usr/local` as [homebrew](https://brew.sh/) uses that
 location.  *Don't* put it in `/usr` as the system python uses that location.
@@ -182,7 +178,11 @@ Since these notes were generated on a Mac OS 10.13 system, I'll use the name
 
 ```bash
 $ export PY_PRE=/project/juno/opt/darwin13
+```
 
+### Build the Interpreter
+
+```bash
 $ cd $HOME
 $ curl https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tgz > Python-2.7.18.tgz
 $ mkdir tmp && cd tmp
@@ -202,15 +202,15 @@ for the entire test battery to finish, though it's a good idea.
 $ make test
 ```
 Finally symlink the python binary to some location on your project path.
+
+```bash
 $ cd /project/juno/bin/darwin13
 $ ln -s /project/juno/opt/darwin13/bin/python2.7
 $ ln -s /project/juno/opt/darwin13/bin/python2
 $ ln -s /project/juno/opt/darwin13/bin/python
 ```
 
-
-
-## Building numpy 1.17 from source on any POSIX system
+### Building numpy 1.17
 
 First we'll need the prerequisites:
 ```bash
@@ -237,7 +237,7 @@ $ which python
 /project/juno/bin/darwin13/python  # Specific example, yours will be different
 ```
 
-Now build/install numpy 1.16.
+Now build/install numpy 1.17.
 ```bash
 $ python setup.py build
 $ python setup.py install
