@@ -32,7 +32,7 @@ If this command produces a plot similar to the following\.\.\.
 \.\.\.then das2py is installed, and you can skip building the software and
 head straight the example program below.
 
-## Building and Installing Wheels from Source on Linux
+## Building and Installing from Source on Linux
 
 Compilation and installation of das2py is regularly tested on Linux under
 both Python 2 (still) and Python 3. Testing on Windows and MacOS is less
@@ -40,15 +40,15 @@ frequent, and then only under Python 3. The following packages are required
 to build das2py and all dependencies:
 
 1. Get system software packages.
-
-  **Rocky Linux Compatable**
-  ```bash
-  dnf install git gcc expat-devel fftw-devel openssl-devel python3-devel
-  ```
-  **Debian Linux Compatable**
-  ```bash
-  apt install gcc git libexpat-dev libfftw3-dev libssl-dev python3-dev
-  ```
+   
+   Rocky Linux or Compatable
+   ```bash
+   dnf install git gcc expat-devel fftw-devel openssl-devel python3-devel
+   ```
+   Debian Linux or Compatable
+   ```bash
+   apt install gcc git libexpat-dev libfftw3-dev libssl-dev python3-dev
+   ```
 
 2. Get both source trees in parallel directories.  Unless the `DAS2C`
    environment variable is set, the makefile will look for das2C in
