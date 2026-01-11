@@ -1,6 +1,6 @@
 # das2py
-Das2 servers typically provide data relevant to space plasma and magnetospheric
-physics research. To retrieve data, an HTTP GET request is posted to a das2
+Das servers typically provide data relevant to space plasma and magnetospheric
+physics research. To retrieve data, an HTTP GET request is posted to a das
 server by a client program and a self-describing stream of data values covering
 the requested time range, at the requested time resolution, is provided in the
 response body. This package, *das2py* provides an efficient space physics data
@@ -8,6 +8,7 @@ client for python.  Streams are parsed and stored as NumPy arrays using a C
 extension, avoiding data copies and conversions.
 
 ## Anaconda Package
+
 [![Anaconda Package](https://anaconda.org/dasdevelopers/das2py/badges/version.svg)](https://anaconda.org/DasDevelopers/das2py)
 
 Pre-build versions of das2py are available from Anaconda.  If you're working in an 
@@ -31,68 +32,70 @@ If this command produces a plot similar to the following\.\.\.
 \.\.\.then das2py is installed, and you can skip building the software and
 head straight the example program below.
 
-## Prerequisite
-Compilation and installation of das2py has been tested on Linux, Windows, MacOS using
-both Python 2 and Python 3.  The following packages are required to build das2py:
+## Building and Installing Wheels from Source on Linux
 
-  * [Das2C](https://github.com/das-developers/das2C) - Version 3.0 or above.  Need not be installed, but must be built
-  * **NumPy** - Version 1.10.1 or above
-  * **MatplotLib++** - For plotting data (optional, recommended)
-  * **[CDF](https://spdf.gsfc.nasa.gov/pub/software/cdf/dist/cdf38_1/cdf38_1-dist-cdf.tar.gz)** - For writing CDF files (optional)
+Compilation and installation of das2py is regularly tested on Linux under
+both Python 2 (still) and Python 3. Testing on Windows and MacOS is less
+frequent, and then only under Python 3. The following packages are required
+to build das2py and all dependencies:
 
-Pre-requisite package install commands are give below.
-```bash
-$ sudo apt install python3-setuptools python3-dev python3-numpy # debian
-```
+1. Get system software packages.
 
-## New build instructions (wheel)
+  **Rocky Linux Compatable**
+  ```bash
+  dnf install git gcc expat-devel fftw-devel openssl-devel python3-devel
+  ```
+  **Debian Linux Compatable**
+  ```bash
+  apt install gcc git libexpat-dev libfftw3-dev libssl-dev python3-dev
+  ```
 
-In this version, almost no environment variables are needed  Below, das2C
-is built adjacent to das2py so that it can be included in das2py.
-```bash
-# (Works on Linux, more steps needed on Windows & MacOS. 
-#  See buildfiles/pypi/ReadMe.md for details)
+2. Get both source trees in parallel directories.  Unless the `DAS2C`
+   environment variable is set, the makefile will look for das2C in
+   a parallel directory.
+   ```bash
+   mkdir -p git && cd git
+   git clone https://github.com/das-developers/das2C.git
+   git clone https://github.com/das-developers/das2py.git
+   ```
 
-# First build and test das2C, installation is not necessary
-git clone git@github.com:das-developers/das2C.git
-cd das2C
-env make CDF=yes SPICE=yes
-env make CDF=yes SPICE=yes test
-cd ../
+3. Build and test sources against a *specific* version of python. The
+   makefiles will automatically find python if `PY_BIN` is not defined,
+   but providing an explicit path avoids confusion down the road.  For
+   old Python2 builds, PY_BIN is required, as Python3 will be built by
+   default.
 
-# make sure the build and venv packages are installed
-apt install python3-build python3-venv  #<-- Or use PIP
+   Note that the `make` command is not needed to build das2py. Python
+   invocations could be typed manually, but it's saves time, encourages
+   testing, and we need it for building das2C anyway.
 
-# Now build das2py using the PIP of your choice in an adjacent directory
-git clone git@github.com:das-developers/das2py.git
-cd das2py
-env DAS_LIBDIR=$PWD/../das2C/build. DAS_INCDIR=$PWD/../das2C python3.11 -m build
-```
-That's it!  Now you have a wheel file that can be installed where ever you
-like.  The included setup.py instructs the python setuptools module to staticlly
-link das2C. So the wheel is self contained.
+   ```bash
+   cd git/das2C
+   make CDF=yes SPICE=yes         # das2py needs spice and cdf utils
+   make CDF=yes SPICE=yes test
+   cd ../
+    
+   cd ../das2py
+   make PY_BIN=/path/to/python          # See PY_BIN note above
+   make PY_BIN=/path/to/python test     # optional, but recommended
+   make PY_BIN=/path/to/python example  # optional, but recommended
+   cd ../
+   ```
 
-To install your new wheel into the user-local area:
-```bash
-pip3.9 install ./dist/das2py-2.3.0-cp310-cp310-linux_x86_64.whl
-ls .local/bin/das_verify
-ls .local/lib/python3.9/site-packages/das2
-ls .local/lib/python3.9/site-packages/_das2*
-```
+4. Install into your desired python environment.
+   ```bash
+   /path/to/python -m pip install ./dist/das2py-*.whl
 
-To test it by validating one of the example files...
-```bash
-das_verify das2py/test/ex96_yscan_multispec.d2t
-```
-and to generate a plot of Cassini electron cyclotron frequencies.
-```bash
-python3.9 das2py/examples/ex09_cassini_fce_ephem_ticks.py 2017-09-14
-okular cas_mag_fce_2017-09-14.png # Or whatever PNG viewer you like
-```
+   # or
+   
+   make PY_BIN=/path/to/python install
+   ```
 
-## Building without PIP
+## Alternate builds
 
-See older instructions in [buildfiles/ReadMe.md](buildfiles/ReadMe.md)
+To build from source under anaconda, or for Windows or MacOS hosts and
+to interact with PyPI see the alternate instructions in 
+[buildfiles/ReadMe.md](buildfiles/AltBuild.md)
 
 ## First program
 

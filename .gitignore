@@ -2,10 +2,10 @@
 das2/__pycache__
 das2/*.pyc
 *.png
-build
+build_venv
 dist
 *.egg-info
-dist_venv
+test_venv
 wav*.cdf
 ex*.cdf
 das2/pycdf/libcdf.so

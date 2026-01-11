@@ -22,21 +22,25 @@ $(error Neither python nor python3 were found, set PY_BIN to the path to your py
 endif
 endif
 
+# Realpath is part of the POSIX standard, hopefully it's available here
 ifeq ($(DAS_INCDIR),)
-ifneq ($(DAS2C),)
-DAS_INCDIR:=$(DAS2C)
+
+ifeq ($(DAS2C),)
+DAS_INCDIR:=$(shell realpath $(PWD)/../das2C)
 else
-$(error Please set DAS_INCDIR to the das2C include directory)
-endif
+DAS_INCDIR:=$(DAS2C)
+endif 
+
 endif
 
-# Realpath is part of the POSIX standard, hopefully it's available here
 ifeq ($(DAS_LIBDIR),)
-ifneq ($(DAS2C),)
-DAS_LIBDIR:=$(shell realpath $(DAS2C)/build.$(N_ARCH))
+
+ifeq ($(DAS2C),)
+DAS_LIBDIR:=$(shell realpath $(PWD)/../das2C/build.$(N_ARCH))	
 else
-$(error Please set DAS_LIBDIR to the das2C archive library name aka: /path/to/libdas3.0.a )
+DAS_LIBDIR:=$(shell realpath $(DAS2C)/build.$(N_ARCH))
 endif
+
 endif
 
 # Just depend on das2C providing a working libcdf.so and copy it in, don't 
@@ -87,53 +91,57 @@ das2/pycdf/__init__.py \
 das2/pycdf/const.py \
 das2/pycdf/LICENSE.md
 
-.PHONY: build dist test install clean distclean
+.PHONY: build dist test install clean distclean examples
 
 build:dist/$(WHEEL_FILE)
 
-dist/$(WHEEL_FILE):$(SRC)
-	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) $(PY_BIN) -m build
+dist/$(WHEEL_FILE):$(SRC) build_venv/bin/python
+	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) build_venv/bin/python -m build	
 
-test:
+build_venv/bin/python:
+	$(PY_BIN) -m $(VENV_MOD) build_venv
+	build_venv/bin/python -m pip install build
+
+test:dist/$(WHEEL_FILE)
 	# Creating temporary environment for testing
-	$(PY_BIN) -m $(VENV_MOD) dist_venv
-	./dist_venv/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
-	@./dist_venv/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
-	./dist_venv/bin/python test/TestCatalog.py
-	./dist_venv/bin/python test/TestDasTime.py
-	./dist_venv/bin/python test/TestSortMinimal.py
-	./dist_venv/bin/python test/TestRead.py
-	./dist_venv/bin/das_verify -h
-	./dist_venv/bin/das_verify test/ex05_waveform_extra.d3t
-	./dist_venv/bin/das_cdf_info -h 
-	./dist_venv/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
-	@echo "All tests ran without an error return"
+	$(PY_BIN) -m $(VENV_MOD) test_venv
+	./test_venv/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
+	@./test_venv/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
+	./test_venv/bin/python test/TestCatalog.py
+	./test_venv/bin/python test/TestDasTime.py
+	./test_venv/bin/python test/TestSortMinimal.py
+	./test_venv/bin/python test/TestRead.py
+	./test_venv/bin/das_verify -h
+	./test_venv/bin/das_verify test/ex05_waveform_extra.d3t
+	./test_venv/bin/das_cdf_info -h 
+	./test_venv/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
+	@echo "All tests ran without returning an error code"
 
 examples:
 	# Creating temporary environment for testing, verify more streams, re-gen all example plots
-	$(PY_BIN) -m $(VENV_MOD) dist_venv
-	./dist_venv/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
-	./dist_venv/bin/python -m pip install --isolated $(PY_VER_WARN)  matplotlib
-	@./dist_venv/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
-	./dist_venv/bin/das_verify test/ex06_waveform_binary.d3b
-	./dist_venv/bin/das_verify test/ex08_dynaspec_namespace.d3t
-	./dist_venv/bin/das_verify test/ex12_sounder_xyz.d3t
-	./dist_venv/bin/das_verify test/ex13_object_annotation.d3t
-	./dist_venv/bin/das_verify test/ex14_object_tfcat.d3t
-	./dist_venv/bin/das_verify test/ex15_vector_frame.d3b
-	./dist_venv/bin/das_verify test/ex16_mag_grid_doc.d3x
-	./dist_venv/bin/das_verify test/ex96_yscan_multispec.d2t
-	./dist_venv/bin/python examples/c_module/galileo_pws_e-survey.py
-	./dist_venv/bin/python examples/c_module/juno_hfwbr_cdf.py
-	./dist_venv/bin/python examples/ex01_source_queries.py
-	./dist_venv/bin/python examples/ex02_galileo_pws_spectra.py	
-	./dist_venv/bin/python examples/ex03_cassini_rpws_multimode.py
-	./dist_venv/bin/python examples/ex04_voyager_pws_query_by_time.py
-	./dist_venv/bin/python examples/ex08_juno_waves_wfrm_to_cdf.py
-	./dist_venv/bin/python examples/ex09_cassini_fce_ephem_ticks.py 2017-01-02
-	./dist_venv/bin/python examples/ex10_manual_datasets.py
-	./dist_venv/bin/python examples/ex11_catalog_listings.py
-	@echo "All examples ran without an error return"
+	$(PY_BIN) -m $(VENV_MOD) test_venv
+	./test_venv/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
+	./test_venv/bin/python -m pip install --isolated $(PY_VER_WARN)  matplotlib
+	@./test_venv/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
+	./test_venv/bin/das_verify test/ex06_waveform_binary.d3b
+	./test_venv/bin/das_verify test/ex08_dynaspec_namespace.d3t
+	./test_venv/bin/das_verify test/ex12_sounder_xyz.d3t
+	./test_venv/bin/das_verify test/ex13_object_annotation.d3t
+	./test_venv/bin/das_verify test/ex14_object_tfcat.d3t
+	./test_venv/bin/das_verify test/ex15_vector_frame.d3b
+	./test_venv/bin/das_verify test/ex16_mag_grid_doc.d3x
+	./test_venv/bin/das_verify test/ex96_yscan_multispec.d2t
+	./test_venv/bin/python examples/c_module/galileo_pws_e-survey.py
+	./test_venv/bin/python examples/c_module/juno_hfwbr_cdf.py
+	./test_venv/bin/python examples/ex01_source_queries.py
+	./test_venv/bin/python examples/ex02_galileo_pws_spectra.py	
+	./test_venv/bin/python examples/ex03_cassini_rpws_multimode.py
+	./test_venv/bin/python examples/ex04_voyager_pws_query_by_time.py
+	./test_venv/bin/python examples/ex08_juno_waves_wfrm_to_cdf.py
+	./test_venv/bin/python examples/ex09_cassini_fce_ephem_ticks.py 2017-01-02
+	./test_venv/bin/python examples/ex10_manual_datasets.py
+	./test_venv/bin/python examples/ex11_catalog_listings.py
+	@echo "All examples ran without returning an error code"
 
 
 install:
@@ -141,8 +149,8 @@ install:
 	$(PY_BIN) -m pip install --isolated --no-python-version-warning ./dist/$(WHEEL_FILE)
 
 clean:
-	-rm -r dist dist_venv *.egg-info
+	-rm -r dist test_venv *.egg-info
 
 distclean:
-	-rm -r dist dist_venv *.egg-info
+	-rm -r dist test_venv build_venv *.egg-info
 
