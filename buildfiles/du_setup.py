@@ -23,7 +23,7 @@ lSrc = ["src/_das2.c"]
 if sys.platform.lower().startswith('sunos'):
 	ext = Extension(
 		"_das2", sources=lSrc, include_dirs=lInc, define_macros=lDefs
-		,library_dirs=lLibDirs, libraries=["das3.0","fftw3", "expat", 
+		,library_dirs=lLibDirs, libraries=["das3","fftw3", "expat", 
 		                                   "ssl", "crypto", "z"]
 		,extra_compile_args=["-xc99"]
 	)
@@ -34,17 +34,17 @@ elif sys.platform == 'win32':
 		"_das2", sources=lSrc, include_dirs=lInc, define_macros=lDefs
 		,library_dirs=lLibDirs, 
         libraries=[
-            "libdas3.0", "fftw3", "expat", "libssl", "libcrypto",
+            "libdas3", "fftw3", "expat", "libssl", "libcrypto",
             "zlib", "pthreadVC3", "ws2_32"
 		]
-        ,extra_objects=['%s/libdas3.0.a'%sCLibDir]
+        ,extra_objects=['%s/libdas3.a'%sCLibDir]
 	)
 elif sys.platform == 'darwin':
 
 	# Hack in static locations for homebrew stuff, will probably break
 	# in the future
 	lExObjs = [
-		'%s/libdas3.0.a'%sCLibDir,
+		'%s/libdas3.a'%sCLibDir,
 		'/usr/local/opt/openssl/lib/libssl.a',
 		'/usr/local/opt/openssl/lib/libcrypto.a',
 		'/usr/local/lib/libfftw3.a'
@@ -65,7 +65,7 @@ else:
 		,library_dirs=lLibDirs
 		,libraries=["fftw3", "expat", "ssl", "crypto", "z"]
 		,extra_compile_args=['-std=c99', '-ggdb', '-O0']
-		,extra_objects=['%s/libdas3.0.a'%sCLibDir]
+		,extra_objects=['%s/libdas3.a'%sCLibDir]
 	)
 
 

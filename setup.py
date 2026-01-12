@@ -13,7 +13,7 @@ import sys
 sCLibDir = os.getenv("DAS_LIBDIR")
 if not sCLibDir:
 	sCLibDir = "../das2C/build."
-	
+
 sCHdrDir = os.getenv("DAS_INCDIR")
 if not sCHdrDir:
 	sCHdrDir = "../das2C"
@@ -21,15 +21,22 @@ if not sCHdrDir:
 print('(setup.py) DAS_LIBDIR = %s'%sCLibDir)
 print('(setup.py) DAS_INCDIR = %s'%sCHdrDir)
 
-# Package is not complete without libcdf.so, include it
+# Package is not complete without libcdf.so, include it.  If it's not
+# listed by CDF_LIBDIR try see if das2C provides it, otherwise give up.
+
 dName = {'win32':'dllcdf.dll','linux':'libcdf.so','darwin': 'libcdf.dylib'}
-sCdfSo = pjoin(sCLibDir, dName[sys.platform])
+sCdfLibDir = os.getenv("CDF_LIBDIR")
+if not sCdfLibDir:
+	sCdfLibDir = sCLibDir
+sCdfSo = pjoin(sCdfLibDir, dName[sys.platform])
+
 if os.path.isfile(sCdfSo):
 	print('(setup.py) Adding %s to module'%sCdfSo)
 	shutil.copy2(sCdfSo, pjoin('.','das2','pycdf'))
 else:
 	print('(setup.py) ERROR: %s missing, build das2C with CDF support'%sCdfSo)
 	sys.exit(3)
+
 
 # Under conda we can dependend on shared objects, under system builds we can't
 if os.getenv("CONDA_PREFIX"):
