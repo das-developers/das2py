@@ -95,9 +95,9 @@
 
 <xs:simpleType name="Terminator" >
   <xs:restriction base="xs:string" >
-    <!-- Anything but a pipe, higher level parsing may disqualify many patterns -->
-    <xs:pattern value="([ -{]|[}~];)+" />
-    <xs:pattern value="\\n" />
+    <!-- Any printable byte except pipe (0x7C, the TermList separator).  Backslash
+         escapes (\n \t \r \\) are ordinary printables here; the reader interprets them. -->
+    <xs:pattern value="([ -{}~])+" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -307,7 +307,7 @@
      or just some information (string) -->
 <xs:simpleType name="Semantic">
   <xs:restriction base="xs:string">
-      <xs:pattern value="bool|datetime|integer|real|string|pixel" />
+      <xs:pattern value="bool|datetime|integer|real|string|pixel|blob" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -411,7 +411,7 @@
     <xs:enumeration value="std_dev" />
     <xs:enumeration value="min_error" />
     <xs:enumeration value="max_error" />
-    <xs:enumeration value="norm" />  
+    <xs:enumeration value="norm" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -436,6 +436,7 @@
 
 <xs:simpleType  name="NumComps">
   <xs:restriction base="xs:nonNegativeInteger">
+    <xs:minInclusive value="1"/>
     <xs:maxInclusive value="3"/>
   </xs:restriction>
 </xs:simpleType>
@@ -449,11 +450,11 @@
 <xs:simpleType name="ComponentSystem">
   <xs:restriction base="xs:string">
     <xs:enumeration value="cartesian" />
-    <xs:enumeration value="polar" />
+    <xs:enumeration value="cylindrical" />  <!-- polar is the 2-D case of this -->
     <xs:enumeration value="spherical" />
     <xs:enumeration value="centric" />
     <xs:enumeration value="detic" />
-    <!-- More?? -->
+    <xs:enumeration value="graphic" />
   </xs:restriction>
 </xs:simpleType>
 
