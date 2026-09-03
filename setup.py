@@ -24,7 +24,10 @@ print('(setup.py) DAS_INCDIR = %s'%sCHdrDir)
 # Package is not complete without libcdf.so, include it.  If it's not
 # listed by CDF_LIBDIR try see if das2C provides it, otherwise give up.
 
-dName = {'win32':'dllcdf.dll','linux':'libcdf.so','darwin': 'libcdf.dylib'}
+dName = {
+	'win32':'dllcdf.dll','linux':'libcdf.so','linux2':'libcdf.so',
+	'darwin': 'libcdf.dylib'
+}
 sCdfLibDir = os.getenv("CDF_LIBDIR")
 if not sCdfLibDir:
 	sCdfLibDir = sCLibDir
@@ -34,7 +37,7 @@ if os.path.isfile(sCdfSo):
 	print('(setup.py) Adding %s to module'%sCdfSo)
 	shutil.copy2(sCdfSo, pjoin('.','das2','pycdf'))
 else:
-	print('(setup.py) ERROR: %s missing, build das2C with CDF support'%sCdfSo)
+	print('(setup.py) ERROR: %s missing, set CDF_LIBDIR or build das2C with CDF support'%sCdfSo)
 	sys.exit(3)
 
 
