@@ -16,13 +16,13 @@ import os
 import re
 import warnings
 
-ROOTS = ('das2', 'scripts')
+ROOTS = ('das3', 'das2', 'scripts')
 
 # Test files that are part of make test; the rest of test/ holds generators
 # and scratch that never run on 2.7
 TEST_FILES = (
 	'test/TestCatalog.py', 'test/TestDasTime.py', 'test/TestSortMinimal.py',
-	'test/TestRead.py', 'test/TestComposite.py',
+	'test/TestRead.py', 'test/TestComposite.py', 'test/TestAlias.py',
 )
 
 ZERO_ARG_SUPER = re.compile(r'\bsuper\(\s*\)')

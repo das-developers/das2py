@@ -21,11 +21,22 @@
 # SOFTWARE.
 
 
-import _das2
+import _das3
 
 import sys
 
 from . util import CatalogError
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.node import *'.
+__all__ = [
+	'GLOBAL',
+	'DETACHED',
+	'STUB',
+	'FULL',
+	'Node',
+]
+
 
 # This is a node object.  It has 2-phase construction.  A minimal version
 # may be in memory representing just a reference to an item from a higher
@@ -130,19 +141,19 @@ class Node(object):
 		dDef = {}
 		if self.bGlobal:
 			try:
-				dDef = _das2.get_node(self.path)
+				dDef = _das3.get_node(self.path)
 				self.url = dDef['_url']
-			except _das2.Error as e:
+			except _das3.Error as e:
 				raise CatalogError("Couldn't load node %s: %s"%(self.path, str(e)))
 		else:
 			bGotIt = False
 			for sUrl in self.props['urls']:
 				try:
-					dDef = _das2.get_node(self.path, None, sUrl)
+					dDef = _das3.get_node(self.path, None, sUrl)
 					self.url = dDef['_url']
 					bGotIt = True
 					break
-				except _das2.Error:
+				except _das3.Error:
 					pass
 
 			if not bGotIt:

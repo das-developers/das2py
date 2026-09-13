@@ -16,7 +16,7 @@ def main(argv):
 	sys.path.insert(0, "%s/%s"%(os.getcwd(), argv[1]))
 	sys.path.insert(0, ".")
 	
-	import das2 as D
+	import das3 as D
 	
 	dt = D.DasTime("1971-001")
 	print("A parsed time")

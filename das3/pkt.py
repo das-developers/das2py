@@ -26,6 +26,22 @@
 import os
 import struct
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.pkt import *'.
+__all__ = [
+	'EXCEPT_NODATA',
+	'EXCEPT_BADARG',
+	'EXCEPT_SRVERR',
+	'fwrite',
+	'HdrBuf',
+	'PktBuf',
+	'sendComment',
+	'sendException',
+	'sendTaskSize',
+	'sendProgress',
+]
+
+
 EXCEPT_NODATA = "NoDataInInterval"
 EXCEPT_BADARG = "IllegalArgument"
 EXCEPT_SRVERR = "ServerError"

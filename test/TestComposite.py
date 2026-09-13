@@ -8,7 +8,7 @@ shape trailing the dataset indices rather than folding it into them.
 
 import sys
 import numpy
-import das2
+import das3
 
 perr = sys.stderr.write
 
@@ -94,7 +94,7 @@ class Failures(object):
 
 
 def checkHigh(fails, sFile, tDsShape, dVars):
-	(dHdr, lDs) = das2.read_file(sFile)
+	(dHdr, lDs) = das3.read_file(sFile)
 	fails.check(len(lDs) == 1, "%s: expected 1 dataset, got %d"%(sFile, len(lDs)))
 	ds = lDs[0]
 	fails.check(tuple(ds.shape) == tDsShape,
@@ -134,7 +134,7 @@ def checkHigh(fails, sFile, tDsShape, dVars):
 
 
 def checkLow(fails, sFile, dBind):
-	(dHdr, lDs) = das2._das2.read_file(sFile)
+	(dHdr, lDs) = das3._das3.read_file(sFile)
 	fails.check('context' not in dHdr, "%s: stream header still carries 'context'"%sFile)
 	dDs = lDs[0]
 	for (sCat, sDim, sRole), (sAry, lMap) in dBind.items():
@@ -149,8 +149,8 @@ def checkLow(fails, sFile, dBind):
 
 
 def checkPair(fails, sText, sBinary):
-	(hdr, lText) = das2.read_file(sText)
-	(hdr, lBin)  = das2.read_file(sBinary)
+	(hdr, lText) = das3.read_file(sText)
+	(hdr, lBin)  = das3.read_file(sBinary)
 	sWho = "%s vs %s"%(sText, sBinary)
 	fails.check(len(lText) == len(lBin), "%s: dataset counts differ"%sWho)
 	for (dsT, dsB) in zip(lText, lBin):

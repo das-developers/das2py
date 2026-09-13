@@ -1,8 +1,8 @@
 # das2 module example 2:
 #    Plotting simple cubic Galileo PWS spectra
 
-import das2
-import das2.mpl  # Extra helpers for interfacing to matplotlib
+import das3
+import das3.mpl  # Extra helpers for interfacing to matplotlib
 
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
@@ -17,7 +17,7 @@ import matplotlib.dates  as dates
 
 sId = "site:/uiowa/galileo/pws/survey_electric/das2"
 print("Getting data source definition for %s"%sId)
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 
 # Get data from the source.  Note, if no parameters are specifed the default
 # range and resolution in the source definition will be used
@@ -79,10 +79,10 @@ ax0.fmt_xdata = dates.DateFormatter("%Y-%m-%dT%H:%M")  # High-Res in mouse over
 ax0.xaxis.set_minor_locator(dates.MinuteLocator(interval=5)) # add minor ticks
 
 # Set plot labels, will use matplotlib helpers from das2 module to format labels
-ax0.set_xlabel(das2.mpl.range_label(time) )
-ax0.set_ylabel(das2.mpl.label(freq.props['label']))
-cbar.set_label(das2.mpl.label(specDens.props['label']) )
+ax0.set_xlabel(das3.mpl.range_label(time) )
+ax0.set_ylabel(das3.mpl.label(freq.props['label']))
+cbar.set_label(das3.mpl.label(specDens.props['label']) )
 
-ax0.set_title(das2.mpl.label(header['props']['title']) )
+ax0.set_title(das3.mpl.label(header['props']['title']) )
 
 pyplot.savefig('ex02_galileo_pws_spectra.png')

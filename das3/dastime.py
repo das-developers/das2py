@@ -30,7 +30,14 @@ import sys
 import math as M
 
 
-import _das2
+import _das3
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.dastime import *'.
+__all__ = [
+	'DasTime',
+]
+
 
 
 # Check to see if we're python 2 or 3
@@ -57,7 +64,7 @@ class DasTime(object):
 	def from_string(cls, sTime):
 		"""Static method to generate a DasTime from a string, uses the
 		   C parsetime to get the work done"""
-		t = _das2.parsetime(sTime)
+		t = _das3.parsetime(sTime)
 		return cls(t[0], t[1], t[2], t[4], t[5], t[6])
 		
 	@classmethod
@@ -109,7 +116,7 @@ class DasTime(object):
 		# Initialize from any type of string
 		if isinstance(nYear, basestring):
 			try:	
-				tTmp = _das2.parsetime(nYear)
+				tTmp = _das3.parsetime(nYear)
 				(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
 			except ValueError as e:
 				raise ValueError("String '%s' was not parseable as a datetime"%nYear)
@@ -135,7 +142,7 @@ class DasTime(object):
 			# datetime64 always uses the unix epoch, but at different units.
 			r1970 = nEpoch * g_dDt64Scale[sType]
 			
-			tTmp = _das2.parse_epoch(r1970, "t1970")
+			tTmp = _das3.parse_epoch(r1970, "t1970")
 			(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
 			
 			
@@ -144,12 +151,12 @@ class DasTime(object):
 
 			# Special long integer handling for TT2000 times
 			if isinstance(nYear, int) and (nMonth == "TT2000"):
-				tTmp = _das2.tt2k_utc(nYear)
+				tTmp = _das3.tt2k_utc(nYear)
 				(nYear, nMonth, nDom, nHour, nMin, fSec) = tTmp
-				tWithDoy = _das2.tnorm(nYear, nMonth, nDom)
+				tWithDoy = _das3.tnorm(nYear, nMonth, nDom)
 				nDoy = tWithDoy[3]
 			else:
-				tTmp = _das2.parse_epoch(nYear, nMonth)
+				tTmp = _das3.parse_epoch(nYear, nMonth)
 				(nYear, nMonth, nDom, nDoy, nHour, nMin, fSec) = tTmp
 
 			# Don't normalize time incase we are on a leap second
@@ -182,12 +189,12 @@ class DasTime(object):
 			if self.t[0] < 100 and self.t[0] > 57:
 				self.t[0] = self.t[0] + 1900
 			
-			self.t = list( _das2.tnorm(t[0], t[1], t[2], t[4], t[5], t[6]) )
+			self.t = list( _das3.tnorm(t[0], t[1], t[2], t[4], t[5], t[6]) )
 		else:
 			if nYear < 100 and nYear >= 57:
 				nYear += 1900
 						
-			self.t = list( _das2.tnorm(nYear, nMonth, nDom, nHour, nMin, fSec) )
+			self.t = list( _das3.tnorm(nYear, nMonth, nDom, nHour, nMin, fSec) )
 		
 		if abs(self.t[0]) > 9999:
 			raise OverflowError("Year value is outside range +/- 9999")
@@ -349,18 +356,18 @@ class DasTime(object):
 			
 	def norm(self):
 		"""Normalize the time fields so that all contain legal values."""
-		tNew = _das2.tnorm(self.t[0], self.t[1], self.t[2], self.t[4], self.t[5],
+		tNew = _das3.tnorm(self.t[0], self.t[1], self.t[2], self.t[4], self.t[5],
 		               self.t[6])
 		self.t = list( tNew )
 		
 	def mj1958(self):
 		"""Get the current time value as seconds since January 1st 1958, ignoring
 		leap seconds"""
-		return _das2.ttime(self.t[0], self.t[1], self.t[2], self.t[4], self.t[5],
+		return _das3.ttime(self.t[0], self.t[1], self.t[2], self.t[4], self.t[5],
 		               self.t[6])
 							
 	def t2000(self):
-		return self.mj1958() - _das2.ttime(2000, 1, 1)
+		return self.mj1958() - _das3.ttime(2000, 1, 1)
 
 
 	def epoch(self, sUnits):
@@ -379,11 +386,11 @@ class DasTime(object):
 		Note: Of the systems above, *only* TT2000 is leap-second aware.
 		"""
 		if sUnits == 'TT2000':
-			return _das2.utc_tt2k(
+			return _das3.utc_tt2k(
 				self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], self.t[6]
 			)
 		else:
-			return _das2.to_epoch(
+			return _das3.to_epoch(
 				sUnits, self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], self.t[6]
 			)
 		
@@ -402,7 +409,7 @@ class DasTime(object):
 		     self.t[5] + nMin,
 		     self.t[6] + fSec]
 			  		
-		self.t = list( _das2.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
+		self.t = list( _das3.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
 				
 	
 	def copy(self, inc_yr=0, inc_mon=0, inc_dom=0, inc_hr=0, inc_min=0, inc_sec=0.0):
@@ -452,7 +459,7 @@ class DasTime(object):
 			raise ValueError("Can't yet provide floor values for times > 1 day")
 		
 		
-		self.t = list( _das2.tnorm(self.t[0], self.t[1], self.t[2], 
+		self.t = list( _das3.tnorm(self.t[0], self.t[1], self.t[2], 
 		                           self.t[4], self.t[5], self.t[6]) )
 		
 	###########################################################################
@@ -503,7 +510,7 @@ class DasTime(object):
 			raise ValueError("Can't yet provide floor values for times > 1 day")
 			
 		
-		self.t = list( _das2.tnorm(self.t[0], self.t[1], self.t[2], 
+		self.t = list( _das3.tnorm(self.t[0], self.t[1], self.t[2], 
 		                           self.t[4], self.t[5], self.t[6]) )
 		
 	
@@ -786,7 +793,7 @@ class DasTime(object):
 		t = [self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], 
 		     self.t[6] - other]
 			  
-		self.t = list( _das2.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
+		self.t = list( _das3.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
 		
 		return self
 
@@ -808,7 +815,7 @@ class DasTime(object):
 		t = [self.t[0], self.t[1], self.t[2], self.t[4], self.t[5], 
 		     self.t[6] + other]
 			  
-		self.t = list( _das2.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
+		self.t = list( _das3.tnorm(t[0], t[1], t[2], t[3], t[4], t[5]) )
 		
 		return self
 		

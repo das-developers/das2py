@@ -28,7 +28,7 @@ that provide a data stream.
 """
 import sys
 import json
-import _das2
+import _das3
 from . dastime import DasTime
 from . node import Node
 from . source import Source
@@ -40,6 +40,13 @@ try:
 	from urllib import quote_plus
 except ImportError:
 	from urllib.parse import quote_plus
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.streamsrc import *'.
+__all__ = [
+	'HttpStreamSrc',
+]
+
 
 # Get a string type that is consistant across python 2 and 3
 try:
@@ -57,7 +64,7 @@ class HttpStreamSrc(Source):
 	An example of typical usage of this class would be::
 
 		sId = 'site:/voparis/nancay/nda/junon/junon_tag1_lh/das2'
-		src = das2.get_source(sId)
+		src = das3.get_source(sId)
 		dQuery = {'time':('2017-07-01T17:14:00','2017-07-01T17:15:00',0.03)}
 		lDs = src.get(dQuery)
 		print(lDs[0])
@@ -67,8 +74,8 @@ class HttpStreamSrc(Source):
 	def __init__(self, dDef, bStub, bGlobal):
 		"""Constructor is not intended for direct use, use
 
-			das2.get_node()
-			das2.get_source()
+			das3.get_node()
+			das3.get_source()
 
 		instead."""
 
@@ -341,12 +348,12 @@ class HttpStreamSrc(Source):
 		      query to one of the URLs identified in .props['protocol']['base_urls'].
 
 		Returns:
-			list : A list of `das2.Dataset` objects or None if the query failed.
+			list : A list of `das3.Dataset` objects or None if the query failed.
 
 		Raises:
-			das2.CatalogError : If there is a problem with the source definition
+			das3.CatalogError : If there is a problem with the source definition
 				itself
-			das2.ServerError : If there is a problem not related to authentication
+			das3.ServerError : If there is a problem not related to authentication
 				when downloading data
 		"""
 
@@ -394,7 +401,7 @@ class HttpStreamSrc(Source):
 			try:
 				#print("Reading %s"%sUrl)
 				if verbose: perr("Requesting: %s\n"%sUrl)
-				(dHdr, lDs) = _das2.read_server(sUrl)
+				(dHdr, lDs) = _das3.read_server(sUrl)
 			except Exception as e:
 				sys.stderr.write("Couldn't read URL '%s', %s\n"%(sUrl, str(e)))
 				# put this URL on the naughty list

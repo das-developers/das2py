@@ -2,7 +2,7 @@
 
 import sys
 import numpy as np
-import das2
+import das3
 
 # Get around numpy printing bugs
 import os, time
@@ -11,7 +11,7 @@ time.tzset()
 
 prn = sys.stdout.write
 
-lDs = das2.read_file('test/test_sort.d2t')
+lDs = das3.read_file('test/test_sort.d2t')
 
 ##############################################################################
 # Sort manually a 6x6 dataset of time, freq and amplitude
@@ -103,7 +103,7 @@ print(" \n ")
 
 print("6 x 6, 2-D flaten case...\n")
 
-lDs = das2.read_file('test/test_sort.d2t')
+lDs = das3.read_file('test/test_sort.d2t')
 ds = lDs[0]
 
 shape = ds.shape()

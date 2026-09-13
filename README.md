@@ -11,6 +11,20 @@ extension, avoiding data copies and conversions.
 
 [![Anaconda Package](https://anaconda.org/dasdevelopers/das2py/badges/version.svg)](https://anaconda.org/DasDevelopers/das2py)
 
+## Upgrading from `import das2`
+
+As of version 3.0 the package is `das3`, named for the das3 stream format.
+It runs on Python 2.7 and 3.x alike, and the pip package name is unchanged.
+`import das2` still works: it is an alias that returns the very same
+modules, so old and new code mix freely.  The alias raises a
+`PendingDeprecationWarning`, which Python hides by default.  To find the
+places in a project that still use the old name, run it with that warning
+promoted to an error:
+
+```bash
+python -W error::PendingDeprecationWarning your_script.py
+```
+
 Pre-build versions of das2py are available from Anaconda.  If you're working in an 
 Anoconda or Miniconda python 3 environment these are easier to install as no C 
 compiler is required.   To install the conda package run the command:
@@ -104,8 +118,8 @@ using das2py.
 
 ### Query a URI for reduced resolution data
 ```python
-import das2
-src = das2.get_source( 'tag:das2.org,2012:site:/uiowa/galileo/pws/survey_electric/das2' )
+import das3
+src = das3.get_source( 'tag:das2.org,2012:site:/uiowa/galileo/pws/survey_electric/das2' )
 dataset = src.get( {'time' : ('1997-05-07T15:00', '1997-05-07T17:00', 4.0)} )[0] 
 ```
   * Servers come and go.  The federated catalog provides stability for 

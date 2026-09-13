@@ -27,17 +27,25 @@ import sys
 import numpy
 import datetime
 import os
-import _das2
+import _das3
 import argparse
 from os.path import basename as bname
 
 from . dataset import *
 
 try:
-	import das2.pycdf as pycdf
+	import das3.pycdf as pycdf
 except ImportError:
 	# If CDF support not installed, try falling back to spacepy
 	import spacepy.pycdf as pycdf
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.cdf import *'.
+__all__ = [
+	'write',
+	'main',
+]
+
 
 perr = sys.stderr.write
 
@@ -173,10 +181,10 @@ def _varAttrs(zVar, var, sType='c'):
 		prop = var.dim.props['range']
 		if isinstance(prop, Quantity):
 			if len(prop.value) > 0:
-				rMin = _das2.convert(prop.value[0], prop.unit, var.units)
+				rMin = _das3.convert(prop.value[0], prop.unit, var.units)
 				zVar.attrs['SCALEMIN'] = rMin
 			if len(prop.value) > 1:
-				rMax = _das2.convert(prop.value[1], prop.unit, var.units)
+				rMax = _das3.convert(prop.value[1], prop.unit, var.units)
 				zVar.attrs['SCALEMAX'] = rMax
 		else:
 			perr("WARNING: Property %s:%s -> 'range' is not of type Quantity"%(
@@ -327,8 +335,8 @@ def write(ds, path, src=None, derived=False):
 
 	The return value of this function must be closed by the caller for example::
 
-		import das2.cdf
-		cdf = das2.cdf.write(dataset, 'my_path.cdf')
+		import das3.cdf
+		cdf = das3.cdf.write(dataset, 'my_path.cdf')
 		cdf.close()
 
 	This function calls pycdf.lib.set_backward(backward=false) internally.
@@ -411,7 +419,7 @@ def write(ds, path, src=None, derived=False):
 				z1 = cdf[ zVar.attrs['DEPEND_1'] ]
 				
 				if pycdf.const.CDF_TIME_TT2000 == z0.type():
-					if das2._das2.convertable(z1.attrs['UNITS'], 's'):
+					if das3._das3.convertable(z1.attrs['UNITS'], 's'):
 						sDisplay = 'waveform'		
 			
 		else:

@@ -1,5 +1,5 @@
 import sys
-import das2
+import das3
 
 perr = sys.stderr.write
 
@@ -14,14 +14,14 @@ def main(argv):
 	sFile = 'test/test_read_empty.d2s'
 
 	# Low level
-	(dStream, lDs) = das2._das2.read_file(sFile)
+	(dStream, lDs) = das3._das3.read_file(sFile)
 	print(dStream['info'])
 	for ds in lDs: 
 		print(ds['info'])
 	print("")
 
 	# High level
-	(dStream, lDs) = das2.read_file(sFile)
+	(dStream, lDs) = das3.read_file(sFile)
 	return 0
 
 	for ds in lDs:
@@ -29,7 +29,7 @@ def main(argv):
 	print("")
 	
 
-	lDs = das2.ds_strip_empty(lDs)
+	lDs = das3.ds_strip_empty(lDs)
 	if len(lDs) > 0:
 		perr("ERROR: Expected empty dataset list\n")
 		return 13
@@ -42,13 +42,13 @@ def main(argv):
 			 'end_time=2001-002'
 			 
 	# First low level...
-	(dStream, lDs) = das2._das2.read_server(sUrl, 3.0)
+	(dStream, lDs) = das3._das3.read_server(sUrl, 3.0)
 	print(dStream['info'])
 	for ds in lDs: print(ds['info'])
 	print("")
 	
 	# Now high level			 
-	(dStream, lDs) = das2.read_http(sUrl)
+	(dStream, lDs) = das3.read_http(sUrl)
 	for ds in lDs: print(ds)
 
 	return 0

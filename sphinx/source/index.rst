@@ -7,8 +7,8 @@ das2py: The python das2 client package
 	:maxdepth: 4
 
 	Examples <examples>
-	das2 Module Reference <ref_hi>
-	_das2 C-extension Reference <ref_lo>
+	das3 Module Reference <ref_hi>
+	_das3 C-extension Reference <ref_lo>
 
 
 This module builds upon the functionality provided by the C-library, libdas2,
@@ -75,13 +75,13 @@ formats as well as static CDF_ files.
 Data Source Definitions
 -----------------------
 Most das2py source code examples start by providing a dota collection ID to
-the ``das2.get_source()`` function.  This defines the source inside a local
+the ``das3.get_source()`` function.  This defines the source inside a local
 python object which can then be queried for data.  In the code snippet below
 the data source collection for the Electric field Survey data from the Plasma
 Wave Instrument that was onboard the Galileo_ spacecraft is aquired::
 
-	import das2
-	meta_src = das2.get_source('site:/uiowa/galileo/pws/survey_electic')
+	import das3
+	meta_src = das3.get_source('site:/uiowa/galileo/pws/survey_electic')
 
 When ``get_source()`` is called das2py will access the global catalog and
 walk it's nodes until finding the node at the virtual path:
@@ -107,7 +107,7 @@ how the data are sub-set in coordinate space the single call::
 	dataset_list = meta_src.get()
 
 will get the job done.  The output of this call is a python list of
-das2 ``dataset`` objects.
+das3 ``dataset`` objects.
 
 
 Installation

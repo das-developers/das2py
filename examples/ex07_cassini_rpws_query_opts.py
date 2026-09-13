@@ -3,7 +3,7 @@
 #   data source options
 
 import numpy
-import das2
+import das3
 import sys
 
 import matplotlib.pyplot as pyplot
@@ -22,5 +22,5 @@ import matplotlib.ticker as ticker
 # detailed parameter information.  As das 2.3 servers are not yet available
 # this example will use the 2.2 protocol.
 
-src = das2.Source("site:/uiowa/cassini/rpws/survey/das2")
+src = das3.Source("site:/uiowa/cassini/rpws/survey/das2")
 

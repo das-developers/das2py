@@ -1,77 +1,77 @@
-das2 package
+das3 package
 ============
 
 Submodules
 ----------
 
-das2.auth module
+das3.auth module
 ----------------
 
-.. automodule:: das2.auth
+.. automodule:: das3.auth
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.container module
+das3.container module
 ---------------------
 
-.. automodule:: das2.container
+.. automodule:: das3.container
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.dastime module
+das3.dastime module
 -------------------
 
-.. automodule:: das2.dastime
+.. automodule:: das3.dastime
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.dataset module
+das3.dataset module
 -------------------
 
-.. automodule:: das2.dataset
+.. automodule:: das3.dataset
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.error module
+das3.error module
 -----------------
 
-.. automodule:: das2.error
+.. automodule:: das3.error
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.node module
+das3.node module
 ----------------
 
-.. automodule:: das2.node
+.. automodule:: das3.node
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.plothelp module
+das3.plothelp module
 --------------------
 
-.. automodule:: das2.plothelp
+.. automodule:: das3.plothelp
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.source module
+das3.source module
 ------------------
 
-.. automodule:: das2.source
+.. automodule:: das3.source
     :members:
     :undoc-members:
     :show-inheritance:
 
-das2.toml module
+das3.toml module
 ----------------
 
-.. automodule:: das2.toml
+.. automodule:: das3.toml
     :members:
     :undoc-members:
     :show-inheritance:
@@ -80,7 +80,7 @@ das2.toml module
 Module contents
 ---------------
 
-.. automodule:: das2
+.. automodule:: das3
     :members:
     :undoc-members:
     :show-inheritance:

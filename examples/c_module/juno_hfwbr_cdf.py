@@ -17,12 +17,12 @@ import datetime
 import math as M
 
 import numpy
-import das2
+import das3
 
 try:
 	import spacepy.pycdf as pycdf
 except ImportError:
-	import das2.pycdf as pycdf # Use included copy if spacepy not installed
+	import das3.pycdf as pycdf # Use included copy if spacepy not installed
 
 perr = sys.stderr.write
 pout = sys.stdout.write
@@ -35,7 +35,7 @@ g_sServer = 'http://jupiter.physics.uiowa.edu/das/server'
 g_sRealm = 'Juno Magnetospheric Working Group'
 g_sHash = base64.standard_b64encode(b"USERNAME:PASSWORD").decode('utf-8')
 
-das2.auth_set(g_sServer, g_sRealm, g_sHash, ('dataset','Juno/WAV/Uncalibrated/HRS'))
+das3.auth_set(g_sServer, g_sRealm, g_sHash, ('dataset','Juno/WAV/Uncalibrated/HRS'))
 
 # ########################################################################## #
 
@@ -49,7 +49,7 @@ def getIQ(sBeg, sEnd):
 	sUrl = g_sGetFmt%(g_sServer, g_sDataset, sBeg, sEnd, sParams)
 
 	print("Getting Reals from %s to %s"%(sBeg, sEnd))
-	(dHdr, lReal) = das2._das2.read_server(sUrl)
+	(dHdr, lReal) = das3._das3.read_server(sUrl)
 	dsReal = lReal[0]
 
 	#print(dsReal['info'])
@@ -58,7 +58,7 @@ def getIQ(sBeg, sEnd):
 	sUrl = g_sGetFmt%(g_sServer, g_sDataset, sBeg, sEnd, sParams)
 
 	print("Getting Imaginary from %s to %s"%(sBeg, sEnd))
-	(dHdr, lImg) = das2._das2.read_server(sUrl)
+	(dHdr, lImg) = das3._das3.read_server(sUrl)
 	dsImg = lImg[0]
 
 	#print(dsImg['info'])
@@ -109,7 +109,7 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
 		# We're going to use the das2 power spectral density estimator since
 		# we know it satisfies Parseval's theorem, so set up the estimator
 		# object
-		g_psd = das2._das2.Psd(nDFT, True, 'HANN')
+		g_psd = das3._das3.Psd(nDFT, True, 'HANN')
 
 
 	# Setup the output arrays, the number of output rows is per input row is:

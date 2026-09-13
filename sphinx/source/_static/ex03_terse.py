@@ -1,12 +1,12 @@
 import numpy
-import das2
+import das3
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 import matplotlib.ticker as ticker
 
 # Use the federated das2 catalog to find and download data given a source ID
 sSourceId = "tag:das2.org,2012:site:/uiowa/cassini/rpws/survey/das2"
-src = das2.get_source(sSourceId)
+src = das3.get_source(sSourceId)
 lDatasets = src.get()
 
 # Combining multiple table datasets into a single homogeneous scatter dataset
@@ -41,17 +41,17 @@ cbar = fig.colorbar(hb, ax=ax0)
 ax0.xaxis.set_minor_locator(ticker.MultipleLocator(60*60*int(1e9)))
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(6*60*60*int(1e9)))
 
-fmtr = das2.MplTimeTicker(aX.min(), aX.max())
+fmtr = das3.MplTimeTicker(aX.min(), aX.max())
 ax0.xaxis.set_major_formatter(ticker.FuncFormatter(fmtr.label))
 
 # Plot labels
-ax0.set_xlabel(das2.ph_ns1970_range( ax0.get_xlim() ))
+ax0.set_xlabel(das3.ph_ns1970_range( ax0.get_xlim() ))
 
 sUnits = lDs[0]['frequency']['center'].units
-ax0.set_ylabel("Frequency (%s)"%das2.mpl_text(sUnits))
+ax0.set_ylabel("Frequency (%s)"%das3.mpl_text(sUnits))
 
 sUnits = lDs[0]['amplitude']['center'].units
-cbar.set_label("Spectral Density (%s)"%das2.mpl_text(sUnits))
+cbar.set_label("Spectral Density (%s)"%das3.mpl_text(sUnits))
 
 # Use the title of the data source for the plot title
 ax0.set_title( src.props['title'] )

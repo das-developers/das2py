@@ -19,8 +19,8 @@ Homepage = "https://das2.org/das2py"
 Repository = "https://github.com/das-developers/das2py"
 
 [project.scripts]
-das_verify = "das2.verify:main"
-das_cdf_info = "das2.cdf:main"
+das_verify = "das3.verify:main"
+das_cdf_info = "das3.cdf:main"
 
 [build-system]
 #requires = [ "setuptools", "numpy>=2.0.0" ]
@@ -29,4 +29,4 @@ build-backend = "setuptools.build_meta"
 
 #[tool.setuptools]
 #include-package-data = true
-#packages = ["das2", "das2.pycdf", "_das2"]
+#packages = ["das3", "das3.pycdf", "das2", "_das3"]

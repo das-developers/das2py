@@ -338,7 +338,7 @@ const char das2help_Dft[] =
 
 static PyTypeObject pyd2_DftType = {
 	PyVarObject_HEAD_INIT(NULL, 0)   /*ob_size now included compat to 2.6 */
-	"_das2.Dft",         /*tp_name*/
+	"_das3.Dft",         /*tp_name*/
 	sizeof(pyd2_Dft),		/*tp_basicsize*/
 	0,							/*tp_itemsize*/
 	(destructor) pyd2_Dft_dealloc,/*tp_dealloc*/
@@ -667,7 +667,7 @@ const char das2help_Psd[] =
 
 static PyTypeObject pyd2_PsdType = {
 	PyVarObject_HEAD_INIT(NULL, 0) /* ob_size is second arg, compat to 2.6 */
-	"_das2.Psd",		   /*tp_name*/
+	"_das3.Psd",		   /*tp_name*/
 	sizeof(pyd2_Psd),		/*tp_basicsize*/
 	0,							/*tp_itemsize*/
 	(destructor) pyd2_Psd_dealloc,/*tp_dealloc*/

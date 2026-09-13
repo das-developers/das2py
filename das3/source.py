@@ -28,7 +28,7 @@ the streams they emit.
 """
 import sys
 import json
-import _das2
+import _das3
 from . dastime import DasTime
 from . node import Node
 from . dataset import *
@@ -39,6 +39,13 @@ try:
 	from urllib import quote_plus
 except ImportError:
 	from urllib.parse import quote_plus
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.source import *'.
+__all__ = [
+	'Source',
+]
+
 
 # Get a string type that is consistant across python 2 and 3
 try:
@@ -88,7 +95,7 @@ class Source(Node):
 	example names as return from :meth:`~get` can be used as the where 
 	argument.  For example::
 	   
-	   source = das2.get_source('site:/uiowa/mars_express/marsis/spectrogram/das2')
+	   source = das3.get_source('site:/uiowa/mars_express/marsis/spectrogram/das2')
 	   examples = src.examples()
 	   datasets = src.get(examples[0][0])
 

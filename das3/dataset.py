@@ -32,10 +32,25 @@ import numpy.ma
 from collections import Counter, namedtuple
 import datetime
 
-import _das2
+import _das3
 
 from . import dastime
 from . util import *
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.dataset import *'.
+__all__ = [
+	'Datum',
+	'Quantity',
+	'Variable',
+	'Dimension',
+	'Dataset',
+	'mk_prop_from_raw',
+	'ds_from_raw',
+	'ds_strip_empty',
+	'ds_union',
+]
+
 
 g_sIdxNames = "ijklmnpqrstuvwxyz" # Printing aid
 
@@ -275,9 +290,9 @@ class Datum(object):
 
 	def __repr__(self):
 		if isinstance(self.value, str):
-			return "<das2.Datum: value='%s' units='%s'>"%(self.value, self.unit)
+			return "<das3.Datum: value='%s' units='%s'>"%(self.value, self.unit)
 		else:
-			return "<das2.Datum: value=%s units='%s'>"%(self.value, self.unit)
+			return "<das3.Datum: value=%s units='%s'>"%(self.value, self.unit)
 
 
 # ########################################################################### #
@@ -292,9 +307,9 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	To avoid extra dependencies, the AstroPy Quantity class is not used directly
 	within das2py, but users of both this library and Astropy are encouraged to
-	convert das2.Quantity objects to astropy.units.Quantity objects using the
-	the :meth:`das2.astro._wrap() function from the optional
-	:mod:`das2.astro` module.
+	convert das3.Quantity objects to astropy.units.Quantity objects using the
+	the :meth:`das3.astro._wrap() function from the optional
+	:mod:`das3.astro` module.
 	"""
 	__slots__ = ()
 
@@ -376,13 +391,13 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 		if unit == None or unit == self.unit:
 			return self.value
 
-		if not _das2.convertible(self.unit, unit):
+		if not _das3.convertible(self.unit, unit):
 			raise ValueError(
 				"This Quantities's units, %s, are not convertable to %s"%(
 				self.unit, unit
 			))
 
-		rScale = _das2.convert(1.0, self.unit, unit)
+		rScale = _das3.convert(1.0, self.unit, unit)
 		return rScale * self.value
 
 
@@ -406,7 +421,7 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def __truediv__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_div(self.unit, other.unit)
+			u = _das3.unit_div(self.unit, other.unit)
 			v = _np_td_cast(self.value) / _np_td_cast(other.value)
 		else:
 			u = self.unit
@@ -416,10 +431,10 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def __rtruediv__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_div(other.unit, self.unit)
+			u = _das3.unit_div(other.unit, self.unit)
 			v = _np_td_cast(other.value) / _np_td_cast(self.value)
 		else:
-			u = _das2.unit_invert(self.unit)
+			u = _das3.unit_invert(self.unit)
 			v = _np_td_cast(other) / _np_td_cast(self.value)
 
 		return Quantity(value=v, unit=u)
@@ -427,7 +442,7 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def __mul__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_mul(self.unit, other.unit)
+			u = _das3.unit_mul(self.unit, other.unit)
 			v = self.value * other.value
 		else:
 			u = self.unit
@@ -688,20 +703,20 @@ class Variable(object):
 
 	def __add__(self, other):
 		# Check that the units are compatable
-		if not _das2.can_merge(self.units, '+', other.units):
+		if not _das3.can_merge(self.units, '+', other.units):
 			raise DatasetError("Operation %s + %s is invalid"%(self.units, other.units))
 
 		# Get the scaling factor
 		rFactor = 1.0
 		if self.units == 'UTC' or self.units == 'ns1970':
-			rFactor = _das2.convert(1.0, other.units, 'ns')
+			rFactor = _das3.convert(1.0, other.units, 'ns')
 			my_ary = self.array.astype("int64", copy=False)
 			other_ary = other.array * rFactor
 			other_ary = other_ary.astype("int64")
 			new_ary = my_ary + other_ary
 			new_ary = new_ary.astype(numpy.dtype('M8[ns]'), copy=False)
 		else:
-			rFactor = _das2.convert(1.0, other.units, self.units)
+			rFactor = _das3.convert(1.0, other.units, self.units)
 			new_ary = self.array + (other.array * rFactor)
 
 		var = Variable(self.dim, None, new_ary, self.units, fill=self.fill,
@@ -758,15 +773,15 @@ class Variable(object):
 		rMax = self.array.max()
 
 		if isinstance(quant, Quantity):
-			if not _das2.convertible(self.units, quant.unit):
+			if not _das3.convertible(self.units, quant.unit):
 				raise ValueError(
 					"This Variable's units, %s, are not convertable to %s"%(
 					self.units, quant.unit
 				))
 
 			if (self.units != quant.unit):
-				rMin = _das2.convert(rMin, self.units, quant.unit)
-				rMax = _das2.convert(rMax, self.units, quant.unit)
+				rMin = _das3.convert(rMin, self.units, quant.unit)
+				rMax = _das3.convert(rMax, self.units, quant.unit)
 
 
 		# Can't use loops.
@@ -825,7 +840,7 @@ class Dimension(object):
 		"""Create or replace a variable in this dimension.
 
 		Add a variable to a dataset can trigger broadcasting of other variables
-		to fill the required index space.  See :class:`das2.Variable` for the
+		to fill the required index space.  See :class:`das3.Variable` for the
 		meaning of subrank.
 		"""
 
@@ -843,17 +858,17 @@ class Dimension(object):
 		return _var
 
 	def center(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for center values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for center values"""
 		var = self.var('center', values, units, axis, fill)
 		return var
 
 	def reference(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for referenece values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for referenece values"""
 		var = self.var('reference', values, units, axis, fill)
 		return var
 
 	def offset(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for offset values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for offset values"""
 		var = self.var('offset', values, units, axis, fill)
 		return var
 		
@@ -1544,7 +1559,7 @@ class Dataset(object):
 # das2C wrapper to high level interface conversion functions
 
 def mk_prop_from_raw(tProp):
-	"""Make a property dictionary value given a :mod:_das2 property string
+	"""Make a property dictionary value given a :mod:_das3 property string
 
 	Low level properties are the tuples:
 
@@ -1605,7 +1620,7 @@ def mk_prop_from_raw(tProp):
 
 		# Careful to preserve resolution here
 		if sUnits in ("TT2000"):
-			t = _das2.tt2k_utc(int(sValue))
+			t = _das3.tt2k_utc(int(sValue))
 			val = numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
 			return Quantity( val, sUnits)
 		else:
@@ -1627,7 +1642,7 @@ def mk_prop_from_raw(tProp):
 		if sSep == "": lItems = sValue.split()
 		else:  lItems = sValue.split()
 	else:
-		raise ValueError("Unexpected property tuple from _das2, multiplicity = %d"%nMulti)
+		raise ValueError("Unexpected property tuple from _das3, multiplicity = %d"%nMulti)
 
 	# Now for the range & set types
 	if sType == "stringarray":
@@ -1662,7 +1677,7 @@ def mk_prop_from_raw(tProp):
 			# TODO: Implement a flat lookup table similar to dastelem for 
 			#       this conversion.  It will be *MUCH* faster.
 			return Quantity( [
-				numpy.datetime64(dastime.DasTime(_das2.tt2k_utc(int(s))).isoc(9), 'ns')
+				numpy.datetime64(dastime.DasTime(_das3.tt2k_utc(int(s))).isoc(9), 'ns')
 				for s in lItems
 			], sUnits)
 		else:
@@ -1759,10 +1774,10 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 def ds_from_raw(dRawDs):
 	"""Create a Dataset from a set of nested dictionaries.
 
-	The low-level _das2 madule returns datasets created by libdas2 in the form
+	The low-level _das3 madule returns datasets created by libdas2 in the form
 	of a list of nested dictionaries.  This function creates a Dataset object
-	and all it's sub-objects given a nested dictionary from _das2.read_file,
-	_das2.read_cmd, or _das2.read_server.
+	and all it's sub-objects given a nested dictionary from _das3.read_file,
+	_das3.read_cmd, or _das3.read_server.
 	"""
 
 	ds = Dataset(dRawDs['id'], dRawDs['group'])

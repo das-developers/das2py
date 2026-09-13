@@ -75,33 +75,34 @@ endif
 # rebuilt and you test the previous build.
 
 SRC:= \
-src/_das2.c \
+src/_das3.c \
 src/py_builder.h \
 src/py_catalog.h \
 src/py_dft.h \
-das2/__init__.py \
-das2/auth.py \
-das2/cdf.py \
-das2/cli.py \
-das2/container.py \
-das2/das-basic-doc-ns-v3.0.xsd \
-das2/das-basic-stream-ns-v3.0.xsd \
-das2/das-basic-stream-v2.2.xsd \
-das2/das-basic-stream-v3.0.xsd \
-das2/dastime.py \
-das2/dataset.py \
-das2/mpl.py \
-das2/node.py \
-das2/pkt.py \
-das2/reader.py \
-das2/source.py \
-das2/streamsrc.py \
-das2/toml.py \
-das2/util.py \
-das2/verify.py \
-das2/pycdf/__init__.py \
-das2/pycdf/const.py \
-das2/pycdf/LICENSE.md
+das3/__init__.py \
+das3/auth.py \
+das3/cdf.py \
+das3/cli.py \
+das3/container.py \
+das3/das-basic-doc-ns-v3.0.xsd \
+das3/das-basic-stream-ns-v3.0.xsd \
+das3/das-basic-stream-v2.2.xsd \
+das3/das-basic-stream-v3.0.xsd \
+das3/dastime.py \
+das3/dataset.py \
+das3/mpl.py \
+das3/node.py \
+das3/pkt.py \
+das3/reader.py \
+das3/source.py \
+das3/streamsrc.py \
+das3/toml.py \
+das3/util.py \
+das3/verify.py \
+das3/pycdf/__init__.py \
+das3/pycdf/const.py \
+das3/pycdf/LICENSE.md \
+das2/__init__.py
 
 .PHONY: build dist test install clean distclean examples
 
@@ -127,10 +128,12 @@ test:dist/$(WHEEL_FILE)
 	./test_$(VDIR)/bin/python test/TestSortMinimal.py
 	./test_$(VDIR)/bin/python test/TestRead.py
 	./test_$(VDIR)/bin/python test/TestComposite.py
+	./test_$(VDIR)/bin/python test/TestAlias.py
 	./test_$(VDIR)/bin/das_verify -h
 	./test_$(VDIR)/bin/das_verify test/ex05_waveform_extra.d3t
 	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3t
 	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3b
+	./test_$(VDIR)/bin/das_verify test/ex16_mag_grid_doc.d3x
 	./test_$(VDIR)/bin/das_cdf_info -h 
 	./test_$(VDIR)/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
 	@echo "All tests ran without returning an error code"

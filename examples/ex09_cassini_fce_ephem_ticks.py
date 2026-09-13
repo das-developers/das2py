@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as pyplot
 import matplotlib.ticker as ticker
 
-import das2      # General data stuff
-import das2.mpl  # matplotlib helpers
+import das3      # General data stuff
+import das3.mpl  # matplotlib helpers
 
 # ########################################################################### #
 # Plot Helpers #
@@ -15,8 +15,8 @@ import das2.mpl  # matplotlib helpers
 def dayTicks(sDay):
 	"""Calculate ns1970 times at every 4 hours of a day inclusive"""
 	
-	dt = das2.DasTime(sDay)
-	dtFloor = das2.DasTime("%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom()))
+	dt = das3.DasTime(sDay)
+	dtFloor = das3.DasTime("%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom()))
 	
 	lTimes = [ dtFloor.epoch('ns1970') ]
 	for i in range(6):
@@ -40,15 +40,15 @@ def dayLabels(sDay, sEphemSrc):
 		and the row label to pyplot.gcf().text()
 	"""
 	
-	dt = das2.DasTime(sDay)
-	dtBeg = das2.DasTime("%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom()))
+	dt = das3.DasTime(sDay)
+	dtBeg = das3.DasTime("%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom()))
 	dtEnd = dtBeg + 60*60*24 + 1 # Add 86401 seconds to get upper bound
 	
-	ephem_src = das2.get_source(sEphemSrc)
+	ephem_src = das3.get_source(sEphemSrc)
 	print(ephem_src.info())    # Print dev info about the source
 	
 	# Get some help on how to query a source
-	# help(das2.Source.get)
+	# help(das3.Source.get)
 	
 	# Here I'm using the Coordinate subset query shortcut as described
 	# in "shortcuts" section of the help above
@@ -71,10 +71,10 @@ def dayLabels(sDay, sEphemSrc):
 		))
 		
 	sHdr = "SCET\n%s\n%s\n%s\n%s"%(
-		das2.mpl.label( dsEphem['R_S'].props['label'] ),
-		das2.mpl.label( dsEphem['Lon'].props['label'] ),
-		das2.mpl.label( dsEphem['Lat'].props['label'] ),
-		das2.mpl.label( dsEphem['L'].props['label'] )
+		das3.mpl.label( dsEphem['R_S'].props['label'] ),
+		das3.mpl.label( dsEphem['Lon'].props['label'] ),
+		das3.mpl.label( dsEphem['Lat'].props['label'] ),
+		das3.mpl.label( dsEphem['L'].props['label'] )
 	)
 	
 	return (sHdr, lLabels)
@@ -91,16 +91,16 @@ def main(lArgs):
 		print("Usage: %s Day"%os.path.basename(lArgs[0]))
 		return 7
 	
-	dt = das2.DasTime(lArgs[1])
+	dt = das3.DasTime(lArgs[1])
 	sBeg = "%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom())
-	dtEnd = das2.DasTime(sBeg)
+	dtEnd = das3.DasTime(sBeg)
 	dtEnd.adjust(0,0,1)
 	sEnd = "%04d-%02d-%02d"%(dtEnd.year(), dtEnd.month(), dtEnd.dom())
 	
 	
 	# Gather the primary data...
 	
-	fce_src = das2.get_source('site:/uiowa/cassini/mag/electroncyclotron/das2')
+	fce_src = das3.get_source('site:/uiowa/cassini/mag/electroncyclotron/das2')
 	print(fce_src.info())      # Print dev info about the source
 	
 	
@@ -138,15 +138,15 @@ def main(lArgs):
 	pyplot.xticks(ticks=dayTicks(sBeg), labels=lTicLbls)
 	ax0.xaxis.set_minor_locator(ticker.AutoMinorLocator(4))
 		
-	dt = das2.DasTime(sBeg)
+	dt = das3.DasTime(sBeg)
 	sDate = "%04d-%02d-%02d"%(dt.year(), dt.month(), dt.dom())
 	ax0.set_xlabel("%s (%03d) UTC"%(sDate, dt.doy()))
 	ax0.set_yscale('log')
 	
-	# das2.mpl module provides das2 -to-> mpl text formatting
-	ax0.set_ylabel(das2.mpl.label(dsFce['Fce'].props['label']))
+	# das3.mpl module provides das2 -to-> mpl text formatting
+	ax0.set_ylabel(das3.mpl.label(dsFce['Fce'].props['label']))
 	print(hdrFce['props']['title'])
-	ax0.set_title(das2.mpl.label(hdrFce['props']['title']))
+	ax0.set_title(das3.mpl.label(hdrFce['props']['title']))
 	
 	pyplot.savefig('cas_mag_fce_%s.png'%sDate)
 	

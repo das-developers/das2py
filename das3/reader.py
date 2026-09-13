@@ -39,6 +39,20 @@ except:
 import xml.parsers.expat  # Switch das2C to use libxml2 as well?
 from lxml import etree
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.reader import *'.
+__all__ = [
+	'HeaderError',
+	'DataError',
+	'Das22HdrParser',
+	'Packet',
+	'HdrPkt',
+	'DataHdrPkt',
+	'DataPkt',
+	'PacketReader',
+]
+
+
 
 class HeaderError(Exception):
 	def __init__(self, line, message):

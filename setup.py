@@ -35,7 +35,7 @@ sCdfSo = pjoin(sCdfLibDir, dName[sys.platform])
 
 if os.path.isfile(sCdfSo):
 	print('(setup.py) Adding %s to module'%sCdfSo)
-	shutil.copy2(sCdfSo, pjoin('.','das2','pycdf'))
+	shutil.copy2(sCdfSo, pjoin('.','das3','pycdf'))
 else:
 	print('(setup.py) ERROR: %s missing, set CDF_LIBDIR or build das2C with CDF support'%sCdfSo)
 	sys.exit(3)
@@ -60,7 +60,7 @@ if sCHdrDir: lInc = [ sCHdrDir ]
 else: lInc = [ ]
 
 
-lSrc = ["src/_das2.c"]
+lSrc = ["src/_das3.c"]
 
 if sys.platform == 'win32':
 
@@ -104,7 +104,7 @@ if sys.platform == 'win32':
 	print("(setup.py) Using Libs from %s"%lLibDirs)
 
 	ext = Extension(
-		"_das2"
+		"_das3"
 		,sources=lSrc
 		,include_dirs=lInc
 		,define_macros=lDefs
@@ -145,7 +145,7 @@ elif sys.platform == 'darwin':
 
 
 	ext = Extension(
-		"_das2", sources=lSrc 
+		"_das3", sources=lSrc 
 		,include_dirs=lInc
 		,define_macros=lDefs
 		,library_dirs=lLibDirs
@@ -157,7 +157,7 @@ elif sys.platform == 'darwin':
 else:
 	# Linux, also works for anaconda on macos
 	ext = Extension(
-		"_das2", sources=lSrc
+		"_das3", sources=lSrc
 		,include_dirs=lInc
 		,define_macros=lDefs
 		,library_dirs=lLibDirs
@@ -192,13 +192,13 @@ setup(
 	name="das2py",
 	version="3.0rc5",
 	ext_modules=[ext],
-	packages=['das2', 'das2.pycdf'],
+	packages=['das3', 'das3.pycdf', 'das2'],
 	author="C Piker",
 	author_email="das-developers@uiowa.edu",
 	url="https://das2.org/das2py",
 	scripts=['scripts/das_verify','scripts/das_cdf_info'],
 	include_package_data=True,
 	#package_data={'das2':['xsd/*.xsd']}, # <-- in das2C now
-	package_data={'das2.pycdf':[bname(sCdfSo)]},
+	package_data={'das3.pycdf':[bname(sCdfSo)]},
 	install_requires=['lxml','numpy>=1.16.6']
 )

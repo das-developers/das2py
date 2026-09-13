@@ -7,8 +7,8 @@
 #     4) Overlapping polar and cartesian plots
 
 import numpy as np
-import das2
-import das2.mpl
+import das3
+import das3.mpl
 
 import matplotlib.pyplot  as pyplot
 import matplotlib.patches as patches
@@ -104,7 +104,7 @@ def main():
    # get a datasource, use it to download data
    
    sId = "test:/uiowa/mars_express/marsis/ne-density-planetographic/das2"
-   src = das2.get_source(sId)
+   src = das3.get_source(sId)
    print(src.info())
 
    beg = '2014-01-01'
@@ -141,8 +141,8 @@ def main():
    sub_title = "%s to %s, SZA max %d$^\\circ$, expanded altitude scale"%(
       beg, end, theta_sza_max
    )
-   theta_label = das2.mpl.label(sza_dim.props['label'])
-   rad_label   = das2.mpl.label(alt_dim.props['label'])
+   theta_label = das3.mpl.label(sza_dim.props['label'])
+   rad_label   = das3.mpl.label(alt_dim.props['label'])
    
    cart_ax, pol_ax = make_axes(
       fig, loc_in_fig, r_alt_max, r_offset, title, sub_title, 

@@ -2,7 +2,7 @@
 
 import sys
 import numpy as np
-import das2
+import das3
 
 # Make a test dataset in the style of a sweep frequency radar sounder.
 # This dataset will have values occupying the parameter spaces:
@@ -30,7 +30,7 @@ import das2
 #                Axis 1
 
 
-ds = das2.Dataset('sounder')
+ds = das3.Dataset('sounder')
 
 time = ds.coord('time')
 

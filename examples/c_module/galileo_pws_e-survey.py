@@ -3,7 +3,7 @@
 import sys
 import matplotlib.pyplot as pyplot
 import numpy as N
-import das2
+import das3
 
 
 ##############################################################################
@@ -59,7 +59,7 @@ def getArrayAndUnits(ds, sDimType, sDim, sVar):
 def main(argv):
 	"""Annotated example of using libdas2 and matplotlib to gather and plot
 	a day's worth of Galileo PWS electric spectrum data using the low-level
-	interface.  The das2 python module consist of a low-level C-module, _das2
+	interface.  The das2 python module consist of a low-level C-module, _das3
 	and a higher level module that acts in a more pythonic way, das2.  The
 	higher level module is under construction and is thus ignored here.
 	"""
@@ -77,13 +77,13 @@ def main(argv):
 	       'end_time=2001-002&resolution=60'
 	
 	print("Reading Galileo PWS spectra for 2001-001 at intrinsic resolution")
-	(dHdr, lDs) = das2._das2.read_server(sUrl)
+	(dHdr, lDs) = das3._das3.read_server(sUrl)
 	print("%d correlated dataset(s) downloaded\n"%len(lDs))
 	
 	# Here's how this will work in the near future
 	# 
 	# sUri = 'tag:das2.org,2012:site:/uiowa/Galileo/PWS/Survey_Electric'
-	# source = das2.DataSource(sUri)
+	# source = das3.DataSource(sUri)
 	# lDs = source.request(time=['2001-001','2001-002',60])
 	# ds = lDs[0]
 	# 
@@ -207,7 +207,7 @@ def main(argv):
 	
 	# This will convert the time units to python datetime, but those don't
 	# seem to work for matplotlib
-	#aXfixed = N.array( [das2.DasTime(t, unitsX).pyDateTime() for t in aX] )
+	#aXfixed = N.array( [das3.DasTime(t, unitsX).pyDateTime() for t in aX] )
 	
 	aY = N.log10(aY)
 	aZ = N.log10(aZ.transpose())

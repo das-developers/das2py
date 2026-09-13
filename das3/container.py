@@ -25,6 +25,14 @@ from . node import *
 from . source import *
 from . streamsrc import *
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.container import *'.
+__all__ = [
+	'Catalog',
+	'Collection',
+]
+
+
 try:
   basestring
 except NameError:

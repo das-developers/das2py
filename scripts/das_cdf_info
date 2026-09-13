@@ -12,18 +12,18 @@ from os.path import basename as bname
 #    https://cdf.gsfc.nasa.gov/html/sw_and_docs.html
 # Get verision v3.9.
 
-import das2.pycdf
-import das2.pycdf.const
+import das3.pycdf
+import das3.pycdf.const
 
 def compStr(nUnhashable):
 	""" 
 	The CDF c_long types are not hashable, can't use a direct dictionary lookup
 	"""
-	if nUnhashable == das2.pycdf.const.NO_COMPRESSION : return "No Compression"
-	if nUnhashable == das2.pycdf.const.RLE_COMPRESSION : return "RLE Compression"
-	if nUnhashable == das2.pycdf.const.HUFF_COMPRESSION : return "Huffman Compression"
-	if nUnhashable == das2.pycdf.const.AHUFF_COMPRESSION : return "Adaptive Huffman Compression"
-	if nUnhashable == das2.pycdf.const.GZIP_COMPRESSION : return "GZip Compression"
+	if nUnhashable == das3.pycdf.const.NO_COMPRESSION : return "No Compression"
+	if nUnhashable == das3.pycdf.const.RLE_COMPRESSION : return "RLE Compression"
+	if nUnhashable == das3.pycdf.const.HUFF_COMPRESSION : return "Huffman Compression"
+	if nUnhashable == das3.pycdf.const.AHUFF_COMPRESSION : return "Adaptive Huffman Compression"
+	if nUnhashable == das3.pycdf.const.GZIP_COMPRESSION : return "GZip Compression"
 
 	return str(nUnhashable)
 
@@ -46,7 +46,7 @@ def main():
 	for sFile in opts.lFiles:	
 		try:
 
-			f = das2.pycdf.CDF(sFile)
+			f = das3.pycdf.CDF(sFile)
 			print("Structure of: %s"%bname(sFile))
 
 			for ak in f.attrs:

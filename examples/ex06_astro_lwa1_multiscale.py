@@ -10,13 +10,13 @@
 # das2 server download speeds and data volumes at various time resolutions
 
 import sys
-import das2
+import das3
 
 # Temporary:  This data source requires authentication, so set it.
-n = das2.auth_load()
+n = das3.auth_load()
 
 sId = 'site:/uiowa/earth/lwa-1/stokes_fullres/das2'
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 print(src.info())
 
 sys.exit(117)

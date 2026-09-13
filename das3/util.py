@@ -23,6 +23,15 @@
 
 """ Define das2 utility types"""
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.util import *'.
+__all__ = [
+	'CatalogError',
+	'SourceError',
+	'DatasetError',
+]
+
+
 class CatalogError(Exception):
 	"""Raised when there is a problem with a definition in a das2 catalog"""
 	def __init__(self, sUrl, sMsg):

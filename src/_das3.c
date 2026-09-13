@@ -47,7 +47,7 @@
 #include <das3/operator.h>
 /* #include <python3.4m/modsupport.h> */
 
-/* static char* myname i= "_das2"; */
+/* static char* myname i= "_das3"; */
 
 /* ************************************************************************* */
 /* The exceptions and logging */
@@ -558,7 +558,7 @@ static const char pyd2help_convert[] =
 "\n"
 "For pure interval units (seconds, meters, etc.) that have on implied zero\n"
 "point, this function can be used to get a conversion factor between units\n"
-"by setting fromVal to 1.0.  See also :meth:`_das2.convertible`\n"
+"by setting fromVal to 1.0.  See also :meth:`_das3.convertible`\n"
 "\n"
 "Args:\n"
 "  fromVal (float) : The original value, can be set to 1.0 to get the\n"
@@ -726,7 +726,7 @@ static const char pyd2help_can_merge [] =
 "See if values in the given units can be merged under a given operation\n"
 "\n"
 "For interval units (seconds, meters, etc.) multiply and divide always work and\n"
-"add and subtract only work when :meth:`_das2.convertible` is True\n."
+"add and subtract only work when :meth:`_das3.convertible` is True\n."
 "Values in reference point units (UTC) can be subtracted to provide an interval\n"
 "and intervals can be added or subtracted to references, but references can't\n"
 "be added, multiplied or inverted.\n"
@@ -817,7 +817,7 @@ static PyMethodDef pyd2_methods[] = {
 
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
-	"_das2",                   /* m_name */
+	"_das3",                   /* m_name */
 	"bindings for libdas2",    /* m_doc */
 	-1,                        /* m_size */
 	pyd2_methods,              /* m_methods */
@@ -827,13 +827,13 @@ static struct PyModuleDef moduledef = {
 	NULL,                      /* m_free */
 };
 
-PyMODINIT_FUNC PyInit__das2(void){
+PyMODINIT_FUNC PyInit__das3(void){
 	PyObject* pMod;
 
 	/* This statement is required to setup libdas2.  If you leave it out you
 	 * will never get any unit values and errors will act funny.  You may even
 	 * get segfaults */
-	das_init("module _das2", DASERR_DIS_RET, 512, DASLOG_INFO, pyd2_error_log_handler);
+	das_init("module _das3", DASERR_DIS_RET, 512, DASLOG_INFO, pyd2_error_log_handler);
 
 	/* Initialize our single credentials manager */
 	g_pMgr = new_CredMngr(NULL);
@@ -843,13 +843,13 @@ PyMODINIT_FUNC PyInit__das2(void){
 	if (PyType_Ready(&pyd2_PsdType) < 0)
 		return NULL;
 	
-	g_pPyD2Error = PyErr_NewException("_das2.Error", PyExc_Exception, NULL);
+	g_pPyD2Error = PyErr_NewException("_das3.Error", PyExc_Exception, NULL);
 	Py_INCREF(g_pPyD2Error);
 	
-	g_pPyD2QueryErr = PyErr_NewException("_das2.BadQuery", PyExc_Exception, NULL);
+	g_pPyD2QueryErr = PyErr_NewException("_das3.BadQuery", PyExc_Exception, NULL);
 	Py_INCREF(g_pPyD2QueryErr);
 	
-	g_pPyD2AuthErr = PyErr_NewException("_das2.Authentication", PyExc_Exception, NULL);
+	g_pPyD2AuthErr = PyErr_NewException("_das3.Authentication", PyExc_Exception, NULL);
 	Py_INCREF(g_pPyD2AuthErr);
 	
 	if( (pMod = PyModule_Create(&moduledef)) == NULL) return NULL;
@@ -872,12 +872,12 @@ PyMODINIT_FUNC PyInit__das2(void){
 #else
 
 
-PyMODINIT_FUNC init_das2(void){
+PyMODINIT_FUNC init_das3(void){
 
 	/* This statement is required to setup libdas2.  If you leave it out you
 	 * will never get any unit values and errors will act funny.  You may even
 	 * get segfaults */
-	das_init("module _das2", DASERR_DIS_RET, 512, DASLOG_INFO, pyd2_error_log_handler);
+	das_init("module _das3", DASERR_DIS_RET, 512, DASLOG_INFO, pyd2_error_log_handler);
 	
 	/* Should probably set an log handler above that ties into python's logging
 	 * system */
@@ -890,17 +890,17 @@ PyMODINIT_FUNC init_das2(void){
 	if (PyType_Ready(&pyd2_PsdType) < 0)
 		return;
 
-	g_pPyD2Error = PyErr_NewException("_das2.Error", PyExc_StandardError, NULL);
+	g_pPyD2Error = PyErr_NewException("_das3.Error", PyExc_StandardError, NULL);
 	Py_INCREF(g_pPyD2Error);
 	
-	g_pPyD2QueryErr = PyErr_NewException("_das2.BadQuery", PyExc_StandardError, NULL);
+	g_pPyD2QueryErr = PyErr_NewException("_das3.BadQuery", PyExc_StandardError, NULL);
 	Py_INCREF(g_pPyD2QueryErr);
 	
-	g_pPyD2AuthErr = PyErr_NewException("_das2.Authentication", PyExc_StandardError, NULL);
+	g_pPyD2AuthErr = PyErr_NewException("_das3.Authentication", PyExc_StandardError, NULL);
 	Py_INCREF(g_pPyD2AuthErr);
 	
 	PyObject* pMod = NULL;
-	pMod = Py_InitModule3("_das2", pyd2_methods, "libdas2 python wrappers");
+	pMod = Py_InitModule3("_das3", pyd2_methods, "libdas2 python wrappers");
 	PyModule_AddObject(pMod, "Error", g_pPyD2Error);
 	PyModule_AddObject(pMod, "QueryError", g_pPyD2QueryErr);
 	PyModule_AddObject(pMod, "AuthError", g_pPyD2AuthErr);

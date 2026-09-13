@@ -1,7 +1,7 @@
 # No she-bang here because we want the test target to pick the python version
 
 import sys
-import das2
+import das3
 import json
 
 pout = sys.stdout.write
@@ -13,9 +13,9 @@ pout = sys.stdout.write
 def test_load(sUri, sLocation):
 
 	try:
-		dNode = das2._das2.get_node(sUri, None, sLocation)
+		dNode = das3._das3.get_node(sUri, None, sLocation)
 		
-	except das2._das2.Error as e:
+	except das3._das3.Error as e:
 		sMsg = str(e)
 		i = sMsg.find("\n")
 		if i != 1:
@@ -37,7 +37,7 @@ def main(argv):
 	sSite = "tag:das2.org,2012:das/site/uiowa"
 		
 	# Get a standalone item give it what ever name we want
-	sLoc = 'https://das2.org/catalog/das/site/uiowa/cassini/ephemeris/dione/das2.json'
+	sLoc = 'https://das2.org/catalog/das/site/uiowa/cassini/ephemeris/dione/das3.json'
 	pout("   Test 1: Load direct URL %s"%sLoc)
 	sId = "magnetospheric/dione/cassini/ephemeris"
 	

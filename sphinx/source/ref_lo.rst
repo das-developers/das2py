@@ -1,4 +1,4 @@
-_das2, libdas2 Python bindings
+_das3, libdas2 Python bindings
 ===============================
 Functions in this module provide bindings to the das2C_ library.  Most of
 the small server side programs used to reduce streams in time, compute
@@ -12,11 +12,11 @@ Reading Catalog Files
 ---------------------
 Das2 catalog_ data consists of nodes defined in JSON and XML.  At present only
 JSON nodes are parsable by das2C, though support for SPASE_ XML records may
-be added in funture versions.  The _das2 module converts catalog data to
+be added in funture versions.  The _das3 module converts catalog data to
 python dictionaries.  Higher level pure python code parses these dictionaries
-to create catalog objects such as `das2.Collection` and `das2.Catalog`.
+to create catalog objects such as `das3.Collection` and `das3.Catalog`.
 
-.. autofunction:: _das2.get_node
+.. autofunction:: _das3.get_node
 
 Reading Das2 Streams
 --------------------
@@ -31,9 +31,9 @@ Low-level Dataset Output
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The main data reading functions:
 
-  * :py:func:`_das2.read_cmd`
-  * :py:func:`_das2.read_file`
-  * :py:func:`_das2.read_server`
+  * :py:func:`_das3.read_cmd`
+  * :py:func:`_das3.read_file`
+  * :py:func:`_das3.read_server`
 
 all return the same, rather complex, output.  Each function returns a python
 list containing correlated datasets.  i.e.::
@@ -109,32 +109,32 @@ keys and items:
 	                      # accessor functions and handle array broadcasts.
 	}
 
-The upper level :py:mod:`das2` module converts this low level output into
-:py:class:`das2.Dataset`, :py:class:`das2.Dimension`, and
-:py:class:`das2.Variable` objects that are easier to work with since all the
+The upper level :py:mod:`das3` module converts this low level output into
+:py:class:`das3.Dataset`, :py:class:`das3.Dimension`, and
+:py:class:`das3.Variable` objects that are easier to work with since all the
 array indices have been broadcast to a uniform space.
 
 
-.. autofunction:: _das2.read_cmd
-.. autofunction:: _das2.read_file
-.. autofunction:: _das2.read_server
+.. autofunction:: _das3.read_cmd
+.. autofunction:: _das3.read_file
+.. autofunction:: _das3.read_server
 
 Server Authentication
 ---------------------
-.. autofunction:: _das2.auth_set
+.. autofunction:: _das3.auth_set
 
 Power Spectral Density
 ----------------------
-.. autoclass:: _das2.Dft
-.. autoclass:: _das2.Psd
+.. autoclass:: _das3.Dft
+.. autoclass:: _das3.Psd
 
 Time Handling
 -------------
-.. autofunction:: _das2.parsetime
-.. autofunction:: _das2.parse_epoch
-.. autofunction:: _das2.emitt
-.. autofunction:: _das2.ttime
-.. autofunction:: _das2.tnorm
+.. autofunction:: _das3.parsetime
+.. autofunction:: _das3.parse_epoch
+.. autofunction:: _das3.emitt
+.. autofunction:: _das3.ttime
+.. autofunction:: _das3.tnorm
 
 
 .. _SPASE:   http://spase-group.org/
