@@ -380,15 +380,15 @@ def write(ds, path, src=None, derived=False):
 	#     ...  
 	#  ]
 	lIdxMap = []
-	lDims = list(ds.dCoord.keys())
+	lDims = list(ds._dCoord.keys())
 	lDims.sort()
 	for sDim in lDims:
-		lIdxMap += _writeDim(cdf, ds.dCoord[sDim], True)
+		lIdxMap += _writeDim(cdf, ds._dCoord[sDim], True)
 		
-	lDims = list(ds.dData.keys())
+	lDims = list(ds._dData.keys())
 	lDims.sort()
 	for sDim in lDims:
-		lIdxMap += _writeDim(cdf, ds.dData[sDim], False)
+		lIdxMap += _writeDim(cdf, ds._dData[sDim], False)
 
 	_solve_depends(ds, cdf, lIdxMap)
 	

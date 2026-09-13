@@ -102,11 +102,13 @@ def checkHigh(fails, sFile, tDsShape, dVars):
 
 	for (sDim, sRole), (tShape, lIntern, lLabels, dOps) in dVars.items():
 		sWho = "%s %s:%s"%(sFile, sDim, sRole)
-		dim = ds.dCoord.get(sDim) or ds.dData.get(sDim)
+		dim = ds[sDim] if sDim in ds else None
 		if dim is None or sRole not in dim.vars:
 			fails.check(False, "%s missing"%sWho)
 			continue
 		var = dim.vars[sRole]
+		sKind = 'coord' if sDim in ('time', 'frequency', 'space') else 'data'
+		fails.check(dim.kind == sKind, "%s kind %r, expected %r"%(sWho, dim.kind, sKind))
 		fails.check(var.array.shape == tShape,
 			"%s array shape %s, expected %s"%(sWho, var.array.shape, tShape))
 		fails.check(var.intrShape() == tuple(lIntern),
@@ -148,6 +150,29 @@ def checkLow(fails, sFile, dBind):
 			"%s array %r missing from 'arrays' or 'fill'"%(sWho, sAry))
 
 
+def checkMapping(fails, sFile):
+	"""The dataset's mapping interface agrees with itself: everything keys()
+	yields is 'in' the dataset and indexable, the per-kind key lists carry
+	bare names that are also 'in', and kind matches the list a name came
+	from."""
+	(hdr, lDs) = das3.read_file(sFile)
+	ds = lDs[0]
+	for sKey in ds.keys():
+		fails.check(sKey in ds, "%s: %r from keys() is not 'in' the dataset"%(sFile, sKey))
+		fails.check(ds[sKey].name == sKey.split(':', 1)[1],
+			"%s: ds[%r] is the wrong dimension"%(sFile, sKey))
+	for (sKind, lNames) in (('coord', ds.coordKeys()), ('data', ds.dataKeys())):
+		for sName in lNames:
+			fails.check(sName in ds and ('%s:%s'%(sKind, sName)) in ds,
+				"%s: %s key %r fails membership"%(sFile, sKind, sName))
+			fails.check(ds[sName].kind == sKind,
+				"%s: %r listed under %s but kind is %r"%(sFile, sName, sKind, ds[sName].kind))
+	nAll = len(ds.keys())
+	fails.check(nAll == len(ds.coordKeys()) + len(ds.dataKeys()),
+		"%s: keys() has %d names, per-kind lists total %d"%(
+		sFile, nAll, len(ds.coordKeys()) + len(ds.dataKeys())))
+
+
 def checkPair(fails, sText, sBinary):
 	(hdr, lText) = das3.read_file(sText)
 	(hdr, lBin)  = das3.read_file(sBinary)
@@ -156,15 +181,16 @@ def checkPair(fails, sText, sBinary):
 	for (dsT, dsB) in zip(lText, lBin):
 		fails.check(tuple(dsT.shape) == tuple(dsB.shape),
 			"%s: shapes %s vs %s"%(sWho, dsT.shape, dsB.shape))
-		for (dGrp, sGrp) in ((dsT.dCoord, 'coord'), (dsT.dData, 'data')):
-			dOther = dsB.dCoord if sGrp == 'coord' else dsB.dData
-			for sDim in dGrp:
-				if sDim not in dOther:
-					fails.check(False, "%s: %s %s missing from binary"%(sWho, sGrp, sDim))
+		lKeysB = dsB.keys()
+		for sDim in dsT.keys():   # 'coord:time', 'data:rot', ... in both
+				if sDim not in lKeysB:
+					fails.check(False, "%s: %s missing from binary"%(sWho, sDim))
 					continue
-				for sRole in dGrp[sDim].vars:
-					vT = dGrp[sDim].vars[sRole]
-					vB = dOther[sDim].vars.get(sRole)
+				fails.check(dsT[sDim].kind == dsB[sDim].kind,
+					"%s: %s is %s in text, %s in binary"%(sWho, sDim, dsT[sDim].kind, dsB[sDim].kind))
+				for sRole in dsT[sDim].vars:
+					vT = dsT[sDim].vars[sRole]
+					vB = dsB[sDim].vars.get(sRole)
 					if vB is None:
 						fails.check(False, "%s: %s:%s missing from binary"%(sWho, sDim, sRole))
 						continue
@@ -195,6 +221,11 @@ def main(argv):
 			checkLow(fails, sFile, LOW_LEVEL[sFile])
 		except Exception as e:
 			fails.check(False, "%s low level read: %s: %s"%(sFile, type(e).__name__, e))
+	for sFile in EXPECT:
+		try:
+			checkMapping(fails, sFile)
+		except Exception as e:
+			fails.check(False, "%s mapping: %s: %s"%(sFile, type(e).__name__, e))
 	for (sText, sBinary) in PAIRS:
 		try:
 			checkPair(fails, sText, sBinary)

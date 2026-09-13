@@ -827,13 +827,23 @@ class Dimension(object):
 	This object does not represent an index dimensions, but rather categories,
 	such as time, frequency, electric field amplitudes, cites in Austrilia, etc.
 
-	Dimensions contain Variables.
+	Dimensions contain Variables.  A dimension knows which kind it is, .kind
+	is 'coord' or 'data', the same split das2C's dim_type carries, so code
+	that walks a dataset can sort them without reaching into the dataset:
+
+	   lCoords = [ds[s] for s in ds if ds[s].kind == 'coord']
 	"""
 
-	def __init__(self, dataset, sName):
+	KINDS = ('coord', 'data')
+
+	def __init__(self, dataset, sName, sKind):
 		# Create a new dimension for a dataset
 
+		if sKind not in Dimension.KINDS:
+			raise ValueError("Dimension kind must be one of %s, not %r"%(
+				Dimension.KINDS, sKind))
 		self.ds = dataset
+		self.kind = sKind
 		self.props = {}
 		self.vars = {}
 		self.name = sName
@@ -988,22 +998,22 @@ class Dataset(object):
 		self.rank = 0
 		self.group = group
 		self.props = {}
-		self.dCoord = {}
-		self.dData = {}
+		self._dCoord = {}
+		self._dData = {}
 		self.shape = ()  # Empty tuple
 
 	def coord(self, sId):
 		"""Create or get a coordinate dimension"""
-		if sId not in self.dCoord:
-			self.dCoord[sId] = Dimension(self, sId)
-		return self.dCoord[sId]
+		if sId not in self._dCoord:
+			self._dCoord[sId] = Dimension(self, sId, 'coord')
+		return self._dCoord[sId]
 
 	def data(self, sId):
 		"""Create or get a data dimension"""
 
-		if sId not in self.dData:
-			self.dData[sId] = Dimension(self, sId)
-		return self.dData[sId]
+		if sId not in self._dData:
+			self._dData[sId] = Dimension(self, sId, 'data')
+		return self._dData[sId]
 
 
 	def dim(self, sId):
@@ -1023,8 +1033,8 @@ class Dataset(object):
 	def _allVars(self):
 		"""Return a list of all variables in the dataset, no matter the
 		dimension"""
-		lDims = [self.dCoord[var] for var in self.dCoord]
-		lDims += [self.dData[var] for var in self.dData]
+		lDims = [self._dCoord[var] for var in self._dCoord]
+		lDims += [self._dData[var] for var in self._dData]
 		lVars = []
 		for dim in lDims:
 			for sVar in dim.vars:
@@ -1034,14 +1044,14 @@ class Dataset(object):
 
 
 	def _bcast(self, shape):
-		for sDim in self.dCoord:
-			dim = self.dCoord[sDim]
+		for sDim in self._dCoord:
+			dim = self._dCoord[sDim]
 			for sVar in dim:
 				#print("Asking coord:%s:%s to update to shape %s"%(sDim, sVar, shape))
 				dim.vars[sVar]._bcast(shape)
 
-		for sDim in self.dData:
-			dim = self.dData[sDim]
+		for sDim in self._dData:
+			dim = self._dData[sDim]
 			for sVar in dim:
 				#print("Asking coord:%s:%s to update to shape %s"%(sDim, sVar, shape))
 				dim.vars[sVar]._bcast(shape)
@@ -1056,11 +1066,11 @@ class Dataset(object):
 
 		if key.startswith('coord:'):
 			sDim = key.replace('coord:','')
-			self.dCoord[sDim] = item
+			self._dCoord[sDim] = item
 
 		if key.startswith('data:'):
 			sDim = key.replace('data:','')
-			self.dData[sDim] = item
+			self._dData[sDim] = item
 
 
 	def __getitem__(self, key):
@@ -1081,17 +1091,17 @@ class Dataset(object):
 
 		if key.startswith('coord:'):
 			key = key.replace('coord:','')
-			return self.dCoord[key]
+			return self._dCoord[key]
 
 		if key.startswith('data:'):
 			key = key.replace('data:','')
-			return self.dData[key]
+			return self._dData[key]
 
 		# Not prefixed
-		if key in self.dData:
-			return self.dData[key]
+		if key in self._dData:
+			return self._dData[key]
 		else:
-			return self.dCoord[key]
+			return self._dCoord[key]
 
 	def __iter__(self):
 		# In a multithreaded application we would store the iteration state
@@ -1104,31 +1114,50 @@ class Dataset(object):
 		if len(self.lIter) == 0: raise StopIteration
 		return self.lIter.pop(0)
 
-	def __contains__(self,key):
-		if key in self.dData:
-			return True
+	next = __next__   # the python 2 spelling of the iterator protocol
 
-		return key in self.dCoord
+	def __contains__(self, key):
+		# Same spellings as __getitem__: bare, or prefixed by kind
+		if key.startswith('coord:'):
+			return key[6:] in self._dCoord
+		if key.startswith('data:'):
+			return key[5:] in self._dData
+		return (key in self._dData) or (key in self._dCoord)
 
 	def keys(self):
-		lKeys = ["coord:%s"%s for s in list(self.dCoord.keys()) ]
-		lKeys += ["data:%s"%s for s in list(self.dData.keys()) ]
+		"""Every dimension name, prefixed by kind ('coord:time', 'data:amp')
+		and sorted.  See coordKeys() and dataKeys() for one kind at a time,
+		unprefixed and in the order the dimensions were added."""
+		lKeys = ["coord:%s"%s for s in list(self._dCoord.keys()) ]
+		lKeys += ["data:%s"%s for s in list(self._dData.keys()) ]
 		lKeys.sort()
 		return lKeys
 
+	def coordKeys(self):
+		"""Names of the coordinate dimensions, in the order they were added
+		(the stream's order on python 3.7 and later).  Fetch one with
+		coord(name) or ds[name]."""
+		return list(self._dCoord.keys())
+
+	def dataKeys(self):
+		"""Names of the data dimensions, in the order they were added (the
+		stream's order on python 3.7 and later).  Fetch one with data(name)
+		or ds[name]."""
+		return list(self._dData.keys())
+
 	def _check_shape(self):
 
-		for sD in self.dData:
-			for sV in self.dData[sD].vars:
-				shape = self.dData[sD].vars[sV].array.shape
+		for sD in self._dData:
+			for sV in self._dData[sD].vars:
+				shape = self._dData[sD].vars[sV].array.shape
 				if shape != self.shape:
 					sMsg = "Invalid Variable %s shape %s, expected %s"%(
 							  sV, shape, self.shape)
 					raise DatasetError(self.group, self.name, sMsg)
 
-		for sC in self.dCoord:
-			for sV in self.dCoord[sC].vars:
-				shape = self.dCoord[sC].vars[sV].array.shape
+		for sC in self._dCoord:
+			for sV in self._dCoord[sC].vars:
+				shape = self._dCoord[sC].vars[sV].array.shape
 				if shape != self.shape:
 					sMsg = "Invalid Variable %s shape %s, expected %s"%(
 							  sV, shape, self.shape)
@@ -1162,17 +1191,17 @@ class Dataset(object):
 			lLines.append("   Property: %s | %s"%(sProp, self.props[sProp]))
 		if len(self.props): lLines.append("")
 
-		lDims = list(self.dData.keys())
+		lDims = list(self._dData.keys())
 		lDims.sort()
 		for sDim in lDims:
-			dim = self.dData[sDim]
+			dim = self._dData[sDim]
 			lLines += self._dimStrs("Data", dim)
 			lLines.append("")
 
-		lDims = list(self.dCoord.keys())
+		lDims = list(self._dCoord.keys())
 		lDims.sort()
 		for sDim in lDims:
-			dim = self.dCoord[sDim]
+			dim = self._dCoord[sDim]
 			lLines += self._dimStrs("Coordinate", dim)
 			lLines.append("")
 
@@ -1207,48 +1236,48 @@ class Dataset(object):
 		lPath = sVar.split(':')
 
 		if lPath[0] == 'coords' and (len(lPath) > 1):
-			if lPath[1] in self.dCoord:
+			if lPath[1] in self._dCoord:
 				if len(lPath) > 2:
-					if lPath[2] in self.dCoord[ lPath[1] ]:
+					if lPath[2] in self._dCoord[ lPath[1] ]:
 						sPath = 'coords:%s:%s'%(lPath[1], lPath[2])
-						return (sPath, self.dCoord[ lPath[1] ][ lPath[2] ])
+						return (sPath, self._dCoord[ lPath[1] ][ lPath[2] ])
 				else:
-					if 'center' in self.dCoord[ lPath[1] ]:
+					if 'center' in self._dCoord[ lPath[1] ]:
 						sPath = 'coords:%s:center'%(lPath[1])
-						return (sPath, self.dCoord[ lPath[1] ][ 'center' ])
+						return (sPath, self._dCoord[ lPath[1] ][ 'center' ])
 
 		if lPath[0] == 'data' and (len(lPath) > 1):
-			if lPath[1] in self.dData:
+			if lPath[1] in self._dData:
 				if len(lPath) > 2:
-					if lPath[2] in self.dData[ lPath[1] ]:
+					if lPath[2] in self._dData[ lPath[1] ]:
 						sPath = 'data:%s:%s'%(lPath[1], lPath[2])
-						return (sPath, self.dData[ lPath[1] ][ lPath[2] ])
+						return (sPath, self._dData[ lPath[1] ][ lPath[2] ])
 				else:
-					if 'center' in self.dData[ lPath[1] ]:
+					if 'center' in self._dData[ lPath[1] ]:
 						sPath = 'data:%s:center'%(lPath[1])
-						return (sPath, self.dData[ lPath[1] ][ 'center' ])
+						return (sPath, self._dData[ lPath[1] ][ 'center' ])
 
 		# Okay, looks like they left the coords, data part out.
-		if (lPath[0] in self.dCoord) and not (lPath[0] in self.dData):
+		if (lPath[0] in self._dCoord) and not (lPath[0] in self._dData):
 			if len(lPath) > 1:
-				if lPath[1] in self.dCoord[ lPath[0] ]:
+				if lPath[1] in self._dCoord[ lPath[0] ]:
 					sPath = 'coords:%s:%s'%(lPath[0], lPath[1])
-					return (sPath, self.dCoord[ lPath[0] ][ lPath[1] ])
+					return (sPath, self._dCoord[ lPath[0] ][ lPath[1] ])
 			else:
-				if 'center' in self.dCoord[ lPath[0] ]:
+				if 'center' in self._dCoord[ lPath[0] ]:
 					sPath = 'coords:%s:center'%(lPath[0])
-					return (sPath, self.dCoord[ lPath[0] ][ 'center' ])
+					return (sPath, self._dCoord[ lPath[0] ][ 'center' ])
 
 
-		if (lPath[0] in self.dData) and not (lPath[0] in self.dCoord):
+		if (lPath[0] in self._dData) and not (lPath[0] in self._dCoord):
 			if len(lPath) > 1:
-				if lPath[1] in self.dData[ lPath[0] ]:
+				if lPath[1] in self._dData[ lPath[0] ]:
 					sPath = 'data:%s:%s'%(lPath[0], lPath[1])
-					return (sPath, self.dData[ lPath[0] ][ lPath[1] ])
+					return (sPath, self._dData[ lPath[0] ][ lPath[1] ])
 			else:
-				if 'center' in self.dData[ lPath[0] ]:
+				if 'center' in self._dData[ lPath[0] ]:
 					sPath = 'data:%s:center'%(lPath[0])
-					return (sPath, self.dData[ lPath[0] ][ 'center' ])
+					return (sPath, self._dData[ lPath[0] ][ 'center' ])
 
 
 		raise KeyError("Variable %s not present or not unique in Dataset %s"%(
