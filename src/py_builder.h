@@ -690,13 +690,15 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
 			sUnits = "";
 		else
 			sUnits = pProp->units;
-		char cSep = DasProp_sep(pProp);
-		const char* sSep = "";
-		if(cSep != '\0') sSep = &cSep;
+		/* A one character string, not a pointer at a lone char: PyString reads
+		 * to the NUL, and a bare char on the stack has none after it. */
+		char sSep[2] = {DasProp_sep(pProp), '\0'};
 
+		/* Set before range: DASPROP_SET is both bits, so a set answers true
+		 * to DasProp_isRange() as well. */
 		int nMultiplicity = 1;
-		if(DasProp_isRange(pProp)) nMultiplicity = 2;
-		else if(DasProp_isSet(pProp)) nMultiplicity = 3;
+		if(DasProp_isSet(pProp)) nMultiplicity = 3;
+		else if(DasProp_isRange(pProp)) nMultiplicity = 2;
 
 		pTup = Py_BuildValue("ssssi", 
 			DasProp_typeStr3(pProp), DasProp_value(pProp), sUnits, sSep,

@@ -1623,97 +1623,65 @@ def _mk_prop_from_raw(tProp):
 	#print("Checking: tProp[%s] = '%s'"%(key, prop))
 
 	sType  = tProp[0].lower()
-	sValue = tProp[1];
-	sUnits = tProp[2];
-	sSep   = tProp[3];
-	nMulti = tProp[4];
+	sValue = tProp[1]
+	sUnits = tProp[2]
+	sSep   = tProp[3]
+	nMulti = tProp[4]
 
-	if sType == 'string':
-		if sUnits == "": return sValue
-		else:            return Quantity(sValue, sUnits);
+	# Both vocabularies: das2.2 said 'boolean' and 'int', das3 says 'bool'
+	# and 'integer'.  Range and array types carry the base type as a prefix.
+	sBase = sType
+	for sSuffix in ('array', 'range'):
+		if sBase.endswith(sSuffix):
+			sBase = sBase[:-len(sSuffix)]
+	if sBase == 'boolean': sBase = 'bool'
+	if sBase == 'int':     sBase = 'integer'
+	if sBase == 'double':  sBase = 'real'
 
-	if sType == 'boolean':
-		return tProp[1].lower() in ('true','1','yes')
-
-	if (sType == 'int') or (sType == 'integer'):
-		if sUnits == "": return int(tProp[1]);
-		else:            return Quantity(int(tProp[1]), sUnits);
-
-	if sType == 'datetime':
-
-		# Special exception here.  UTC has been used to tag time values
-		# so if you see those units, return a datetime
-		if sUnits in ("", "UTC", "utc"):
-			val = numpy.datetime64(dastime.DasTime(sValue).isoc(9), 'ns')
-			return Quantity(val, 'UTC')
-
-		# Careful to preserve resolution here
-		if sUnits in ("TT2000"):
-			t = _das3.tt2k_utc(int(sValue))
-			val = numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
-			return Quantity( val, sUnits)
-		else:
-			return Quantity( float(sValue), sUnits)
-
-	if sType == 'real':
-		if sUnits == "": return float(tProp[1]);
-		else:            return Quantity(float(tProp[1]), sUnits);
-
-
+	# One item, a 'to' separated pair, or a separated list.  A list may end
+	# with its terminator (das3 stringArrays often do), which is not an item.
 	if nMulti == 1:
-		raise ValueError("Unknown property type %s of multiplicity 1"%sType)
-
-
-	# Split the items up, the multiplicity 2 items are ranges
-	if nMulti == 2:
-		lItems = [s.strip() for s in sValue.split(' to ') ]
+		lItems = [sValue]
+	elif nMulti == 2:
+		lItems = [t.strip() for t in sValue.split(' to ')]
 	elif nMulti == 3:
-		if sSep == "": lItems = sValue.split()
-		else:  lItems = sValue.split()
+		lItems = sValue.split(sSep) if sSep else sValue.split()
+		lItems = [t.strip() for t in lItems]
+		if lItems and lItems[-1] == '':
+			lItems = lItems[:-1]
 	else:
 		raise ValueError("Unexpected property tuple from _das3, multiplicity = %d"%nMulti)
 
-	# Now for the range & set types
-	if sType == "stringarray":
-		if sUnits == "": return lItems
-		else:            return Quantity(lItems, sUnits);
+	def _one(sItem):
+		if sBase == 'string':
+			return sItem
+		if sBase == 'bool':
+			return sItem.lower() in ('true', '1', 'yes')
+		if sBase == 'integer':
+			return int(sItem)
+		if sBase == 'real':
+			return float(sItem)
+		if sBase == 'datetime':
+			# UTC (or nothing) is a calendar string; TT2000 is a count; any
+			# other units are an epoch offset and stay a plain number
+			if sUnits in ('', 'UTC', 'utc'):
+				return numpy.datetime64(dastime.DasTime(sItem).isoc(9), 'ns')
+			if sUnits == 'TT2000':
+				t = _das3.tt2k_utc(int(sItem))
+				return numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
+			return float(sItem)
+		raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
 
-	if sType == "boolArray":
-		return [ s.lower() in ('true','1','yes') for s in lItems]
+	lVals = [_one(t) for t in lItems]
+	val = lVals[0] if nMulti == 1 else lVals
 
-	if sType in ("integerarray","integerrange"):
-		lInts = [int(s) for s in lItems ]
-		if sUnits == "": return lInts
-		else:            return Quantity(lInts, sUnits);
-
-	if sType in ("realarray","realrange"):
-		lFloats = [float(s) for s in lItems ]
-		if sUnits == "": return lFloats
-		else:            return Quantity(lFloats, sUnits);
-
-	if sType in ("datetimerange","datetimearray"):
-
-		# Conversions depend on units.  Shouldn't be the case, but is traditional
-		# at this point.
-		if sUnits in ("", "UTC", "utc"):
-			lDt = [ 
-				numpy.datetime64( dastime.DasTime(s).isoc(9), 'ns' ) 
-				for s in lItems
-			]
-			return Quantity(lDt, 'UTC')
-
-		if sUnits in ("TT2000"):
-			# TODO: Implement a flat lookup table similar to dastelem for 
-			#       this conversion.  It will be *MUCH* faster.
-			return Quantity( [
-				numpy.datetime64(dastime.DasTime(_das3.tt2k_utc(int(s))).isoc(9), 'ns')
-				for s in lItems
-			], sUnits)
-		else:
-			return Quantity( [float(s) for s in lItems], sUnits)
-
-
-	raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
+	# Anything with units is a Quantity; calendar datetimes always are, in
+	# UTC, so they carry their units like every other quantity
+	if sBase == 'datetime' and sUnits in ('', 'UTC', 'utc'):
+		return Quantity(val, 'UTC')
+	if sUnits == '':
+		return val
+	return Quantity(val, sUnits)
 
 # #########################
 
