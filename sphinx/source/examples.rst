@@ -8,5 +8,6 @@ Examples
 	ex_02
 	ex_03
 	ex_04
+	ex_08
 	ex_10
 	ex_11

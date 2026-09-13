@@ -18,12 +18,12 @@ to create catalog objects such as `das3.Collection` and `das3.Catalog`.
 
 .. autofunction:: _das3.get_node
 
-Reading Das2 Streams
---------------------
-The C library handles reading parsing stream data into internal arrays that
-are passed to NumPy via pointer assignment (not a copy).  At present only
-stream in `das2/2.2 format`_ are supported, but other formats such as the HAPI
-stream format will be supported as time permits.
+Reading Das Streams
+-------------------
+The C library parses stream data into internal arrays that are handed to
+NumPy by pointer assignment, not by copy.  Both das2.2 and das3 streams are
+read; a das3 stream may carry composite values (vectors, matrices, complex
+pairs) and sequences, and both come through here.
 
 .. _Low-level Dataset Output:
 
@@ -35,13 +35,15 @@ The main data reading functions:
   * :py:func:`_das3.read_file`
   * :py:func:`_das3.read_server`
 
-all return the same, rather complex, output.  Each function returns a python
-list containing correlated datasets.  i.e.::
+all return the same, rather complex, output: a 2-tuple of a stream header
+dictionary and a list of correlated datasets::
 
-    [ dataset_dict_1, dataset_dict_2, ... ]
+    (header_dict, [ dataset_dict_1, dataset_dict_2, ... ])
 
-The structure and meaning of each dataset is contained in a python dictionary
-with the following structure::
+The header dictionary has two keys, ``'props'``, the stream level properties
+as (type, value) tuples, and ``'info'``, a summary string.
+
+Each dataset is a dictionary with the following structure::
 
 	{
 	   'id':str,      # An identifier token usable as a C style variable name, no
@@ -68,22 +70,22 @@ with the following structure::
 	   'data':dict,   # A dictionary of physical data dimension objects,
 	                  # (described below).
 
-	   'arrays':dict  # A dictionary of all the backing ndarrays for this dataset.
+	   'arrays':dict, # A dictionary of all the backing ndarrays for this dataset,
+	                  # keyed by array id.  A sequence or constant variable is
+	                  # computed into an array named DIMENSION.ROLE.
+
+	   'fill':dict,   # The fill value for each array, same keys as 'arrays'.
+
+	   'info':str     # A summary of the dataset, as das2C prints it.
 	}
 
-
-
-Each element of the 'coords' and 'data' dicts are also dictionaries.  Each one
-of these define a single physical dimension.  The dimension dictionaries
-contains the following keys and items::
+Each element of the 'coords' and 'data' dicts is also a dictionary.  Each one
+defines a single physical dimension and contains the following keys::
 
 	{
-	   'id':str,     # An identifier token usable as a C style variable name,
-	                 # no spaces or special charaters allowed.
-
 	   'type':str,   # The string 'COORD_DIM' or 'DATA_DIM'
 
-	   'props':str,  # A dictionary of (type, value) 2-tuples providing any
+	   'props':dict, # A dictionary of (type, value) 2-tuples providing any
 	                 # properties set on this dimension.
 
 	   role:dict     # Here *role* is the name of a variable.  There are 1-N
@@ -92,27 +94,51 @@ contains the following keys and items::
 	                 # are "center", "offset", "reference", "minimum", etc.
 	}
 
+Each variable in a dimension is defined by a dictionary with the following
+keys::
 
-Each variable in a dimension is also defined by a dictionary with the following
-keys and items:
-::
 	{
-	   'role':str,   # A repeat of this variable's role (i.e. 'center', 'min' etc)
+	   'role':str,     # A repeat of this variable's role (i.e. 'center', 'min' etc)
 
-	   'units':str,  # The units string.  Note that date-time values are ususally
-	                 # in non-physical units such as t1970, which is the number
-	                 # of seconds since midnight, Jan. 1st 1970 ignoring leap
-	                 # seconds.
+	   'units':str,    # The units string.  Date-time values are always given in
+	                   # 'ns1970', nanoseconds since 1970-01-01 ignoring leap
+	                   # seconds, and time offsets in 'ns', to match the numpy
+	                   # datetime64 and timedelta64 arrays that hold them.
 
-	   'expression':str,  # A summary of how to get values for this variable out
-	                      # of the ndarrays.  Used by higher level code to setup
-	                      # accessor functions and handle array broadcasts.
+	   'valtype':str,  # The das2C value type name ('double', 'das_time',
+	                   # 'composite', ...)
+
+	   'expression':str, # A description of the variable for people.  Nothing
+	                   # in das2py parses it.
+
+	   'array':str,    # The key in 'arrays' of the ndarray backing this variable.
+	                   # None for reference + offset, which the higher level
+	                   # Dimension derives itself.
+
+	   'idxmap':list,  # One entry per dataset index: the array index it maps
+	                   # to, or None where this variable does not vary.  None
+	                   # as a whole when 'array' is None.
+
+	   'ops':dict,     # None, or the <ops> formalism: 'kind' plus each
+	                   # parameter under its wire attribute name (frame, body,
+	                   # fixed, system, sysorder, surface, from, to).  An
+	                   # unknown kind arrives with its parameters verbatim.
+
+	   'intern':list,  # The internal shape of one value, [] for a scalar, [3]
+	                   # for a vector, [3, 3] for a matrix.  These indices trail
+	                   # the dataset indices in the array.  None marks a ragged
+	                   # level such as a variable length string.
+
+	   'labels':list   # One label per component in storage order, or one
+	                   # label for a scalar.  Same preference order as das3_cdf.
 	}
 
 The upper level :py:mod:`das3` module converts this low level output into
 :py:class:`das3.Dataset`, :py:class:`das3.Dimension`, and
 :py:class:`das3.Variable` objects that are easier to work with since all the
-array indices have been broadcast to a uniform space.
+array indices have been broadcast to a uniform space.  Composite values keep
+their internal shape trailing the dataset shape there; see
+:py:meth:`das3.Variable.intrShape`.
 
 
 .. autofunction:: _das3.read_cmd

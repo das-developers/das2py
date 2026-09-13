@@ -1,5 +1,6 @@
 import numpy
 import das3
+import das3.mpl
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 import matplotlib.ticker as ticker
@@ -41,17 +42,17 @@ cbar = fig.colorbar(hb, ax=ax0)
 ax0.xaxis.set_minor_locator(ticker.MultipleLocator(60*60*int(1e9)))
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(6*60*60*int(1e9)))
 
-fmtr = das3.MplTimeTicker(aX.min(), aX.max())
+fmtr = das3.mpl.TimeTicker(aX.min(), aX.max())
 ax0.xaxis.set_major_formatter(ticker.FuncFormatter(fmtr.label))
 
 # Plot labels
-ax0.set_xlabel(das3.ph_ns1970_range( ax0.get_xlim() ))
+ax0.set_xlabel(das3.mpl.ns1970_label( ax0.get_xlim() ))
 
 sUnits = lDs[0]['frequency']['center'].units
-ax0.set_ylabel("Frequency (%s)"%das3.mpl_text(sUnits))
+ax0.set_ylabel("Frequency (%s)"%das3.mpl.label(sUnits))
 
 sUnits = lDs[0]['amplitude']['center'].units
-cbar.set_label("Spectral Density (%s)"%das3.mpl_text(sUnits))
+cbar.set_label("Spectral Density (%s)"%das3.mpl.label(sUnits))
 
 # Use the title of the data source for the plot title
 ax0.set_title( src.props['title'] )

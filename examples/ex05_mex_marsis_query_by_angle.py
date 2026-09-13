@@ -159,7 +159,7 @@ def main():
    )
    
    # Colorbar axis
-   density_label = "$\mathregular{N_{e}\\ (cm^{-3})}$"
+   density_label = r"$\mathregular{N_{e}\ (cm^{-3})}$"
       
    color_ax = fig.add_axes([0.87, 0.225, 0.02, 0.425])
    color_ax.text(

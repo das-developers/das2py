@@ -20,9 +20,9 @@ elif len(sys.argv) == 2:
 
 # ...or request 100 time bins in an arbitrary range
 else:
-   resolution = das3.Dastime(sys.argv[2]) - das3.Dastime(sys.argv[2])
+   resolution = das3.DasTime(sys.argv[2]) - das3.DasTime(sys.argv[1])
    resolution /= 100.0
-   subset = (sys.argv[0], sys.argv[1], resolution)
+   subset = (sys.argv[1], sys.argv[2], resolution)
 
 sId = 'site:/uiowa/voyager/1/pws/specanalyzer-4s-efield/das2'
 src = das3.get_source(sId)

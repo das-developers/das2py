@@ -4,11 +4,11 @@ Processing Juno Waves downmixed dual sideband waveforms from CODMAC
 Level 2 (i.e. uncalibrated) data into `CDF files`_.  This example makes use
 of the pyCDF_ functionality from SpacePy_.
 
-.. figure:: ../../examples/ex09_juno_waves_wfrm_to_cdf.png
+.. figure:: ../../examples/ex08_juno_waves_wfrm_to_cdf.png
 
 	Plotting the output CDF with Autoplot_ and a das2 ephemeris_ data source.
 
-.. literalinclude:: ../../examples/ex09_juno_waves_wfrm_to_cdf.py
+.. literalinclude:: ../../examples/ex08_juno_waves_wfrm_to_cdf.py
 	:linenos:
 	:language: python
 

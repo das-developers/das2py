@@ -11,6 +11,37 @@ extension, avoiding data copies and conversions.
 
 [![Anaconda Package](https://anaconda.org/dasdevelopers/das2py/badges/version.svg)](https://anaconda.org/DasDevelopers/das2py)
 
+## What changed in 3.0
+
+The short version, for people upgrading from 2.3:
+
+* **The package is `das3` now.**  It reads das3 streams, so it's named for
+  them.  `import das2` keeps working as an alias and points at the very same
+  modules, so old and new code mix without a fuss.  The pip name is still
+  `das2py`.  Python 2.7 and 3.x are both fine; `das3` says nothing about
+  the interpreter.
+* **Composite values.**  Vectors, rotation matrices, quaternions and complex
+  pairs come through as one variable with a trailing internal shape, so a
+  vector over N records is an (N, 3) array in a shape (N,) dataset.  Each
+  variable carries its `<ops>` formalism as a dict (`var.ops`), one label
+  per component (`var.labels`), and `var.extShape()` / `var.intrShape()`
+  for the two halves of the shape.
+* **Sequences are materialized.**  A coordinate defined by a `<sequence>` in
+  the stream header arrives as a real array now instead of going missing.
+* **Dimensions know what they are.**  `dim.kind` is `'coord'` or `'data'`,
+  and `ds.coordKeys()` / `ds.dataKeys()` list one kind at a time.
+* **Tidier names.**  `dir(das3)` shows the public API and nothing else.  A
+  few methods were renamed to match the rest: `DasTime.fromString`,
+  `DasTime.roundDoy`, `Dimension.hasProp` and `hasPropVal` (replacing
+  `propEq`), `Source.getProto` and `infoProto`.  `DasTime.from_string`
+  still works and warns.  `Quantity.to_value` keeps its snake_case on
+  purpose, since that's AstroPy's name for the same thing.
+* **das_verify checks more.**  Index counts against the dataset rank, one
+  `units=` per composite, and `<sequence>` counts against the internal
+  shape, none of which an XML schema can express.
+* **Not yet:** ragged arrays (variable length records) still don't convert
+  to ndarrays.  das2C reads them; das2py stops at the conversion.
+
 ## Upgrading from `import das2`
 
 As of version 3.0 the package is `das3`, named for the das3 stream format.
