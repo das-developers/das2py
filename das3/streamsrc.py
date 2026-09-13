@@ -939,7 +939,7 @@ class HttpStreamSrc(Source):
 		dSet = dAsp['set']
 		
 		if 'param' not in dSet:
-			raise DatsetError("key 'param' missing in %s:set in datasource form %s"%(
+			raise DatasetError("key 'param' missing in %s:set in datasource form %s"%(
 			                  sAsp, self.props['_url']))
 									
 		sParam = dSet['param']

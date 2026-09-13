@@ -223,7 +223,8 @@ def writeCdf(aEpoch, aFreq, aSpec, sBeg, sEnd, nDFT, nSlide):
 	oneSec = numpy.timedelta64(1, 's')
 	oneUnit = numpy.timedelta64(1, timeUnits(aEpoch))
 	rToSec = float( oneUnit / oneSec )
-	lEpoch = [ datetime.datetime.utcfromtimestamp(n * rToSec) for n in aEpoch.astype('int64') ]
+	epoch1970 = datetime.datetime(1970, 1, 1)
+	lEpoch = [ epoch1970 + datetime.timedelta(seconds=n * rToSec) for n in aEpoch.astype('int64') ]
 	
 	# The generic variable setter doesn't allow for selecting the CDF data
 	# type.  So we can't use: cdf['Epoch'] = aEpoch here if we want TT2000

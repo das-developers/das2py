@@ -3,6 +3,8 @@ import sys
 import os.path
 import numpy as np
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.ticker as ticker
 
@@ -148,7 +150,7 @@ def main(lArgs):
 	print(hdrFce['props']['title'])
 	ax0.set_title(das3.mpl.label(hdrFce['props']['title']))
 	
-	pyplot.savefig('cas_mag_fce_%s.png'%sDate)
+	pyplot.savefig('cas_mag_fce_%s.png'%sDate)  # Or pyplot.show(), with the backend line above commented out
 	
 	return 0
 	

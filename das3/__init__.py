@@ -46,6 +46,7 @@ from das3.dastime   import *
 from das3.source    import *
 from das3.streamsrc import * 
 from das3.container import *
+from das3.node      import GLOBAL, DETACHED, STUB, FULL
 from das3.dataset   import *
 from das3.auth      import *
 from das3.util      import *
@@ -284,7 +285,8 @@ def get_node(sPathId, sUrl=None):
 	if dDef['type'] == 'Catalog':       return Catalog(dDef, 'catalog', FULL, bGlobal)
 	if dDef['type'] == 'HttpStreamSrc': return HttpStreamSrc(dDef, FULL, bGlobal)
 	if dDef['type'] == 'Collection':    return Collection(dDef, FULL, bGlobal)
-	if dDef['type'] == 'FileAggSrc':    return FileAggSrc(dDef, FULL, bGlobal)
+	if dDef['type'] == 'FileAggSrc':
+		raise NotImplementedError("FileAggSrc catalog nodes are not supported yet (%s)"%dDef.get('_url', ''))
 
 	raise CatalogError("Data type '%s' of node from '%s' is unknown"%(
 	                    dDef['type'], sUrl))

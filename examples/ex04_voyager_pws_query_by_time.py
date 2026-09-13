@@ -5,6 +5,8 @@ import sys
 import das3
 import das3.mpl
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.dates  as dates
 import matplotlib.ticker as ticker
@@ -79,4 +81,4 @@ ax[iBot].fmt_xdata = dates.DateFormatter("%Y-%m-%dT%H:%M")  # mouse over dates
 ax[iBot].xaxis.set_minor_locator(dates.HourLocator(interval=1)) # add minor ticks
 ax[iBot].set_xlabel(das3.mpl.range_label(time) )
 
-pyplot.savefig('ex04_voyager_pws_query_by_time.png')
+pyplot.savefig('ex04_voyager_pws_query_by_time.png')  # Or pyplot.show(), with the backend line above commented out

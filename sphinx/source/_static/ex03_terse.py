@@ -1,6 +1,8 @@
 import numpy
 import das3
 import das3.mpl
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 import matplotlib.ticker as ticker

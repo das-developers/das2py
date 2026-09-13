@@ -419,7 +419,7 @@ def write(ds, path, src=None, derived=False):
 				z1 = cdf[ zVar.attrs['DEPEND_1'] ]
 				
 				if pycdf.const.CDF_TIME_TT2000 == z0.type():
-					if das3._das3.convertable(z1.attrs['UNITS'], 's'):
+					if _das3.convertible(z1.attrs['UNITS'], 's'):
 						sDisplay = 'waveform'		
 			
 		else:
@@ -501,7 +501,7 @@ def main():
 			f.close()
 
 		except (ValueError, IOError) as e:
-			pout("%s [ERROR]"%str(e))
+			sys.stderr.write("%s [ERROR]\n"%str(e))
 			return 13
 			
 	return 0	

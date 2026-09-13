@@ -163,7 +163,7 @@ static PyObject* pyd2_get_node(PyObject* self, PyObject* args)
 	/* g_pMgr note: module initialization handles the lone cred manager */
 	if(g_pRootCat == NULL){
 		g_pRootCat = new_RootNode(NULL, g_pMgr, sAgent);
-		if(g_pRootCat == NULL) return NULL;
+		if(g_pRootCat == NULL) return pyd2_setExceptFromLog(g_pPyD2Error);
 	}
 	
 	if(sUri == NULL){

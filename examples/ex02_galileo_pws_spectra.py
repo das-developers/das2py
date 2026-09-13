@@ -4,6 +4,8 @@
 import das3
 import das3.mpl  # Extra helpers for interfacing to matplotlib
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 import matplotlib.dates  as dates
@@ -85,4 +87,4 @@ cbar.set_label(das3.mpl.label(specDens.props['label']) )
 
 ax0.set_title(das3.mpl.label(header['props']['title']) )
 
-pyplot.savefig('ex02_galileo_pws_spectra.png')
+pyplot.savefig('ex02_galileo_pws_spectra.png')  # Or pyplot.show(), with the backend line above commented out

@@ -441,6 +441,11 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 		return Quantity(value=v, unit=u)
 
+	# Python 2 spells the operator __div__ unless the module opts into true
+	# division; without these, 1.0 / quantity raises TypeError there.
+	__div__  = __truediv__
+	__rdiv__ = __rtruediv__
+
 
 	def __mul__(self, other):
 		if isinstance(other, Quantity):
@@ -451,6 +456,11 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 			v = self.value * other
 
 		return Quantity(value=v, unit=u)
+
+	# Multiplication commutes, and this must be spelled out: Quantity is a
+	# tuple underneath, and a tuple's own __rmul__ turns 2 * q into a four
+	# element tuple and 2.0 * q into a TypeError.
+	__rmul__ = __mul__
 
 
 

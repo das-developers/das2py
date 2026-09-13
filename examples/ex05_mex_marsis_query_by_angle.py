@@ -10,6 +10,8 @@ import numpy as np
 import das3
 import das3.mpl
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot  as pyplot
 import matplotlib.patches as patches
 import matplotlib.colors  as colors
@@ -169,7 +171,7 @@ def main():
               
    fig.colorbar(hb, cax=color_ax)
    
-   pyplot.savefig('ex05_mex_marsis_query_by_angle.png')
+   pyplot.savefig('ex05_mex_marsis_query_by_angle.png')  # Or pyplot.show(), with the backend line above commented out
 
 if __name__ == '__main__': main()
 

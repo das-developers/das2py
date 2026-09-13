@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 
 import sys
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import numpy as N
 import das3
@@ -218,7 +220,7 @@ def main(argv):
 	pyplot.xlabel(unitsX)
 	pyplot.ylabel("log(%s)"%unitsY)
 	pyplot.title(dHdr['props']['title'][1])
-	pyplot.savefig('galileo_pws_e-survey.png')
+	pyplot.savefig('galileo_pws_e-survey.png')  # Or pyplot.show(), with the backend line above commented out
 
 
 if __name__ == '__main__':

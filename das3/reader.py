@@ -627,7 +627,7 @@ class PacketReader:
 		"""
 		
 		if nPktId < 1 or nPktId > 99:
-			raise ValueError("Packet ID %d is invalid"%nPktid)
+			raise ValueError("Packet ID %d is invalid"%nPktId)
 		if nBytes <= 0:
 			raise ValueError("Data packet size %d is invalid"%nBytes)
 		
