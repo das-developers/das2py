@@ -36,7 +36,7 @@ endif
 ifeq ($(DAS_LIBDIR),)
 
 ifeq ($(DAS2C),)
-DAS_LIBDIR:=$(shell realpath $(PWD)/../das2C/build.$(N_ARCH))	
+DAS_LIBDIR:=$(shell realpath $(PWD)/../das2C/build.$(N_ARCH))
 else
 DAS_LIBDIR:=$(shell realpath $(DAS2C)/build.$(N_ARCH))
 endif
@@ -107,7 +107,9 @@ das2/pycdf/LICENSE.md
 
 build:dist/$(WHEEL_FILE)
 
-dist/$(WHEEL_FILE):$(SRC) build_$(VDIR)/bin/python
+# The static das2C library is linked into the extension, so a das2C rebuild
+# must trigger a wheel rebuild too, or you test against the previous library.
+dist/$(WHEEL_FILE):$(SRC) $(DAS_LIBDIR)/libdas3.a build_$(VDIR)/bin/python
 	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) build_$(VDIR)/bin/python -m build
 
 build_$(VDIR)/bin/python:
@@ -119,12 +121,16 @@ test:dist/$(WHEEL_FILE)
 	$(PY_BIN) -m $(VENV_MOD) test_$(VDIR)
 	./test_$(VDIR)/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
 	@./test_$(VDIR)/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
+	./test_$(VDIR)/bin/python test/CheckPortable.py
 	./test_$(VDIR)/bin/python test/TestCatalog.py
 	./test_$(VDIR)/bin/python test/TestDasTime.py
 	./test_$(VDIR)/bin/python test/TestSortMinimal.py
 	./test_$(VDIR)/bin/python test/TestRead.py
+	./test_$(VDIR)/bin/python test/TestComposite.py
 	./test_$(VDIR)/bin/das_verify -h
 	./test_$(VDIR)/bin/das_verify test/ex05_waveform_extra.d3t
+	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3t
+	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3b
 	./test_$(VDIR)/bin/das_cdf_info -h 
 	./test_$(VDIR)/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
 	@echo "All tests ran without returning an error code"
@@ -140,8 +146,14 @@ examples:
 	./test_$(VDIR)/bin/das_verify test/ex12_sounder_xyz.d3t
 	./test_$(VDIR)/bin/das_verify test/ex13_object_annotation.d3t
 	./test_$(VDIR)/bin/das_verify test/ex14_object_tfcat.d3t
-	./test_$(VDIR)/bin/das_verify test/ex15_vector_frame.d3b
+	./test_$(VDIR)/bin/das_verify test/ex15_vector_frame.d3t
 	./test_$(VDIR)/bin/das_verify test/ex16_mag_grid_doc.d3x
+	./test_$(VDIR)/bin/das_verify test/ex17_vector_noframe.d3b
+	./test_$(VDIR)/bin/das_verify test/ex22_mag_grid_vec.d3t
+	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3b
+	./test_$(VDIR)/bin/das_verify test/ex41_quaternion.d3t
+	./test_$(VDIR)/bin/das_verify test/ex42_plain_tensor.d3t
+	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3t
 	./test_$(VDIR)/bin/das_verify test/ex96_yscan_multispec.d2t
 	./test_$(VDIR)/bin/python examples/c_module/galileo_pws_e-survey.py
 	./test_$(VDIR)/bin/python examples/c_module/juno_hfwbr_cdf.py

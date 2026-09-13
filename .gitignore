@@ -11,4 +11,7 @@ ex*.cdf
 das2/pycdf/libcdf.so
 das2/pycdf/libcdf.dynlib
 das2/pycdf/dllcdf.dll
-
+/co_notes
+/das2/pycdf/__pycache__/
+session.txt
+/tmp
