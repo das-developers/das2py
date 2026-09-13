@@ -16,28 +16,17 @@
       are not facing the same way, so the raw data had to be rotated into the
       common room frame, which is the main (i.e. first) dataset.
     </p>
+    <p name="frame_LAB601">Room 601 Coordinates.
+      For the 601 lab, Z is taken to be up, +X is towards the east wall and
+      +Y is towards the north wall.  Zero is at the inner southwest corner.
+    </p>
+    <p name="frame_SENSOR">Intrinsic VMR sensor coords.
+      These are the generic VMR sensor coordinates inside each sensor.  The
+      rotation between this and the lab coordinates is a function of the
+      location index (2nd array shape parameter).
+    </p>
   </properties>
 
-  <frame name="lab601">
-    <properties>
-      <p name="label">Room 601 Coordinates</p>
-      <p name="summary">
-        For the 601 lab, Z is taken to be up, +X is towards the east wall and 
-        +Y is towards the north wall.  Zero is at the inner southwest corner.
-      </p>
-    </properties>
-  </frame>
-
-  <frame name="sensor">
-    <properties>
-      <p name="label">Intrinsic VMR sensor coords</p>
-      <p name="summary">
-        These are the generic VMR sensor coordinates inside each sensor.  The
-        rotation between this and the lab coordinates is a function of the 
-        location index (2nd array shape parameter)
-      </p>
-    </properties>
-  </frame>
 
   <dataset name="merit_test" id="1" rank="1" index="*;4">
 
@@ -45,28 +34,34 @@
          is a movie.  A plotter could put a time slider below a 3-D cube plot
          to allow for scrolling in time -->
     <coord physDim="time" axis="t">
-      <scalar use="center" semantic="real" units="t1970" index="*;-">
+      <scalar use="center" semantic="real" storage="double" units="t1970" index="*;-">
+        <!-- epoch seconds are affine values just like calendar datetimes -->
+        <ops kind="point"/>
         <packet numItems="1"/>
       </scalar>
     </coord>
 
-    <!-- display the Y direction of the room in the X plot direction just to show
-         that these aren't intrinsically linked. -->
-	 <coord physDim="space" axis="y;x" frame="lab601">
-	 	<vector components="2" semantic="real" units="m" index="-;4" system="cartesian" sysorder="1;0">
-			<values>1 1 2 1 1 2 2 2</values>
-		</vector>
+    <!-- display the Y direction of the room in the X plot direction just to 
+	      show that these aren't intrinsically linked. -->	 
+	 <coord physDim="space" axis="y;x">
+	 	<composite semantic="real" storage="float" units="m" index="-;4" intern="2">
+			<ops kind="vector" frame="LAB601" fixed="true" system="cartesian" sysorder="0;1"/>
+			<values valTerm=";">1;1;2;1;1;2;2;2;</values>
+		</composite>
 	 </coord>
     
-    <data physDim="B" name="calibrated" frame="lab601">
+    <data physDim="B" name="calibrated">
       <properties>
         <p name="label">Rotated and scaled data from the 4 sensors</p>
-        <p name="componentLabel" type="stringArray">Bx_cal By_cal Bz_cal</p>
       </properties>
-      
-      <vector components="3" use="center" semantic="real" units="nT" index="*;4" system="cartesian" sysorder="0;1;2">
+
+      <composite use="center" semantic="real" storage="float" units="nT" index="*;4" intern="3">
+        <properties>
+          <p name="label" type="stringArray" term=";">Bx_cal;By_cal;Bz_cal;</p>
+        </properties>
+        <ops kind="vector" frame="LAB601" fixed="true" system="cartesian" sysorder="0;1;2"/>
         <packet numItems="12" valTerm=";"/>
-      </vector>
+      </composite>
     </data>
 
     <!-- the plotter won't know how to map these components onto a single physical
@@ -74,21 +69,24 @@
          coordinates.  At best it could just display the each component (or the 
          magnitude) as a heat-map.
     -->
-    <data physDim="B" name="raw" frame="sensor">
+    <data physDim="B" name="raw">
       <properties>
         <p name="label">Raw Measurements from the 4 sensors</p>
-        <p name="componentLabel" type="stringArray" sep=";">Bx_raw;By_raw;Bz_raw</p>
-        <p name="sensors" type="stringArray" sep=";">
+        <p name="sensors" type="stringArray" term=";">
           VMR0 R12 N261;VMR1 R12 N261;VMR2 R12 N261;VMR3 R12 N26
         </p>
       </properties>
-      
-      <vector components="3" use="center" semantic="real" units="nT" index="*;4" system="cartesian" sysorder="0;1;2">
+
+      <composite use="center" semantic="real" storage="float" units="nT" index="*;4" intern="3">
+        <properties>
+          <p name="label" type="stringArray" term=";">Bx_raw;By_raw;Bz_raw</p>
+        </properties>
+        <ops kind="vector" frame="SENSOR" fixed="true" system="cartesian" sysorder="0;1;2"/>
         <packet numItems="12" valTerm=";"/>
-      </vector>
+      </composite>
     </data>
   </dataset>
-<d id="1">1657223019.5375;4.953124E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03;4.954014E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03</d>
+<d id="1">1657223019.5375;4.953124E+04;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03;-1.120886E+05;-3.530095E+04;-2.533876E+04;-5.227198E+04;-1.212970E+05;1.480172E+03;4.620956E+04;1.475458E+04;1.433644E+04;-5.087511E+04;6.930183E+03</d>
 <d id="1">1657223019.5400;4.954014E+04;-1.120865E+05;-3.529543E+04;-2.534174E+04;-5.227079E+04;-1.212828E+05;1.470473E+03;4.620215E+04;1.475737E+04;1.434963E+04;-5.088306E+04;6.943523E+03;4.954014E+04;-1.120865E+05;-3.529543E+04;-2.534174E+04;-5.227079E+04;-1.212828E+05;1.470473E+03;4.620215E+04;1.475737E+04;1.434963E+04;-5.088306E+04;6.943523E+03</d>
 <d id="1">1657223019.5425;4.953842E+04;-1.121039E+05;-3.529789E+04;-2.533422E+04;-5.229595E+04;-1.212895E+05;1.478799E+03;4.618652E+04;1.477262E+04;1.434640E+04;-5.089331E+04;6.933145E+03;4.953842E+04;-1.121039E+05;-3.529789E+04;-2.533422E+04;-5.229595E+04;-1.212895E+05;1.478799E+03;4.618652E+04;1.477262E+04;1.434640E+04;-5.089331E+04;6.933145E+03</d>
 <d id="1">1657223019.5450;4.953184E+04;-1.121189E+05;-3.529036E+04;-2.534171E+04;-5.230769E+04;-1.213002E+05;1.482242E+03;4.618036E+04;1.475938E+04;1.433949E+04;-5.090488E+04;6.940134E+03;4.953184E+04;-1.121189E+05;-3.529036E+04;-2.534171E+04;-5.230769E+04;-1.213002E+05;1.482242E+03;4.618036E+04;1.475938E+04;1.433949E+04;-5.090488E+04;6.940134E+03</d>

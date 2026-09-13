@@ -7,20 +7,22 @@ das2py: The python das2 client package
 	:maxdepth: 4
 
 	Examples <examples>
-	das2 Module Reference <ref_hi>
-	_das2 C-extension Reference <ref_lo>
+	das3 Module Reference <ref_hi>
+	_das3 C-extension Reference <ref_lo>
 
 
-This module builds upon the functionality provided by the C-library, libdas2,
-to bring to das2 client capabilities to C-python programs.  Functionality
-provided in this package:
+This module builds upon the functionality provided by the C-library, das2C_,
+to bring das2 and das3 client capabilities to C-python programs.  The package
+imports as ``das3``, named for the das3 stream format it reads; ``import das2``
+still works as an alias.  Functionality provided in this package:
 
 	#. Locates data sources across institutions using the
 	   `federated das2 data catalog`_.
 
 	#. Converts data sub-set queries into back-end server protocol messages.
 
-	#. Efficently reads data streams to directly into numpy_ arrays.
+	#. Efficently reads das2 and das3 data streams directly into numpy_ arrays,
+	   including composite values such as vectors, matrices and complex numbers.
 
 	#. Assists with generating matplotlib_ plots.
 
@@ -75,13 +77,13 @@ formats as well as static CDF_ files.
 Data Source Definitions
 -----------------------
 Most das2py source code examples start by providing a dota collection ID to
-the ``das2.get_source()`` function.  This defines the source inside a local
+the ``das3.get_source()`` function.  This defines the source inside a local
 python object which can then be queried for data.  In the code snippet below
 the data source collection for the Electric field Survey data from the Plasma
 Wave Instrument that was onboard the Galileo_ spacecraft is aquired::
 
-	import das2
-	meta_src = das2.get_source('site:/uiowa/galileo/pws/survey_electic')
+	import das3
+	meta_src = das3.get_source('site:/uiowa/galileo/pws/survey_electic')
 
 When ``get_source()`` is called das2py will access the global catalog and
 walk it's nodes until finding the node at the virtual path:
@@ -107,7 +109,7 @@ how the data are sub-set in coordinate space the single call::
 	dataset_list = meta_src.get()
 
 will get the job done.  The output of this call is a python list of
-das2 ``dataset`` objects.
+das3 ``dataset`` objects.
 
 
 Installation
@@ -141,3 +143,4 @@ Indices and tables
 .. _numpy: https://www.numpy.org
 .. _matplotlib: https://matplotlib.org/
 .. _CDF: https://cdf.gsfc.nasa.gov/
+.. _das2C: https://github.com/das-developers/das2C

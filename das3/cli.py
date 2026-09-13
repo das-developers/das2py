@@ -7,6 +7,26 @@ import sys
 
 from . import dastime
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.cli import *'.
+__all__ = [
+	'BOOL',
+	'INT',
+	'REAL',
+	'STRING',
+	'TIMEPT',
+	'DAS2_BINARY',
+	'DAS2_TEXT',
+	'Q_BINARY',
+	'Q_TEXT',
+	'DasCliError',
+	'Selector',
+	'Output',
+	'DasCliSet',
+	'DasCli',
+]
+
+
 ##############################################################################
 # Export globals
 

@@ -2,9 +2,11 @@
 #   Reading Voyager PWS 16-channel data and plotting peaks and averages
 #   based on command line time ranges
 import sys
-import das2
-import das2.mpl
+import das3
+import das3.mpl
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.dates  as dates
 import matplotlib.ticker as ticker
@@ -20,12 +22,12 @@ elif len(sys.argv) == 2:
 
 # ...or request 100 time bins in an arbitrary range
 else:
-   resolution = das2.Dastime(sys.argv[2]) - das2.Dastime(sys.argv[2])
+   resolution = das3.DasTime(sys.argv[2]) - das3.DasTime(sys.argv[1])
    resolution /= 100.0
-   subset = (sys.argv[0], sys.argv[1], resolution)
+   subset = (sys.argv[1], sys.argv[2], resolution)
 
 sId = 'site:/uiowa/voyager/1/pws/specanalyzer-4s-efield/das2'
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 
 (hdr,lDs) = src.get({'time':subset})
 ds = lDs[0]
@@ -44,7 +46,7 @@ fig, ax = pyplot.subplots(ds.shape[1], 1, sharex=True)
 fig.subplots_adjust(hspace=0)  # Rm space between axis
 fig.autofmt_xdate()  # Fix date formating
 
-sAmpLbl = das2.mpl.label(amp.props['label'])
+sAmpLbl = das3.mpl.label(amp.props['label'])
 
 # plot all the channels as a Y-stack
 for j in range(ds.shape[1]):
@@ -77,6 +79,6 @@ ax[iTop].set_title("Voyager 1 PWS - Jupiter Encounter")
 
 ax[iBot].fmt_xdata = dates.DateFormatter("%Y-%m-%dT%H:%M")  # mouse over dates
 ax[iBot].xaxis.set_minor_locator(dates.HourLocator(interval=1)) # add minor ticks
-ax[iBot].set_xlabel(das2.mpl.range_label(time) )
+ax[iBot].set_xlabel(das3.mpl.range_label(time) )
 
-pyplot.savefig('ex04_voyager_pws_query_by_time.png')
+pyplot.savefig('ex04_voyager_pws_query_by_time.png')  # Or pyplot.show(), with the backend line above commented out

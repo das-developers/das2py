@@ -21,9 +21,9 @@
 
 #include <Python.h>
 
-#include <das2/http.h>
-#include <das2/node.h>
-#include <das2/log.h>
+#include <das3/http.h>
+#include <das3/node.h>
+#include <das3/log.h>
 
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
@@ -163,7 +163,7 @@ static PyObject* pyd2_get_node(PyObject* self, PyObject* args)
 	/* g_pMgr note: module initialization handles the lone cred manager */
 	if(g_pRootCat == NULL){
 		g_pRootCat = new_RootNode(NULL, g_pMgr, sAgent);
-		if(g_pRootCat == NULL) return NULL;
+		if(g_pRootCat == NULL) return pyd2_setExceptFromLog(g_pPyD2Error);
 	}
 	
 	if(sUri == NULL){

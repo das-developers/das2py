@@ -10,7 +10,22 @@ from os.path import basename as bname
 import xml.parsers.expat
 from lxml import etree
 
-import das2
+import das3
+from das3.reader import streamType, loadSchema   # verify-only helpers
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.verify import *'.
+__all__ = [
+	'pout',
+	'errorExit',
+	'namespace',
+	'checkDatasetRules',
+	'prnErrorContext',
+	'checkStream',
+	'checkDoc',
+	'main',
+]
+
 
 # ########################################################################## #
 
@@ -40,6 +55,87 @@ def namespace(element):
 	# Credit: https://stackoverflow.com/questions/9513540/python-elementtree-get-the-namespace-string-of-an-element
 	m = re.match(r'\{.*\}', element.tag)
 	return m.group(0) if m else ''
+
+# ########################################################################### #
+# Structural rules the XSD grammar cannot state.  Takes the <dataset>
+# element of a das3 data header and raises das3.HeaderError on the first
+# violation, so the caller's schema error path prints the context.
+
+def _localName(el):
+	# Comments and processing instructions carry a factory function as their
+	# tag, and a header is allowed to hold them anywhere; they match nothing.
+	if not isinstance(el.tag, str):
+		return ''
+	return etree.QName(el).localname
+
+def _intProduct(sIntern):
+	n = 1
+	for sDim in sIntern.split(';'):
+		n *= int(sDim)
+	return n
+
+def checkDatasetRules(elDs):
+	"""Cross-element consistency for one das3 <dataset> header.
+
+	1. Every variable's index= has exactly rank positions, and a position
+	   that varies ('*' or a count) must also vary in the dataset's own
+	   index=.  das2C refuses such a stream at load time, so catching it
+	   here turns a silent authoring error into a verify failure.
+	2. A <composite> that generates its values with <sequence> children has
+	   one per internal cell: the count equals the intern= product.
+	3. A composite states one units= for all components.  A ';' list is not
+	   legal; angular components take their units from the kind's own law.
+	"""
+	sRank = elDs.attrib.get('rank')
+	lDsIdx = elDs.attrib.get('index', '').split(';')
+	nRank = int(sRank) if sRank else len(lDsIdx)
+
+	if len(lDsIdx) != nRank:
+		raise das3.HeaderError(elDs.sourceline,
+			"<dataset rank=\"%s\"> but index=\"%s\" has %d positions"%(
+			sRank, ';'.join(lDsIdx), len(lDsIdx)))
+
+	for elDim in elDs:
+		if _localName(elDim) not in ('coord', 'data'):
+			continue
+		for elVar in elDim:
+			sTag = _localName(elVar)
+			if sTag not in ('scalar', 'bytes', 'composite', 'object'):
+				continue
+			sName = elDim.attrib.get("name", elDim.attrib.get("physDim", "?"))
+			sWho = "<%s name=\"%s\"> %s"%(_localName(elDim), sName, sTag)
+
+			# Rule 1: index positions
+			if 'index' in elVar.attrib:
+				lIdx = elVar.attrib['index'].split(';')
+				if len(lIdx) != nRank:
+					raise das3.HeaderError(elVar.sourceline,
+						"%s index=\"%s\" has %d positions, dataset rank is %d"%(
+						sWho, elVar.attrib['index'], len(lIdx), nRank))
+				for i in range(nRank):
+					if (lIdx[i] != '-') and (lDsIdx[i] == '-'):
+						raise das3.HeaderError(elVar.sourceline,
+							"%s varies in index %d (\"%s\") but the dataset does not (\"%s\")"%(
+							sWho, i, elVar.attrib['index'], ';'.join(lDsIdx)))
+
+			if sTag != 'composite':
+				continue
+
+			# Rule 3: one units value
+			sUnits = elVar.attrib.get('units', '')
+			if ';' in sUnits:
+				raise das3.HeaderError(elVar.sourceline,
+					"%s units=\"%s\" is a list; a composite has one units value"%(
+					sWho, sUnits))
+
+			# Rule 2: sequence count
+			nSeq = sum(1 for el in elVar if _localName(el) == 'sequence')
+			if nSeq > 0:
+				nCells = _intProduct(elVar.attrib.get('intern', '1'))
+				if nSeq != nCells:
+					raise das3.HeaderError(elVar.sourceline,
+						"%s has %d <sequence> children but intern=\"%s\" has %d cells"%(
+						sWho, nSeq, elVar.attrib.get('intern', '1'), nCells))
 
 # ########################################################################### #
 
@@ -89,21 +185,21 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 
 	try:
 		# Go for packet read...
-		reader = das2.PacketReader(fIn)
+		reader = das3.PacketReader(fIn)
 		for pkt in reader:
 			curPkt = pkt
 			
-			if isinstance(pkt, das2.DataPkt):
+			if isinstance(pkt, das3.DataPkt):
 				dDataPktCount[pkt.id] += 1
 				if dExpectPktSize[pkt.id]:
 					if pkt.length != dExpectPktSize[pkt.id]:
-						raise das2.DataError(pkt.tag, pkt.id, dDataPktCount[pkt.id], 
+						raise das3.DataError(pkt.tag, pkt.id, dDataPktCount[pkt.id], 
 							"Packet size mismatch, expected %d read %d"%(
 							dExpectPktSize[pkt.id], pkt.length
 						))
 				continue
 		
-			if (not isinstance(pkt, das2.HdrPkt) ):
+			if (not isinstance(pkt, das3.HdrPkt) ):
 				raise ValueError("Unknown packet type '%s' encountered"%pkt.tag)
 			if bPrnHdr:
 				pout(pkt.content)
@@ -114,7 +210,9 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 			
 			schema.assertValid(docTree)
 		
-			if isinstance(pkt, das2.DataHdrPkt):
+			if isinstance(pkt, das3.DataHdrPkt):
+				if sVersion.startswith('3'):
+					checkDatasetRules(elRoot)
 				dDataPktCount[pkt.id] = 0
 				dExpectPktSize[pkt.id] = pkt.dataLen()
 
@@ -135,7 +233,7 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 			sCurType = None
 			
 	except (
-		das2.HeaderError, etree.XMLSyntaxError, etree.DocumentInvalid, 
+		das3.HeaderError, etree.XMLSyntaxError, etree.DocumentInvalid, 
 		xml.parsers.expat.ExpatError
 	) as e:
 		if curPkt:
@@ -152,11 +250,11 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 					
 		elif isinstance(e, xml.parsers.expat.ExpatError):
 			nLine = e.lineno
-		elif isinstance(e, das2.HeaderError):
+		elif isinstance(e, das3.HeaderError):
 			nLine = e.line
 				
 		# Print context if we can get it
-		if curPkt and isinstance(curPkt, das2.HdrPkt):
+		if curPkt and isinstance(curPkt, das3.HdrPkt):
 			try:
 				prnErrorContext(curPkt, nLine)
 			except:
@@ -176,7 +274,7 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 		#pout(type(e), "\n   dir:", dir(e.error_log[-1]), '\n   msg:', e.error_log[-1].message)
 		#pout("Error in %s:\n%s"%(sFile, str(e)))
 		return 5
-	except das2.DataError as e:
+	except das3.DataError as e:
 		pout("|%s| ID %d packet %d, %s [ERROR]"%(
 			e.pkt_type, e.pkt_id, e.pkt_num, e.message))
 		return 5
@@ -315,7 +413,7 @@ def main():
 			# reader at all. 16K *should* find the version attribute in almost all 
 			# cases.
 			xFirst = fIn.read(16384)  
-			sStreamContent, sStreamVer, sTagStyle, bUsingNs = das2.streamType(xFirst)
+			sStreamContent, sStreamVer, sTagStyle, bUsingNs = streamType(xFirst)
 			fIn.seek(0)
 
 			if not sStreamContent.startswith('das'):
@@ -333,7 +431,7 @@ def main():
 				schema_doc = etree.parse(fSchema)
 				schema = etree.XMLSchema(schema_doc)
 			else:
-				(schema, opts.sSchema) = das2.loadSchema(sStreamContent, sStreamVer, bUsingNs)
+				(schema, opts.sSchema) = loadSchema(sStreamContent, sStreamVer, bUsingNs)
 			pout("Loaded XSD: %s"%bname(opts.sSchema))
 
 			if sTagStyle == 'none': # Should use real None here? Not sure.

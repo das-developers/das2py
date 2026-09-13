@@ -7,9 +7,11 @@
 #     4) Overlapping polar and cartesian plots
 
 import numpy as np
-import das2
-import das2.mpl
+import das3
+import das3.mpl
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot  as pyplot
 import matplotlib.patches as patches
 import matplotlib.colors  as colors
@@ -104,7 +106,7 @@ def main():
    # get a datasource, use it to download data
    
    sId = "test:/uiowa/mars_express/marsis/ne-density-planetographic/das2"
-   src = das2.get_source(sId)
+   src = das3.get_source(sId)
    print(src.info())
 
    beg = '2014-01-01'
@@ -141,8 +143,8 @@ def main():
    sub_title = "%s to %s, SZA max %d$^\\circ$, expanded altitude scale"%(
       beg, end, theta_sza_max
    )
-   theta_label = das2.mpl.label(sza_dim.props['label'])
-   rad_label   = das2.mpl.label(alt_dim.props['label'])
+   theta_label = das3.mpl.label(sza_dim.props['label'])
+   rad_label   = das3.mpl.label(alt_dim.props['label'])
    
    cart_ax, pol_ax = make_axes(
       fig, loc_in_fig, r_alt_max, r_offset, title, sub_title, 
@@ -159,7 +161,7 @@ def main():
    )
    
    # Colorbar axis
-   density_label = "$\mathregular{N_{e}\\ (cm^{-3})}$"
+   density_label = r"$\mathregular{N_{e}\ (cm^{-3})}$"
       
    color_ax = fig.add_axes([0.87, 0.225, 0.02, 0.425])
    color_ax.text(
@@ -169,7 +171,7 @@ def main():
               
    fig.colorbar(hb, cax=color_ax)
    
-   pyplot.savefig('ex05_mex_marsis_query_by_angle.png')
+   pyplot.savefig('ex05_mex_marsis_query_by_angle.png')  # Or pyplot.show(), with the backend line above commented out
 
 if __name__ == '__main__': main()
 

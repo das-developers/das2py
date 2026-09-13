@@ -28,6 +28,16 @@ import numpy
 from . import dataset
 from . import dastime
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.mpl import *'.
+__all__ = [
+	'range_label',
+	'ns1970_label',
+	'label',
+	'TimeTicker',
+]
+
+
 
 #def ph_binavg(varX, varY, varZ,
 
@@ -159,7 +169,7 @@ def label(sStr):
 			return sNew   # incase all that's changed are newlines
 		else:
 			sNew = sNew.replace(' ','\\ ')
-			return '$\mathregular{' + sNew + '}$'
+			return r'$\mathregular{' + sNew + '}$'
 
 
 class TimeTicker(object):

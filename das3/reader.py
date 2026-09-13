@@ -39,12 +39,25 @@ except:
 import xml.parsers.expat  # Switch das2C to use libxml2 as well?
 from lxml import etree
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.reader import *'.
+__all__ = [
+	'HeaderError',
+	'DataError',
+	'Packet',
+	'HdrPkt',
+	'DataHdrPkt',
+	'DataPkt',
+	'PacketReader',
+]
+
+
 
 class HeaderError(Exception):
 	def __init__(self, line, message):
 		self.line = line
 		self.message = message
-		super().__init__(self.message)
+		super(HeaderError, self).__init__(self.message)
 
 class DataError(Exception):
 	def __init__(self, pkt_type, pkt_id, pkt_number, message):
@@ -52,7 +65,7 @@ class DataError(Exception):
 		self.pkt_id = pkt_id
 		self.pkt_num = pkt_number
 		self.message = message
-		super().__init__(self.message)	
+		super(DataError, self).__init__(self.message)
 
 g_lValidTags = (
 	'Sx', # XML stream definition (parse for content)
@@ -207,7 +220,18 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True):
 		if axis.tag in ('extension','properties'): continue
 
 		for array in axis:
-			if array.tag not in ('scalar','vector','object'): continue
+			# v3.0 renamed <vector> to <composite> and split fixed/variable width
+			# strings and blobs out of <scalar> into <bytes>.  <vector> is kept
+			# here so streams written against the pre-release schema still get a
+			# pre-computed length; all of these carry the same <packet> child, so
+			# the numItems * itemBytes rule below is unchanged.
+			#
+			# Sizing convention (see the Packet type in the schema): numItems
+			# counts user facing VALUES and itemBytes is the width of ONE value.
+			# A 3 component composite is numItems="3", NOT a factor of intern=,
+			# so there is nothing extra to multiply in here.
+			if array.tag not in ('scalar','bytes','composite','object','vector'):
+				continue
 
 			for pkt in array:
 				if pkt.tag != 'packet':  continue
@@ -279,7 +303,7 @@ def _getPktLen(elDs, sStreamVer, nPktId, bThrow=True):
 
 # ########################################################################### #
 
-class Das22HdrParser:
+class _Das22HdrParser:
 	"""Deal with original das2's bad choices on properties elements.  Convert
 	a single properties element into a container with sub elements so that
 	it can be checked by schema documents.
@@ -429,7 +453,7 @@ class HdrPkt(Packet):
 			fPkt = BytesIO(self.content)
 
 			if self.sver == '2.2':
-				parser = Das22HdrParser()
+				parser = _Das22HdrParser()
 				self.tree = parser.parse(fPkt)
 			else:
 				self.tree = etree.parse(fPkt)
@@ -603,7 +627,7 @@ class PacketReader:
 		"""
 		
 		if nPktId < 1 or nPktId > 99:
-			raise ValueError("Packet ID %d is invalid"%nPktid)
+			raise ValueError("Packet ID %d is invalid"%nPktId)
 		if nBytes <= 0:
 			raise ValueError("Data packet size %d is invalid"%nBytes)
 		
@@ -730,7 +754,7 @@ class PacketReader:
 				# the higher level information just to get the size of a packet.
 				# Every other networking protocol in the world knows to include
 				# either lengths or terminators.  Geeeze.  Well... go parse it.
-				parser = Das22HdrParser()
+				parser = _Das22HdrParser()
 				fPkt = BytesIO(xDoc)
 				docTree = parser.parse(fPkt)
 				elRoot = docTree.getroot()

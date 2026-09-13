@@ -39,6 +39,18 @@ import re
 import datetime
 import bisect
 
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.toml import *'.
+__all__ = [
+	'TomlDecodeError',
+	'TomlTz',
+	'load',
+	'loads',
+	'dump',
+	'dumps',
+]
+
+
 class TomlDecodeError(Exception):
     def __init__(self, lineno, msg):
         self.lineno = lineno

@@ -28,9 +28,9 @@
 #                        Axis 1
 
 import numpy as np
-import das2
+import das3
 
-ds = das2.Dataset('sounder')
+ds = das3.Dataset('sounder')
 print("Initial dataset shape: %s"%list(ds.shape))
 
 # State that the dataset has a time dimension, but don't define any variables

@@ -14,8 +14,8 @@ import sys
 import os
 
 import numpy as np
-import das2
-import das2.cdf  # Non default module to assit with writing CDFs
+import das3
+import das3.cdf  # Non default module to assit with writing CDFs
 
 perr = sys.stderr.write
 
@@ -23,16 +23,16 @@ perr = sys.stderr.write
 #
 #  $HOME/.das2_auth
 #
-# and following the instructions for the das2.load_auth() function.
-# Other file names can be used as well, see das2.load_auth() for details.
-das2.auth_load()
+# and following the instructions for the das3.load_auth() function.
+# Other file names can be used as well, see das3.load_auth() for details.
+das3.auth_load()
 
 # ########################################################################## #
 
 def test_load_data(tBeg, tEnd, SrcId):
    """tests whether data exists for the given time range to avoid IndexError issue."""
    try:
-      src = das2.get_source(SrcId)
+      src = das3.get_source(SrcId)
       dQuery = {'time':(tBeg, tEnd), 'hfr_i':True}
       (hdr, lDs) = src.get(dQuery)
       dsReal = lDs[0]
@@ -48,7 +48,7 @@ def test_load_data(tBeg, tEnd, SrcId):
 def getIQ(sSrcId, sBeg, sEnd):
    "Returns the tuple (dataset I, dataset Q)"""
 
-   src = das2.get_source(sSrcId)
+   src = das3.get_source(sSrcId)
 
    print("Getting Reals from %s to %s"%(sBeg, sEnd))
    dQuery = {'time':(sBeg, sEnd), 'hfr_i':True}
@@ -101,7 +101,7 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
    if g_psd == None:
       # We're going to use the das2 power spectral density estimator since we
       # know it satisfies Parseval's theorem, so set up the estimator object
-      g_psd = das2.PSD(nDFT, True, 'HANN')
+      g_psd = das3.PSD(nDFT, True, 'HANN')
 
    # Get variables from the input dataset
    vRealAmp  = dsReal['hfr_I']['center']
@@ -159,7 +159,7 @@ def calcPsd(dsReal, dsImg, nDFT, nSlide):
          j += nSlide
 
    # Package the arrays into a dataset and return
-   dsPsd = das2.Dataset('shifted_psd')
+   dsPsd = das3.Dataset('shifted_psd')
 
    dsPsd.coord('time').center(aOutEpoch, 'UTC', axis=0)
 
@@ -202,7 +202,7 @@ def main(lArgs):
    print("Finished generating spectra from %s to %s"%(sBeg, sEnd))
    print("Writing %s"%sCdfFile)
 
-   cdf = das2.cdf.write(dsPsd, sCdfFile, src=src, derived=True)
+   cdf = das3.cdf.write(dsPsd, sCdfFile, src=src, derived=True)
    cdf.close()   
    return 0
 

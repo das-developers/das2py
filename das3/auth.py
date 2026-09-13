@@ -23,7 +23,15 @@
 import os
 import os.path
 import sys
-import _das2
+import _das3
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.auth import *'.
+__all__ = [
+	'auth_set',
+	'auth_load',
+]
+
 
 def auth_set(sBaseUrl, sRealm, sHash, tGetParam=(None,None)):
 	"""Set an authentication hash to be sent to remote servers when certain
@@ -65,9 +73,9 @@ def auth_set(sBaseUrl, sRealm, sHash, tGetParam=(None,None)):
 		if tGetParam[1] is None:
 			raise ValueError("Dataset ID value (sValue) can't be None when "+\
 			                 "a key is given")
-		_das2.auth_set(sBaseUrl, sRealm, sHash, tGetParam[1])
+		_das3.auth_set(sBaseUrl, sRealm, sHash, tGetParam[1])
 	else:
-		_das2.auth_set(sBaseUrl, sRealm, sHash)
+		_das3.auth_set(sBaseUrl, sRealm, sHash)
 
 
 def auth_load(sFile=None):

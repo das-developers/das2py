@@ -38,7 +38,7 @@
 #   heterogenous data sources using permanent IDs such as DOIs is prototyped
 #   in the file: future/exNN_collection_queries.py .
 
-import das2
+import das3
 import sys
 
 
@@ -47,7 +47,7 @@ sId = 'site:/uiowa/cassini/rpws/hires_midfreq_waveform/das2'
 # 0. Getting example data.  All valid das2 catalog Source definitions are
 #    required to provide at least one example dateset.
 
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 for name, summary in src.examples(): print(name, "|", summary)
 lDatasets = src.get()  # Gets the first example if no arguments are provide
 
@@ -56,21 +56,21 @@ lDatasets = src.get()  # Gets the first example if no arguments are provide
 #    data are moved to a different server with a different API, this code will
 #    break.
 
-src = das2.get_source(sId)
-print( src.protoInfo() )
+src = das3.get_source(sId)
+print( src.infoProto() )
 
 dQuery = {
    'start_time':'2008-223T09:06', 'end_time':'2008-223T09:13',
    'params':'--80khz'
 }
-lDatasets = src.protoGet(dQuery, verbose=True)
+lDatasets = src.getProto(dQuery, verbose=True)
 print(lDatasets[0])
 
 # 2. Public interface query.  This interface exists to make it easier to
 #    associate data navigation operations with the query parameters.  This
 #    is the recommended interface for most uses.
 
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 print(src.info())
 
 dQuery = { 'time':('2008-223T09:06', '2008-223T09:13'), 

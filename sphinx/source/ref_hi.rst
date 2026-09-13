@@ -1,4 +1,4 @@
-das2, Module Reference
+das3, Module Reference
 ======================
 
 .. contents::
@@ -10,20 +10,20 @@ Federated Catalog
 
 Factory Functions
 ~~~~~~~~~~~~~~~~~
-.. autofunction:: das2.get_node
+.. autofunction:: das3.get_node
 
-.. autofunction:: das2.get_catalog
+.. autofunction:: das3.get_catalog
 
-.. autofunction:: das2.get_source
+.. autofunction:: das3.get_source
 
 Class Source
 ~~~~~~~~~~~~
-.. autoclass:: das2.Source
+.. autoclass:: das3.Source
 	:members:
 
 Class Catalog
 ~~~~~~~~~~~~~
-.. autoclass:: das2.Catalog
+.. autoclass:: das3.Catalog
 	:members:
 	:inherited-members:
 
@@ -33,22 +33,22 @@ Streams to Numpy Arrays
 
 Class Dataset
 ~~~~~~~~~~~~~
-.. autoclass:: das2.Dataset
+.. autoclass:: das3.Dataset
 	:members:
 
 Class Dimension
 ~~~~~~~~~~~~~~~
-.. autoclass:: das2.Dimension
+.. autoclass:: das3.Dimension
 	:members:
 
 Class Variable
 ~~~~~~~~~~~~~~
-.. autoclass:: das2.Variable
+.. autoclass:: das3.Variable
 	:members:
 
 
 Parsing times
 -------------
-.. autoclass:: das2.DasTime
+.. autoclass:: das3.DasTime
 	:members:
 

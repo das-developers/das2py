@@ -1,7 +1,7 @@
 # das2py example 11:
 #    Reading catalogs and observing two stage node initialization
 
-import das2
+import das3
 
 # ########################################################################### #
 # Helper: print info on each catalog node
@@ -23,7 +23,7 @@ def prnCat(node):
 
 # ########################################################################### #
 # Browsing directory nodes
-top_node = das2.get_node(None)
+top_node = das3.get_node(None)
 prnCat(top_node)
 
 # Lets walk down the node tree to the Galileo Ephemeris data Collection.
@@ -58,7 +58,7 @@ prnCat(waves_node)
 # to be under the das head node, path URIs that don't start with one of the
 # root paths are assumed to be a relative path under: 'tag:das2.org,2012:'
 
-ephem_col = das2.get_node('site:/uiowa/galileo/ephemeris/jovicentric')
+ephem_col = das3.get_node('site:/uiowa/galileo/ephemeris/jovicentric')
 
 
 # ########################################################################### #

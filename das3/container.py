@@ -22,8 +22,17 @@
 """Looking up data sources and sub catalogs of das catalogs"""
 
 from . node import *
+from . util import CatalogError
 from . source import *
 from . streamsrc import *
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.container import *'.
+__all__ = [
+	'Catalog',
+	'Collection',
+]
+
 
 try:
   basestring
@@ -77,7 +86,7 @@ class Catalog(Node):
 			elif dDef['type'] == 'Collection':
 				self.subs[sKey] = Collection(dDef, STUB, self.bGlobal)
 			elif dDef['type'] == 'FileAggSrc':
-				self.subs[sKey] = FileAggSrc(dDef, STUB, self.bGlobal)
+				raise NotImplementedError("FileAggSrc catalog nodes are not supported yet (%s)"%sKey)
 
 			# TODO: Add other source types here...
 
@@ -155,7 +164,7 @@ class Collection(Catalog):
 			if dDef['type'] == 'HttpStreamSrc':
 				self.subs[sKey] = HttpStreamSrc(dDef, STUB, self.bGlobal)
 			elif dDef['type'] == 'FileAggSrc':
-				self.subs[sKey] = FileAggSrc(dDef, STUB, self.bGlobal)
+				raise NotImplementedError("FileAggSrc catalog nodes are not supported yet (%s)"%sKey)
 			else:
 				raise NotImplementedError(
 					"Illegal sub item type %s in container from %s"%(dDef['type'],

@@ -8,7 +8,7 @@
 #  DAS_LIBDIR
 
 # Find a way to get this from the manifest
-DAS_PY_VER:=3.0rc5
+DAS_PY_VER:=3.0rc7
 
 ifeq ($(PY_BIN),)
 PY_BIN=$(shell which python)
@@ -36,7 +36,7 @@ endif
 ifeq ($(DAS_LIBDIR),)
 
 ifeq ($(DAS2C),)
-DAS_LIBDIR:=$(shell realpath $(PWD)/../das2C/build.$(N_ARCH))	
+DAS_LIBDIR:=$(shell realpath $(PWD)/../das2C/build.$(N_ARCH))
 else
 DAS_LIBDIR:=$(shell realpath $(DAS2C)/build.$(N_ARCH))
 endif
@@ -54,16 +54,25 @@ endif
 PY_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print('%d%d'%sys.version_info[0:2])")
 PY_MAJ_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print(sys.version_info[0])")
 
+# The ABI suffix in the wheel tag comes from the interpreter, not from a
+# guess: 'm' (pymalloc) through 3.7, nothing from 3.8 on, 'd' for a debug
+# build.  2.7 has no sys.abiflags; wheel tags it 'm', plus 'u' for a UCS-4
+# build (most distro pythons), which sys.maxunicode reveals.
+PY_ABI_TOK:=$(shell $(PY_BIN) -c "import sys; f=getattr(sys,'abiflags',None); print(f if f is not None else 'm'+('u' if sys.maxunicode>65535 else ''))")
+
+WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)$(PY_ABI_TOK)-linux_x86_64.whl
+
+# One pair of venvs per interpreter (build_py312_venv, test_py27_venv, ...),
+# not per major version.  A home directory shared between machines with
+# different pythons would otherwise have two boxes rebuilding one venv.
+VDIR:=py$(PY_VER_TOK)_venv
+
 ifeq ($(PY_MAJ_VER_TOK),3)
-WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)-linux_x86_64.whl
 VENV_MOD:=venv
 PY_VER_WARN:=
-VDIR:=py3_venv
 else
-WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)m-linux_x86_64.whl
 VENV_MOD:=virtualenv
 PY_VER_WARN:=--no-python-version-warning
-VDIR:=py2_venv
 endif
 
 # If you can't find libcdf.so CDF_LIBDIR then copy it in from das2C.
@@ -75,40 +84,50 @@ endif
 # rebuilt and you test the previous build.
 
 SRC:= \
-src/_das2.c \
+pyproject.toml \
+setup.py \
+src/_das3.c \
 src/py_builder.h \
 src/py_catalog.h \
 src/py_dft.h \
-das2/__init__.py \
-das2/auth.py \
-das2/cdf.py \
-das2/cli.py \
-das2/container.py \
-das2/das-basic-doc-ns-v3.0.xsd \
-das2/das-basic-stream-ns-v3.0.xsd \
-das2/das-basic-stream-v2.2.xsd \
-das2/das-basic-stream-v3.0.xsd \
-das2/dastime.py \
-das2/dataset.py \
-das2/mpl.py \
-das2/node.py \
-das2/pkt.py \
-das2/reader.py \
-das2/source.py \
-das2/streamsrc.py \
-das2/toml.py \
-das2/util.py \
-das2/verify.py \
-das2/pycdf/__init__.py \
-das2/pycdf/const.py \
-das2/pycdf/LICENSE.md
+das3/__init__.py \
+das3/auth.py \
+das3/cdf.py \
+das3/cli.py \
+das3/container.py \
+das3/das-basic-doc-ns-v3.0.xsd \
+das3/das-basic-stream-ns-v3.0.xsd \
+das3/das-basic-stream-v2.2.xsd \
+das3/das-basic-stream-v3.0.xsd \
+das3/dastime.py \
+das3/dataset.py \
+das3/mpl.py \
+das3/node.py \
+das3/pkt.py \
+das3/reader.py \
+das3/source.py \
+das3/streamsrc.py \
+das3/toml.py \
+das3/util.py \
+das3/verify.py \
+das3/pycdf/__init__.py \
+das3/pycdf/const.py \
+das3/pycdf/LICENSE.md \
+das2/__init__.py
 
 .PHONY: build dist test install clean distclean examples
 
 build:dist/$(WHEEL_FILE)
 
-dist/$(WHEEL_FILE):$(SRC) build_$(VDIR)/bin/python
+# The static das2C library is linked into the extension, so a das2C rebuild
+# must trigger a wheel rebuild too, or you test against the previous library.
+# The sdist step leaves das2py.egg-info in the source tree.  An old pip
+# (9.x, as on python 3.6 hosts) runs with the current directory on sys.path,
+# sees that egg-info, decides das2py is already installed here, and skips the
+# wheel; the test venv then has numpy but no das3.  Remove it right away.
+dist/$(WHEEL_FILE):$(SRC) $(DAS_LIBDIR)/libdas3.a build_$(VDIR)/bin/python
 	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) build_$(VDIR)/bin/python -m build
+	-rm -r *.egg-info
 
 build_$(VDIR)/bin/python:
 	$(PY_BIN) -m $(VENV_MOD) build_$(VDIR)
@@ -119,15 +138,29 @@ test:dist/$(WHEEL_FILE)
 	$(PY_BIN) -m $(VENV_MOD) test_$(VDIR)
 	./test_$(VDIR)/bin/python -m pip install --isolated $(PY_VER_WARN) dist/$(WHEEL_FILE)
 	@./test_$(VDIR)/bin/python -c 'import numpy;print("===================================");print("  Numpy Runtime Version is %s"%numpy.__version__);		print("===================================")'
+	./test_$(VDIR)/bin/python test/CheckPortable.py
 	./test_$(VDIR)/bin/python test/TestCatalog.py
 	./test_$(VDIR)/bin/python test/TestDasTime.py
 	./test_$(VDIR)/bin/python test/TestSortMinimal.py
 	./test_$(VDIR)/bin/python test/TestRead.py
+	./test_$(VDIR)/bin/python test/TestComposite.py
+	./test_$(VDIR)/bin/python test/TestAlias.py
+	./test_$(VDIR)/bin/python test/TestPkt.py
+	./test_$(VDIR)/bin/python test/TestProps.py
+	./test_$(VDIR)/bin/python test/TestQuantity.py
 	./test_$(VDIR)/bin/das_verify -h
 	./test_$(VDIR)/bin/das_verify test/ex05_waveform_extra.d3t
+	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3t
+	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3b
+	./test_$(VDIR)/bin/das_verify test/ex16_mag_grid_doc.d3x
 	./test_$(VDIR)/bin/das_cdf_info -h 
 	./test_$(VDIR)/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
 	@echo "All tests ran without returning an error code"
+
+# Every example writes a PNG and none opens a window, so the file backend is
+# the right one on a build box with no display and on an interpreter built
+# without Tk.  matplotlib honors this variable since 1.5.
+examples: export MPLBACKEND = Agg
 
 examples:
 	# Creating temporary environment for testing, verify more streams, re-gen all example plots
@@ -140,8 +173,14 @@ examples:
 	./test_$(VDIR)/bin/das_verify test/ex12_sounder_xyz.d3t
 	./test_$(VDIR)/bin/das_verify test/ex13_object_annotation.d3t
 	./test_$(VDIR)/bin/das_verify test/ex14_object_tfcat.d3t
-	./test_$(VDIR)/bin/das_verify test/ex15_vector_frame.d3b
+	./test_$(VDIR)/bin/das_verify test/ex15_vector_frame.d3t
 	./test_$(VDIR)/bin/das_verify test/ex16_mag_grid_doc.d3x
+	./test_$(VDIR)/bin/das_verify test/ex17_vector_noframe.d3b
+	./test_$(VDIR)/bin/das_verify test/ex22_mag_grid_vec.d3t
+	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3b
+	./test_$(VDIR)/bin/das_verify test/ex41_quaternion.d3t
+	./test_$(VDIR)/bin/das_verify test/ex42_plain_tensor.d3t
+	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3t
 	./test_$(VDIR)/bin/das_verify test/ex96_yscan_multispec.d2t
 	./test_$(VDIR)/bin/python examples/c_module/galileo_pws_e-survey.py
 	./test_$(VDIR)/bin/python examples/c_module/juno_hfwbr_cdf.py

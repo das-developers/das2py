@@ -2,9 +2,11 @@
 #    Plotting Cassini RPWS multi-mode spectra using hexbin algorithm
 
 import numpy
-import das2
-import das2.mpl
+import das3
+import das3.mpl
 
+import matplotlib
+matplotlib.use('Agg')  # Draw to files only.  Comment out to show plots in a window.
 import matplotlib.pyplot as pyplot
 import matplotlib.colors as colors
 import matplotlib.ticker as ticker
@@ -17,7 +19,7 @@ import matplotlib.ticker as ticker
 
 sId = "site:/uiowa/cassini/rpws/survey/das2"
 print("Getting data source definition for %s"%sId)
-src = das2.get_source(sId)
+src = das3.get_source(sId)
 
 print("Reading default example Cassini RPWS E-Survey data...")
 (hdr, lDs) = src.get()
@@ -57,20 +59,20 @@ nMajor = 6*60
 ax0.xaxis.set_minor_locator(ticker.MultipleLocator(nMinor*60*int(1e9)))
 ax0.xaxis.set_major_locator(ticker.MultipleLocator(nMajor*60*int(1e9)))
 
-fmtr = das2.mpl.TimeTicker(aX.min(), aX.max())
+fmtr = das3.mpl.TimeTicker(aX.min(), aX.max())
 ax0.xaxis.set_major_formatter(ticker.FuncFormatter(fmtr.label))
 
 # Plot labels
-ax0.set_xlabel(das2.mpl.ns1970_label( ax0.get_xlim() ))
+ax0.set_xlabel(das3.mpl.ns1970_label( ax0.get_xlim() ))
 
 sUnits = lDs[0]['frequency']['center'].units
-ax0.set_ylabel("Frequency (%s)"%das2.mpl.label(sUnits))
+ax0.set_ylabel("Frequency (%s)"%das3.mpl.label(sUnits))
 
 sUnits = lDs[0]['amplitude']['center'].units
-cbar.set_label("Spectral Density (%s)"%das2.mpl.label(sUnits))
+cbar.set_label("Spectral Density (%s)"%das3.mpl.label(sUnits))
 
 # Stream didn't contain a title, use the one from the data source
 ax0.set_title( src.props['title'] )
 
 # matplotlib is a little slow displaying this one, expect ~10 sec delay
-pyplot.savefig('ex03_cassini_rpws_multimode.png')
+pyplot.savefig('ex03_cassini_rpws_multimode.png')  # Or pyplot.show(), with the backend line above commented out

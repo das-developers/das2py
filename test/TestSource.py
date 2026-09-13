@@ -1,11 +1,11 @@
 # No she-bang here because we want the test target to pick the python version
 
 import sys
-import das2
+import das3
 
 
-#src = das2.get_source('site:/uiowa/juno/wav/survey/das2')
-src = das2.get_source('site:/uiowa/cassini/rpws/survey_keyparam/das2')
+#src = das3.get_source('site:/uiowa/juno/wav/survey/das2')
+src = das3.get_source('site:/uiowa/cassini/rpws/survey_keyparam/das2')
 lDs = src.httpGet({'start_time':'2016-10-02T11:00', 'end_time':'2016-10-02T12:00'})
 
 for i in range(len(lDs)):
@@ -16,7 +16,7 @@ lDs = src.httpGet({'start_time':'2016-10-02T11:00', 'end_time':'2016-10-02T12:00
 
 sys.exit(117)
 
-src = das2.get_source('site:/uiowa/cassini/rpws/survey_keyparam/das2')
+src = das3.get_source('site:/uiowa/cassini/rpws/survey_keyparam/das2')
 
 lDs = src.get(time=('2010-001','2010-002'), magnetic_specdens=1)
 

@@ -1,0 +1,33 @@
+|Sx||346|
+<stream type="das-basic-stream" version="3.0" >
+  <properties>
+    <p name="info">Composites das2C carries but does not act on: a plain 3;3
+      matrix with no formalism, and a rank 3 tensor under a kind it has no
+      rules for.  Both read back component by component.</p>
+    <p name="sourceId">tmp/gen_ex42.py</p>
+  </properties>
+</stream>
+|Hx|42|844|
+<dataset name="moments" rank="1" index="*" >
+  <coord physDim="time" name="time" axis="x">
+    <scalar semantic="datetime" storage="struct" index="*" units="UTC">
+      <ops kind="point"/>
+      <packet numItems="1" itemBytes="24" encoding="utf8" fill="0001-01-01T00:00:00.000000" />
+    </scalar>
+  </coord>
+  <data physDim="B_cov" name="cov">
+    <composite semantic="real" storage="float" intern="3;3" index="*" units="nT**2">
+      <packet numItems="9" itemBytes="11" encoding="utf8" fill="-1.000000e+31" />
+    </composite>
+  </data>
+  <data physDim="Q" name="heat_flux">
+    <composite semantic="real" storage="float" intern="3;3;3" index="*" units="mW m**-2">
+      <ops kind="tensor" frame="GSE" symmetry="full"/>
+      <packet numItems="27" itemBytes="11" encoding="utf8" fill="-1.000000e+31" />
+    </composite>
+  </data>
+</dataset>
+|Pd|42|420|2026-07-29T00:00:00.000  1.000e+00  2.500e-01  5.000e-01  2.500e-01  1.000e+00  7.500e-01  5.000e-01  7.500e-01  1.000e+00  0.000e+00  1.000e+00  2.000e+00  1.000e+01  1.100e+01  1.200e+01  2.000e+01  2.100e+01  2.200e+01  1.000e+02  1.010e+02  1.020e+02  1.100e+02  1.110e+02  1.120e+02  1.200e+02  1.210e+02  1.220e+02  2.000e+02  2.010e+02  2.020e+02  2.100e+02  2.110e+02  2.120e+02  2.200e+02  2.210e+02  2.220e+02
+|Pd|42|420|2026-07-29T00:00:10.000  2.000e+00  2.500e-01  5.000e-01  2.500e-01  2.000e+00  7.500e-01  5.000e-01  7.500e-01  2.000e+00  5.000e-01  1.500e+00  2.500e+00  1.050e+01  1.150e+01  1.250e+01  2.050e+01  2.150e+01  2.250e+01  1.005e+02  1.015e+02  1.025e+02  1.105e+02  1.115e+02  1.125e+02  1.205e+02  1.215e+02  1.225e+02  2.005e+02  2.015e+02  2.025e+02  2.105e+02  2.115e+02  2.125e+02  2.205e+02  2.215e+02  2.225e+02
+|Pd|42|420|2026-07-29T00:00:20.000  3.000e+00  2.500e-01  5.000e-01  2.500e-01  3.000e+00  7.500e-01  5.000e-01  7.500e-01  3.000e+00  1.000e+00  2.000e+00  3.000e+00  1.100e+01  1.200e+01  1.300e+01  2.100e+01  2.200e+01  2.300e+01  1.010e+02  1.020e+02  1.030e+02  1.110e+02  1.120e+02  1.130e+02  1.210e+02  1.220e+02  1.230e+02  2.010e+02  2.020e+02  2.030e+02  2.110e+02  2.120e+02  2.130e+02  2.210e+02  2.220e+02  2.230e+02
+|Pd|42|420|2026-07-29T00:00:30.000  4.000e+00  2.500e-01  5.000e-01  2.500e-01  4.000e+00  7.500e-01  5.000e-01  7.500e-01  4.000e+00  1.500e+00  2.500e+00  3.500e+00  1.150e+01  1.250e+01  1.350e+01  2.150e+01  2.250e+01  2.350e+01  1.015e+02  1.025e+02  1.035e+02  1.115e+02  1.125e+02  1.135e+02  1.215e+02  1.225e+02  1.235e+02  2.015e+02  2.025e+02  2.035e+02  2.115e+02  2.125e+02  2.135e+02  2.215e+02  2.225e+02  2.235e+02

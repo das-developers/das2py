@@ -32,10 +32,23 @@ import numpy.ma
 from collections import Counter, namedtuple
 import datetime
 
-import _das2
+import _das3
 
 from . import dastime
 from . util import *
+
+# Names the package re-exports.  Helpers, stdlib imports and module
+# globals stay out of 'from das3.dataset import *'.
+__all__ = [
+	'Datum',
+	'Quantity',
+	'Variable',
+	'Dimension',
+	'Dataset',
+	'ds_strip_empty',
+	'ds_union',
+]
+
 
 g_sIdxNames = "ijklmnpqrstuvwxyz" # Printing aid
 
@@ -275,9 +288,9 @@ class Datum(object):
 
 	def __repr__(self):
 		if isinstance(self.value, str):
-			return "<das2.Datum: value='%s' units='%s'>"%(self.value, self.unit)
+			return "<das3.Datum: value='%s' units='%s'>"%(self.value, self.unit)
 		else:
-			return "<das2.Datum: value=%s units='%s'>"%(self.value, self.unit)
+			return "<das3.Datum: value=%s units='%s'>"%(self.value, self.unit)
 
 
 # ########################################################################### #
@@ -292,9 +305,9 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	To avoid extra dependencies, the AstroPy Quantity class is not used directly
 	within das2py, but users of both this library and Astropy are encouraged to
-	convert das2.Quantity objects to astropy.units.Quantity objects using the
-	the :meth:`das2.astro._wrap() function from the optional
-	:mod:`das2.astro` module.
+	convert das3.Quantity objects to astropy.units.Quantity objects using the
+	the :meth:`das3.astro._wrap() function from the optional
+	:mod:`das3.astro` module.
 	"""
 	__slots__ = ()
 
@@ -363,6 +376,10 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 	def to_value(self, unit=None):
 		"""Return the numeric value, possibly in different units.
 
+		Deliberately snake_case, unlike the other methods here: this is the
+		name AstroPy gives the same operation on its Quantity, so code that
+		handles both kinds of quantity can call one method.
+
 		Args:
 			unit (str) : If None this is the same as accessing the .value member
 
@@ -376,13 +393,13 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 		if unit == None or unit == self.unit:
 			return self.value
 
-		if not _das2.convertible(self.unit, unit):
+		if not _das3.convertible(self.unit, unit):
 			raise ValueError(
 				"This Quantities's units, %s, are not convertable to %s"%(
 				self.unit, unit
 			))
 
-		rScale = _das2.convert(1.0, self.unit, unit)
+		rScale = _das3.convert(1.0, self.unit, unit)
 		return rScale * self.value
 
 
@@ -406,7 +423,7 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def __truediv__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_div(self.unit, other.unit)
+			u = _das3.unit_div(self.unit, other.unit)
 			v = _np_td_cast(self.value) / _np_td_cast(other.value)
 		else:
 			u = self.unit
@@ -416,24 +433,34 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def __rtruediv__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_div(other.unit, self.unit)
+			u = _das3.unit_div(other.unit, self.unit)
 			v = _np_td_cast(other.value) / _np_td_cast(self.value)
 		else:
-			u = _das2.unit_invert(self.unit)
+			u = _das3.unit_invert(self.unit)
 			v = _np_td_cast(other) / _np_td_cast(self.value)
 
 		return Quantity(value=v, unit=u)
 
+	# Python 2 spells the operator __div__ unless the module opts into true
+	# division; without these, 1.0 / quantity raises TypeError there.
+	__div__  = __truediv__
+	__rdiv__ = __rtruediv__
+
 
 	def __mul__(self, other):
 		if isinstance(other, Quantity):
-			u = _das2.unit_mul(self.unit, other.unit)
+			u = _das3.unit_mul(self.unit, other.unit)
 			v = self.value * other.value
 		else:
 			u = self.unit
 			v = self.value * other
 
 		return Quantity(value=v, unit=u)
+
+	# Multiplication commutes, and this must be spelled out: Quantity is a
+	# tuple underneath, and a tuple's own __rmul__ turns 2 * q into a four
+	# element tuple and 2.0 * q into a TypeError.
+	__rmul__ = __mul__
 
 
 
@@ -457,10 +484,18 @@ class Variable(object):
 	  - .name  - A name for this variable, defaults to it's role in the dimension
 	  - .unique - A list of indicies in which these values are (potentially)
 	        unique.
+	  - .ops   - None, or a dictionary describing the math formalism of a
+	        composite value: 'kind' plus the parameters from the stream's
+	        <ops> element under their wire names (frame, body, system, ...)
+	  - .subrank - How many trailing indices of .array are internal to one
+	        value (1 for a vector, 2 for a matrix), 0 for a scalar.  See
+	        extShape() and intrShape() for the two halves of the shape.
+	  - .labels - One label per component in storage order, or None when the
+	        variable was not read from a stream
 
 	Variables are very similar to Quantities in AstroPy.
 	"""
-	def __init__(self, dim, role, values, units, axis=None, fill=None):
+	def __init__(self, dim, role, values, units, axis=None, fill=None, subrank=0):
 		"""Create a new Variable.
 
 		Args:
@@ -481,6 +516,10 @@ class Variable(object):
 
 			fill (float,str) : If specified, a masked array will be constructed
 				using this value as mask-out flag.
+
+			subrank (int, optional) : How many trailing indices of values are
+				internal to one value (1 for a vector, 2 for a 3x3 matrix).  These
+				are not dataset indices and take no part in broadcasting.
 		"""
 
 		self.dim = dim
@@ -488,7 +527,9 @@ class Variable(object):
 		self.units = units
 		self.array = None
 		self.fill = fill
-		self.subrank = 0
+		self.subrank = subrank
+		self.ops = None
+		self.labels = None
 
 		# make sure we store time arrays in ns1970
 		if units.upper() == 'UTC':
@@ -519,6 +560,15 @@ class Variable(object):
 
 		ds_shape = dim.ds.shape
 
+		# Only the external shape takes part in index bookkeeping.  The
+		# internal shape rides along at the end of every broadcast below.
+		nExt = len(array.shape) - subrank
+		if nExt < 0:
+			raise DatasetError("Variable %s:%s has %d indices but claims %d internal"%(
+				dim.name, role, len(array.shape), subrank))
+		tExt = array.shape[:nExt]
+		tIntern = array.shape[nExt:]
+
 		scoot = 0                  # See if we need to scoot our indicies
 		if axis != None:
 			if isinstance(axis, int): scoot = axis
@@ -530,8 +580,8 @@ class Variable(object):
 			lShape += [None]*scoot
 			self.unique += [False]*scoot
 
-		lShape += list(array.shape)
-		self.unique += [True]*(len(array.shape))
+		lShape += list(tExt)
+		self.unique += [True]*len(tExt)
 
 		nMoreAx = len(ds_shape) - len(lShape)
 		if nMoreAx:
@@ -564,7 +614,7 @@ class Variable(object):
 			iLast = len(lShape) - 1
 			while lShape[iLast] == None: iLast -= 1
 
-			array = numpy.broadcast_to(array, lShape[:iLast+1])
+			array = numpy.broadcast_to(array, tuple(lShape[:iLast+1]) + tIntern)
 			#print("New var shape is: %s (%s)"%(lShape, array.shape))
 
 		# Now my shape array looks something like this:
@@ -590,21 +640,32 @@ class Variable(object):
 				else: new_shape[i] = ds_shape[i]
 
 			#print("New slice is: %s to be bcast to %s"%(lSlice, new_shape))
-			array = numpy.broadcast_to(array[tuple(lSlice)], new_shape)
+			array = numpy.broadcast_to(array[tuple(lSlice)], tuple(new_shape) + tIntern)
 
 		# Callback to tell dataset to adjust it's arrays if needed
 		self.array = array
-		self.dim.ds._bcast(array.shape)
+		self.dim.ds._bcast(self.extShape())
 
 		# After all is said and done make sure that the DS shape and the
 		# Variable shape now match
 		if (len(self.unique) != len(self.dim.ds.shape)) or \
-		   (len(self.array.shape) != len(self.dim.ds.shape)):
+		   (len(self.extShape()) != len(self.dim.ds.shape)):
 			raise DatasetError(
 				"Dataset Inconsistancy detected! %s:%s  %s %s, dateset: %s"%(
 				self.dim.name, self.name, self.unique, self.array.shape, self.dim.ds.shape)
 			)
 
+
+	def extShape(self):
+		"""The shape of this variable over the dataset indices alone, without
+		the trailing internal shape of a composite value."""
+		return self.array.shape[:len(self.array.shape) - self.subrank]
+
+	def intrShape(self):
+		"""The internal shape of one value: (3,) for a vector, (3, 3) for a
+		matrix, () for a scalar.  These indices trail extShape() in .array.
+		Mirrors DasVar_intrShape() in das2C."""
+		return self.array.shape[len(self.array.shape) - self.subrank:]
 
 	def __str__(self):
 		lIdx = []
@@ -621,44 +682,57 @@ class Variable(object):
 		sIdx = ','.join(lIdx)
 		#sRng = ', '.join(lRng)
 
+		# Internal indices get a second bracket with capital letters, matching
+		# das2C's printer, so var.array[i,j][I,J] is literally the indexing
+		# the string shows.  Scalars print as they always have.
+		if self.subrank > 0:
+			sIdx += ']['  + ','.join(g_sIdxNames[n].upper() for n in range(self.subrank))
+
 		#return "%s['%s'][%s] %s | %s"%(self.dim.name, self.name, sIdx, self.units, sRng)
-		return "%s['%s'][%s] (%s) %s"%(self.dim.name, self.name, sIdx, self.array.dtype, self.units)
+		sOut = "%s['%s'][%s] (%s) %s"%(self.dim.name, self.name, sIdx, self.array.dtype, self.units)
+		return sOut.rstrip()
 
 	def _bcast(self, shape):
-		if shape == self.array.shape: return
+		shape = tuple(shape)
+		nExt = len(self.array.shape) - self.subrank
+		tIntern = self.array.shape[nExt:]
+		if shape == self.array.shape[:nExt]: return
 
 		# The bcast can't ask me to shift to the right, but it can ask me to
 		# add indices to the right that I didn't have, or to repeat my self in
-		# higher indices
-		nExtra = len(shape) - len(self.array.shape)
+		# higher indices.  New indices go between the external and internal
+		# shapes: numpy keeps unnamed trailing axes, so a slice tuple that
+		# names only the external axes inserts there.
+		nExtra = len(shape) - nExt
 		if nExtra:
-			lSlice = [slice(None, None, None) for i in range(len(self.array.shape)) ]
+			lSlice = [slice(None, None, None) for i in range(nExt) ]
 			lSlice += [None]*nExtra
 			self.array = self.array[tuple(lSlice)]
 			self.unique += [False]*nExtra
 
 		# Okay, I have extra dimensions, now broadcast
-		self.array = numpy.broadcast_to(self.array, shape)
+		self.array = numpy.broadcast_to(self.array, shape + tIntern)
 
 	def __add__(self, other):
 		# Check that the units are compatable
-		if not _das2.can_merge(self.units, '+', other.units):
+		if not _das3.can_merge(self.units, '+', other.units):
 			raise DatasetError("Operation %s + %s is invalid"%(self.units, other.units))
 
 		# Get the scaling factor
 		rFactor = 1.0
 		if self.units == 'UTC' or self.units == 'ns1970':
-			rFactor = _das2.convert(1.0, other.units, 'ns')
+			rFactor = _das3.convert(1.0, other.units, 'ns')
 			my_ary = self.array.astype("int64", copy=False)
 			other_ary = other.array * rFactor
 			other_ary = other_ary.astype("int64")
 			new_ary = my_ary + other_ary
 			new_ary = new_ary.astype(numpy.dtype('M8[ns]'), copy=False)
 		else:
-			rFactor = _das2.convert(1.0, other.units, self.units)
+			rFactor = _das3.convert(1.0, other.units, self.units)
 			new_ary = self.array + (other.array * rFactor)
 
-		var = Variable(self.dim, None, new_ary, self.units, fill=self.fill)
+		var = Variable(self.dim, None, new_ary, self.units, fill=self.fill,
+		               subrank=self.subrank)
 		return var
 
 
@@ -711,15 +785,15 @@ class Variable(object):
 		rMax = self.array.max()
 
 		if isinstance(quant, Quantity):
-			if not _das2.convertible(self.units, quant.unit):
+			if not _das3.convertible(self.units, quant.unit):
 				raise ValueError(
 					"This Variable's units, %s, are not convertable to %s"%(
 					self.units, quant.unit
 				))
 
 			if (self.units != quant.unit):
-				rMin = _das2.convert(rMin, self.units, quant.unit)
-				rMax = _das2.convert(rMax, self.units, quant.unit)
+				rMin = _das3.convert(rMin, self.units, quant.unit)
+				rMax = _das3.convert(rMax, self.units, quant.unit)
 
 
 		# Can't use loops.
@@ -763,25 +837,36 @@ class Dimension(object):
 	This object does not represent an index dimensions, but rather categories,
 	such as time, frequency, electric field amplitudes, cites in Austrilia, etc.
 
-	Dimensions contain Variables.
+	Dimensions contain Variables.  A dimension knows which kind it is, .kind
+	is 'coord' or 'data', the same split das2C's dim_type carries, so code
+	that walks a dataset can sort them without reaching into the dataset:
+
+	   lCoords = [ds[s] for s in ds if ds[s].kind == 'coord']
 	"""
 
-	def __init__(self, dataset, sName):
+	KINDS = ('coord', 'data')
+
+	def __init__(self, dataset, sName, sKind):
 		# Create a new dimension for a dataset
 
+		if sKind not in Dimension.KINDS:
+			raise ValueError("Dimension kind must be one of %s, not %r"%(
+				Dimension.KINDS, sKind))
 		self.ds = dataset
+		self.kind = sKind
 		self.props = {}
 		self.vars = {}
 		self.name = sName
 
-	def var(self, role, values, units, axis=None, fill=None):
+	def var(self, role, values, units, axis=None, fill=None, subrank=0):
 		"""Create or replace a variable in this dimension.
 
 		Add a variable to a dataset can trigger broadcasting of other variables
-		to fill the required index space.
+		to fill the required index space.  See :class:`das3.Variable` for the
+		meaning of subrank.
 		"""
 
-		_var = Variable(self, role, values, units, axis, fill)
+		_var = Variable(self, role, values, units, axis, fill, subrank)
 		self.vars[role] = _var
 
 		# If there happens to be both a reference and offset variable
@@ -795,17 +880,17 @@ class Dimension(object):
 		return _var
 
 	def center(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for center values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for center values"""
 		var = self.var('center', values, units, axis, fill)
 		return var
 
 	def reference(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for referenece values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for referenece values"""
 		var = self.var('reference', values, units, axis, fill)
 		return var
 
 	def offset(self, values, units, axis=None, fill=None):
-		"""Shortcut for :meth:`das2.Dimension.var` for offset values"""
+		"""Shortcut for :meth:`das3.Dimension.var` for offset values"""
 		var = self.var('offset', values, units, axis, fill)
 		return var
 		
@@ -824,16 +909,14 @@ class Dimension(object):
 		
 		return None
 
-	def propEq(self, sKey, sValue):
-		"""Does this dimension have a given property and is that property
-		equal to the given value"""
+	def hasProp(self, sKey):
+		"""Does this dimension carry the named property"""
+		return sKey in self.props
 
-		#print("%s: %s"%(self.name, self.props.keys()))
-
-		if not (sKey in self.props):
-			return False
-		else:
-			return (self.props[sKey] == sValue)
+	def hasPropVal(self, sKey, sValue):
+		"""Does this dimension carry the named property with the given value.
+		False, not an error, when the property is absent."""
+		return (sKey in self.props) and (self.props[sKey] == sValue)
 
 	def __contains__(self,key):
 		if not isinstance(key, str):
@@ -925,22 +1008,22 @@ class Dataset(object):
 		self.rank = 0
 		self.group = group
 		self.props = {}
-		self.dCoord = {}
-		self.dData = {}
+		self._dCoord = {}
+		self._dData = {}
 		self.shape = ()  # Empty tuple
 
 	def coord(self, sId):
 		"""Create or get a coordinate dimension"""
-		if sId not in self.dCoord:
-			self.dCoord[sId] = Dimension(self, sId)
-		return self.dCoord[sId]
+		if sId not in self._dCoord:
+			self._dCoord[sId] = Dimension(self, sId, 'coord')
+		return self._dCoord[sId]
 
 	def data(self, sId):
 		"""Create or get a data dimension"""
 
-		if sId not in self.dData:
-			self.dData[sId] = Dimension(self, sId)
-		return self.dData[sId]
+		if sId not in self._dData:
+			self._dData[sId] = Dimension(self, sId, 'data')
+		return self._dData[sId]
 
 
 	def dim(self, sId):
@@ -960,8 +1043,8 @@ class Dataset(object):
 	def _allVars(self):
 		"""Return a list of all variables in the dataset, no matter the
 		dimension"""
-		lDims = [self.dCoord[var] for var in self.dCoord]
-		lDims += [self.dData[var] for var in self.dData]
+		lDims = [self._dCoord[var] for var in self._dCoord]
+		lDims += [self._dData[var] for var in self._dData]
 		lVars = []
 		for dim in lDims:
 			for sVar in dim.vars:
@@ -971,14 +1054,14 @@ class Dataset(object):
 
 
 	def _bcast(self, shape):
-		for sDim in self.dCoord:
-			dim = self.dCoord[sDim]
+		for sDim in self._dCoord:
+			dim = self._dCoord[sDim]
 			for sVar in dim:
 				#print("Asking coord:%s:%s to update to shape %s"%(sDim, sVar, shape))
 				dim.vars[sVar]._bcast(shape)
 
-		for sDim in self.dData:
-			dim = self.dData[sDim]
+		for sDim in self._dData:
+			dim = self._dData[sDim]
 			for sVar in dim:
 				#print("Asking coord:%s:%s to update to shape %s"%(sDim, sVar, shape))
 				dim.vars[sVar]._bcast(shape)
@@ -993,11 +1076,11 @@ class Dataset(object):
 
 		if key.startswith('coord:'):
 			sDim = key.replace('coord:','')
-			self.dCoord[sDim] = item
+			self._dCoord[sDim] = item
 
 		if key.startswith('data:'):
 			sDim = key.replace('data:','')
-			self.dData[sDim] = item
+			self._dData[sDim] = item
 
 
 	def __getitem__(self, key):
@@ -1018,17 +1101,17 @@ class Dataset(object):
 
 		if key.startswith('coord:'):
 			key = key.replace('coord:','')
-			return self.dCoord[key]
+			return self._dCoord[key]
 
 		if key.startswith('data:'):
 			key = key.replace('data:','')
-			return self.dData[key]
+			return self._dData[key]
 
 		# Not prefixed
-		if key in self.dData:
-			return self.dData[key]
+		if key in self._dData:
+			return self._dData[key]
 		else:
-			return self.dCoord[key]
+			return self._dCoord[key]
 
 	def __iter__(self):
 		# In a multithreaded application we would store the iteration state
@@ -1041,31 +1124,50 @@ class Dataset(object):
 		if len(self.lIter) == 0: raise StopIteration
 		return self.lIter.pop(0)
 
-	def __contains__(self,key):
-		if key in self.dData:
-			return True
+	next = __next__   # the python 2 spelling of the iterator protocol
 
-		return key in self.dCoord
+	def __contains__(self, key):
+		# Same spellings as __getitem__: bare, or prefixed by kind
+		if key.startswith('coord:'):
+			return key[6:] in self._dCoord
+		if key.startswith('data:'):
+			return key[5:] in self._dData
+		return (key in self._dData) or (key in self._dCoord)
 
 	def keys(self):
-		lKeys = ["coord:%s"%s for s in list(self.dCoord.keys()) ]
-		lKeys += ["data:%s"%s for s in list(self.dData.keys()) ]
+		"""Every dimension name, prefixed by kind ('coord:time', 'data:amp')
+		and sorted.  See coordKeys() and dataKeys() for one kind at a time,
+		unprefixed and in the order the dimensions were added."""
+		lKeys = ["coord:%s"%s for s in list(self._dCoord.keys()) ]
+		lKeys += ["data:%s"%s for s in list(self._dData.keys()) ]
 		lKeys.sort()
 		return lKeys
 
+	def coordKeys(self):
+		"""Names of the coordinate dimensions, in the order they were added
+		(the stream's order on python 3.7 and later).  Fetch one with
+		coord(name) or ds[name]."""
+		return list(self._dCoord.keys())
+
+	def dataKeys(self):
+		"""Names of the data dimensions, in the order they were added (the
+		stream's order on python 3.7 and later).  Fetch one with data(name)
+		or ds[name]."""
+		return list(self._dData.keys())
+
 	def _check_shape(self):
 
-		for sD in self.dData:
-			for sV in self.dData[sD].vars:
-				shape = self.dData[sD].vars[sV].array.shape
+		for sD in self._dData:
+			for sV in self._dData[sD].vars:
+				shape = self._dData[sD].vars[sV].array.shape
 				if shape != self.shape:
 					sMsg = "Invalid Variable %s shape %s, expected %s"%(
 							  sV, shape, self.shape)
 					raise DatasetError(self.group, self.name, sMsg)
 
-		for sC in self.dCoord:
-			for sV in self.dCoord[sC].vars:
-				shape = self.dCoord[sC].vars[sV].array.shape
+		for sC in self._dCoord:
+			for sV in self._dCoord[sC].vars:
+				shape = self._dCoord[sC].vars[sV].array.shape
 				if shape != self.shape:
 					sMsg = "Invalid Variable %s shape %s, expected %s"%(
 							  sV, shape, self.shape)
@@ -1099,17 +1201,17 @@ class Dataset(object):
 			lLines.append("   Property: %s | %s"%(sProp, self.props[sProp]))
 		if len(self.props): lLines.append("")
 
-		lDims = list(self.dData.keys())
+		lDims = list(self._dData.keys())
 		lDims.sort()
 		for sDim in lDims:
-			dim = self.dData[sDim]
+			dim = self._dData[sDim]
 			lLines += self._dimStrs("Data", dim)
 			lLines.append("")
 
-		lDims = list(self.dCoord.keys())
+		lDims = list(self._dCoord.keys())
 		lDims.sort()
 		for sDim in lDims:
-			dim = self.dCoord[sDim]
+			dim = self._dCoord[sDim]
 			lLines += self._dimStrs("Coordinate", dim)
 			lLines.append("")
 
@@ -1144,48 +1246,48 @@ class Dataset(object):
 		lPath = sVar.split(':')
 
 		if lPath[0] == 'coords' and (len(lPath) > 1):
-			if lPath[1] in self.dCoord:
+			if lPath[1] in self._dCoord:
 				if len(lPath) > 2:
-					if lPath[2] in self.dCoord[ lPath[1] ]:
+					if lPath[2] in self._dCoord[ lPath[1] ]:
 						sPath = 'coords:%s:%s'%(lPath[1], lPath[2])
-						return (sPath, self.dCoord[ lPath[1] ][ lPath[2] ])
+						return (sPath, self._dCoord[ lPath[1] ][ lPath[2] ])
 				else:
-					if 'center' in self.dCoord[ lPath[1] ]:
+					if 'center' in self._dCoord[ lPath[1] ]:
 						sPath = 'coords:%s:center'%(lPath[1])
-						return (sPath, self.dCoord[ lPath[1] ][ 'center' ])
+						return (sPath, self._dCoord[ lPath[1] ][ 'center' ])
 
 		if lPath[0] == 'data' and (len(lPath) > 1):
-			if lPath[1] in self.dData:
+			if lPath[1] in self._dData:
 				if len(lPath) > 2:
-					if lPath[2] in self.dData[ lPath[1] ]:
+					if lPath[2] in self._dData[ lPath[1] ]:
 						sPath = 'data:%s:%s'%(lPath[1], lPath[2])
-						return (sPath, self.dData[ lPath[1] ][ lPath[2] ])
+						return (sPath, self._dData[ lPath[1] ][ lPath[2] ])
 				else:
-					if 'center' in self.dData[ lPath[1] ]:
+					if 'center' in self._dData[ lPath[1] ]:
 						sPath = 'data:%s:center'%(lPath[1])
-						return (sPath, self.dData[ lPath[1] ][ 'center' ])
+						return (sPath, self._dData[ lPath[1] ][ 'center' ])
 
 		# Okay, looks like they left the coords, data part out.
-		if (lPath[0] in self.dCoord) and not (lPath[0] in self.dData):
+		if (lPath[0] in self._dCoord) and not (lPath[0] in self._dData):
 			if len(lPath) > 1:
-				if lPath[1] in self.dCoord[ lPath[0] ]:
+				if lPath[1] in self._dCoord[ lPath[0] ]:
 					sPath = 'coords:%s:%s'%(lPath[0], lPath[1])
-					return (sPath, self.dCoord[ lPath[0] ][ lPath[1] ])
+					return (sPath, self._dCoord[ lPath[0] ][ lPath[1] ])
 			else:
-				if 'center' in self.dCoord[ lPath[0] ]:
+				if 'center' in self._dCoord[ lPath[0] ]:
 					sPath = 'coords:%s:center'%(lPath[0])
-					return (sPath, self.dCoord[ lPath[0] ][ 'center' ])
+					return (sPath, self._dCoord[ lPath[0] ][ 'center' ])
 
 
-		if (lPath[0] in self.dData) and not (lPath[0] in self.dCoord):
+		if (lPath[0] in self._dData) and not (lPath[0] in self._dCoord):
 			if len(lPath) > 1:
-				if lPath[1] in self.dData[ lPath[0] ]:
+				if lPath[1] in self._dData[ lPath[0] ]:
 					sPath = 'data:%s:%s'%(lPath[0], lPath[1])
-					return (sPath, self.dData[ lPath[0] ][ lPath[1] ])
+					return (sPath, self._dData[ lPath[0] ][ lPath[1] ])
 			else:
-				if 'center' in self.dData[ lPath[0] ]:
+				if 'center' in self._dData[ lPath[0] ]:
 					sPath = 'data:%s:center'%(lPath[0])
-					return (sPath, self.dData[ lPath[0] ][ 'center' ])
+					return (sPath, self._dData[ lPath[0] ][ 'center' ])
 
 
 		raise KeyError("Variable %s not present or not unique in Dataset %s"%(
@@ -1495,8 +1597,8 @@ class Dataset(object):
 # ########################################################################### #
 # das2C wrapper to high level interface conversion functions
 
-def mk_prop_from_raw(tProp):
-	"""Make a property dictionary value given a :mod:_das2 property string
+def _mk_prop_from_raw(tProp):
+	"""Make a property dictionary value given a :mod:_das3 property string
 
 	Low level properties are the tuples:
 
@@ -1531,152 +1633,83 @@ def mk_prop_from_raw(tProp):
 	#print("Checking: tProp[%s] = '%s'"%(key, prop))
 
 	sType  = tProp[0].lower()
-	sValue = tProp[1];
-	sUnits = tProp[2];
-	sSep   = tProp[3];
-	nMulti = tProp[4];
+	sValue = tProp[1]
+	sUnits = tProp[2]
+	sSep   = tProp[3]
+	nMulti = tProp[4]
 
-	if sType == 'string':
-		if sUnits == "": return sValue
-		else:            return Quantity(sValue, sUnits);
+	# Both vocabularies: das2.2 said 'boolean' and 'int', das3 says 'bool'
+	# and 'integer'.  Range and array types carry the base type as a prefix.
+	sBase = sType
+	for sSuffix in ('array', 'range'):
+		if sBase.endswith(sSuffix):
+			sBase = sBase[:-len(sSuffix)]
+	if sBase == 'boolean': sBase = 'bool'
+	if sBase == 'int':     sBase = 'integer'
+	if sBase == 'double':  sBase = 'real'
 
-	if sType == 'boolean':
-		return tProp[1].lower() in ('true','1','yes')
-
-	if (sType == 'int') or (sType == 'integer'):
-		if sUnits == "": return int(tProp[1]);
-		else:            return Quantity(int(tProp[1]), sUnits);
-
-	if sType == 'datetime':
-
-		# Special exception here.  UTC has been used to tag time values
-		# so if you see those units, return a datetime
-		if sUnits in ("", "UTC", "utc"):
-			val = numpy.datetime64(dastime.DasTime(sValue).isoc(9), 'ns')
-			return Quantity(val, 'UTC')
-
-		# Careful to preserve resolution here
-		if sUnits in ("TT2000"):
-			t = _das2.tt2k_utc(int(sValue))
-			val = numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
-			return Quantity( val, sUnits)
-		else:
-			return Quantity( float(sValue), sUnits)
-
-	if sType == 'real':
-		if sUnits == "": return float(tProp[1]);
-		else:            return Quantity(float(tProp[1]), sUnits);
-
-
+	# One item, a 'to' separated pair, or a separated list.  A list may end
+	# with its terminator (das3 stringArrays often do), which is not an item.
 	if nMulti == 1:
-		raise ValueError("Unknown property type %s of multiplicity 1"%sType)
-
-
-	# Split the items up, the multiplicity 2 items are ranges
-	if nMulti == 2:
-		lItems = [s.strip() for s in sValue.split(' to ') ]
+		lItems = [sValue]
+	elif nMulti == 2:
+		lItems = [t.strip() for t in sValue.split(' to ')]
 	elif nMulti == 3:
-		if sSep == "": lItems = sValue.split()
-		else:  lItems = sValue.split()
+		lItems = sValue.split(sSep) if sSep else sValue.split()
+		lItems = [t.strip() for t in lItems]
+		if lItems and lItems[-1] == '':
+			lItems = lItems[:-1]
 	else:
-		raise ValueError("Unexpected property tuple from _das2, multiplicity = %d"%nMulti)
+		raise ValueError("Unexpected property tuple from _das3, multiplicity = %d"%nMulti)
 
-	# Now for the range & set types
-	if sType == "stringarray":
-		if sUnits == "": return lItems
-		else:            return Quantity(lItems, sUnits);
+	def _one(sItem):
+		if sBase == 'string':
+			return sItem
+		if sBase == 'bool':
+			return sItem.lower() in ('true', '1', 'yes')
+		if sBase == 'integer':
+			return int(sItem)
+		if sBase == 'real':
+			return float(sItem)
+		if sBase == 'datetime':
+			# UTC (or nothing) is a calendar string; TT2000 is a count; any
+			# other units are an epoch offset and stay a plain number
+			if sUnits in ('', 'UTC', 'utc'):
+				return numpy.datetime64(dastime.DasTime(sItem).isoc(9), 'ns')
+			if sUnits == 'TT2000':
+				t = _das3.tt2k_utc(int(sItem))
+				return numpy.datetime64(dastime.DasTime(t).isoc(9), 'ns')
+			return float(sItem)
+		raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
 
-	if sType == "boolArray":
-		return [ s.lower() in ('true','1','yes') for s in lItems]
+	lVals = [_one(t) for t in lItems]
+	val = lVals[0] if nMulti == 1 else lVals
 
-	if sType in ("integerarray","integerrange"):
-		lInts = [int(s) for s in lItems ]
-		if sUnits == "": return lInts
-		else:            return Quantity(lInts, sUnits);
-
-	if sType in ("realarray","realrange"):
-		lFloats = [float(s) for s in lItems ]
-		if sUnits == "": return lFloats
-		else:            return Quantity(lFloats, sUnits);
-
-	if sType in ("datetimerange","datetimearray"):
-
-		# Conversions depend on units.  Shouldn't be the case, but is traditional
-		# at this point.
-		if sUnits in ("", "UTC", "utc"):
-			lDt = [ 
-				numpy.datetime64( dastime.DasTime(s).isoc(9), 'ns' ) 
-				for s in lItems
-			]
-			return Quantity(lDt, 'UTC')
-
-		if sUnits in ("TT2000"):
-			# TODO: Implement a flat lookup table similar to dastelem for 
-			#       this conversion.  It will be *MUCH* faster.
-			return Quantity( [
-				numpy.datetime64(dastime.DasTime(_das2.tt2k_utc(int(s))).isoc(9), 'ns')
-				for s in lItems
-			], sUnits)
-		else:
-			return Quantity( [float(s) for s in lItems], sUnits)
-
-
-	raise ValueError("Unknown property data type: %s in %s"%(sType, str(tProp)))
+	# Anything with units is a Quantity; calendar datetimes always are, in
+	# UTC, so they carry their units like every other quantity
+	if sBase == 'datetime' and sUnits in ('', 'UTC', 'utc'):
+		return Quantity(val, 'UTC')
+	if sUnits == '':
+		return val
+	return Quantity(val, sUnits)
 
 # #########################
 
-def _mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask=False):
+def _mk_var_from_raw(dim, dRawDs, sRole, dRaw, bMask=False):
+	"""Bind one raw variable dictionary to a Variable in dim.
 
-	# TODO: Make a real expression parser, this is just for testing
-	#       Right now in das2 we only have straight array lookups and
-	#       waveforms which are of type a[i] + b[j].
-	#
-	#       This code will need to be significantly reworked to handle
-	#       das 3 streams.
+	Returns the new Variable, or None when the raw variable is not backed by
+	an array and so is not modeled here.
+	"""
+	sUnits = dRaw['units']
 
-	# Expression parts: array_lookup units "|" index_range
-	#
-	# array_lookup ends with ] unless array_lookup starts with (,
-	#              then it ends with )
-
-	perr = sys.stderr.write
-
-	sArrays = sExp[0:sExp.find('|')].strip()
-	sRange = sExp[sExp.find('|')+1:].strip()
-
-	if sArrays[0] == '(':
-		n = sArrays.rfind(')')
-		sUnits = sArrays[n+1:].strip()
-		sArrays = sArrays[1:n]
-	else:
-		n = sArrays.rfind(']')
-		sUnits = sArrays[n+1:].strip()
-
-		sArrays = sArrays[:n+1]
-
-	# Get a list of arrays (only + is supported as array op right now)
-	lArrays = [s.strip() for s in sArrays.split('+')]
-
-	# If we have more than one array separated by a plus this is probably a
-	# reference and an offset, so skip it.  The dimension will create the
-	# center value automatically for us.
-	if len(lArrays) > 1:
-		# TODO: Handle evaulating expression math here...
-		#
-		# if len(lArrays) > 0:
-		# array = _getNumpyAry(dRawDs, lArrays[0], bMask)
-		# for sArray in lArrays[1:]:
-		#    array = array + _getNumpyAry(dRawDs, sArray, bMask)
+	# Only array backed variables are built here.  A computed variable
+	# (reference + offset, a sequence, a constant) has no 'array' and is
+	# skipped: the dimension makes its own center from reference and offset,
+	# and the other generators are not modeled on the python side yet.
+	sName = dRaw['array']
+	if sName is None:
 		return None
-
-	# TODO: Proper expression parsing here...
-	sArray = lArrays[0]
-	n = sArray.find('[')
-	if n == -1:
-		raise ValueError("Unexpected variable expression: %s"%sArray)
-
-	sName = sArray[:n]
-	sIdx  = sArray[n:]
 
 	array = dRawDs['arrays'][sName]
 
@@ -1704,14 +1737,17 @@ def _mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask=False):
 
 	array = dRawDs['arrays'][sName]
 
-	# Find out where our values start
-	nAxis = None
-	if sIdx.startswith('[i]'): nAxis = 0
-	elif sIdx.startswith('[j]'): nAxis = 1
-	elif sIdx.startswith('[k]'): nAxis = 2
-	else: raise ValueError("I can't parse this %s"%sArray)
+	# The dataset index that feeds the array's first index is where this
+	# variable's values start; earlier dataset indices are degenerate.  A
+	# constant maps nothing and starts at zero like anything else.
+	lMap = dRaw['idxmap']
+	nAxis = lMap.index(0) if 0 in lMap else 0
 
-	var = dim.var(sRole, array, sUnits, axis=nAxis, fill=fill)
+	# Array indices past the mapped ones are internal to one value
+	nMapped = sum(1 for i in lMap if i is not None)
+	nSubRank = len(array.shape) - nMapped
+
+	return dim.var(sRole, array, sUnits, axis=nAxis, fill=fill, subrank=nSubRank)
 
 # #########################
 
@@ -1726,30 +1762,35 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 		elif sVar == 'props':
 			dRawProps = dRawDim['props']
 			for sProp in dRawProps:
-				dim.props[sProp] = mk_prop_from_raw(dRawProps[sProp])
+				dim.props[sProp] = _mk_prop_from_raw(dRawProps[sProp])
 		else:
-			sExp = dRawDim[sVar]['expression']
-			sUnits = dRawDim[sVar]['units']
-			sRole = dRawDim[sVar]['role'].lower()
+			dRaw = dRawDim[sVar]
+			sRole = dRaw['role'].lower()
 
 			# mask fill values in data arrays
-			_mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask)
+			var = _mk_var_from_raw(dim, dRawDs, sRole, dRaw, bMask)
+
+			# None when the expression is reference + offset, the dimension
+			# makes that center variable itself and it has no formalism
+			if var is not None:
+				var.ops    = dRaw.get('ops')
+				var.labels = dRaw.get('labels')
 
 # #########################
 
-def ds_from_raw(dRawDs):
+def _ds_from_raw(dRawDs):
 	"""Create a Dataset from a set of nested dictionaries.
 
-	The low-level _das2 madule returns datasets created by libdas2 in the form
+	The low-level _das3 madule returns datasets created by libdas2 in the form
 	of a list of nested dictionaries.  This function creates a Dataset object
-	and all it's sub-objects given a nested dictionary from _das2.read_file,
-	_das2.read_cmd, or _das2.read_server.
+	and all it's sub-objects given a nested dictionary from _das3.read_file,
+	_das3.read_cmd, or _das3.read_server.
 	"""
 
 	ds = Dataset(dRawDs['id'], dRawDs['group'])
 
 	for sProp in dRawDs['props']:
-		ds.props[sProp] = mk_prop_from_raw(dRawDs['props'][sProp])
+		ds.props[sProp] = _mk_prop_from_raw(dRawDs['props'][sProp])
 
 	ds.shape = dRawDs['shape']
 
