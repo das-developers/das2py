@@ -12,7 +12,7 @@
   See the file das2-basic-doc-v3.0.xsd for a single-root schema definition
   suitable for validating standard (i.e. non-packitized) documents.
 
-  version 3.0, release candidate 2, 2024-05-27.
+  version 3.0, 2026-09-12
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   version="3.0"
@@ -95,9 +95,16 @@
 
 <xs:simpleType name="Terminator" >
   <xs:restriction base="xs:string" >
-    <!-- Any printable byte except pipe (0x7C, the SepList field separator).  Backslash
-         escapes (\n \t \r \0 \\) are ordinary printables here; the reader interprets them. -->
-    <xs:pattern value="([ -{}~])+" />
+    <!-- One value terminator: a single printable byte, or one escape \n \t \r \0.
+         Just one unit on purpose; a multi-byte terminator is ambiguous and buys
+         nothing.  Allowed is printable ASCII minus the bytes we need elsewhere:
+         ( ) [ ] { } frame wire lengths ({N}) and index runs ([k|N]) or are held in
+         reserve for grouping, \ leads an escape, and < > &amp; " are kept out so the
+         value stays clean inside an XML attribute.  Comma and pipe ARE allowed here:
+         comma is a common value separator, and pipe is safe because a packet payload
+         is length framed, so a pipe in the data is never read as a |Pd| tag.  The
+         reader expands \n \t \r \0 to their control bytes. -->
+    <xs:pattern value="([ -~-[()&lt;&gt;\[\]{}\\&amp;&quot;]]|\\[ntr0])" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -109,7 +116,12 @@
    <xs:attribute name="name"  type="StructName" use="required" />
    <xs:attribute name="type"  type="PropType" default="string" />
    <xs:attribute name="units" type="xs:token" />
-   <xs:attribute name="sep"   type="Terminator" default=" " />
+   <!-- term ends each item of a stringArray-typed property value.  No default: an
+        absent term selects the reader's whitespace split (a single-char XSD default
+        can't express the 1-N whitespace rule); consistent with <packet>/<values>
+        valTerm.  (The value is tag-bounded, so the last item's terminator may be
+        omitted; the reader counts it either way.) -->
+   <xs:attribute name="term"  type="Terminator" />
 </xs:complexType>
 
 <!-- Properties grouping -->
@@ -117,26 +129,6 @@
   <xs:sequence>
     <xs:element name="p" type="Property" minOccurs="0" maxOccurs="unbounded"/>
   </xs:sequence>
-</xs:complexType>
-
-<!-- Coordinate Frames =================================================== -->
-
-<!-- These are independent of any particular values and often assign directionality
-     only.  Frame components have no units.  These are not to be confused with
-     the "axis" values from <coord>.  The attribute "axis" is a graphical display
-     directive and refers to a display axis, not a physical axis.  
-
-     The two can be made to coincide by using the optional "frame" and "component"
-     attributes of <coord>
--->
-
-<xs:complexType name="Frame" >
-  <xs:sequence>
-    <xs:element name="properties" type="Properties" minOccurs="0" maxOccurs="1"/>
-  </xs:sequence>
-  <xs:attribute name="name" type="StructName" use="required"/>
-  <xs:attribute name="fixed" type="Bool"/>
-  <xs:attribute name="body" type="xs:string" />
 </xs:complexType>
 
 <!-- Extensions ========================================================== -->
@@ -183,9 +175,11 @@
          |
          |- Physical Dimension <physDim>
              |
-             |- Variable        <scalar> <vector>
+             |- Variable        <scalar> <bytes> <composite>
                  |
-                 |- Quantities   <values> <sequence> <i>
+                 |- Math (optional) <ops>
+                 |
+                 |- Quantities   <values> <sequence> <packet>
 -->
 
 
@@ -204,7 +198,8 @@
 -->
 <xs:simpleType name="PlotDirection">
   <xs:restriction base="xs:string">
-    <xs:pattern value="[xyzρrθφt](;[xyzρrθφat])*" />
+    <xs:pattern value="[xyzρrθφt-](;[xyzρrθφat-])*" />
+    <!-- -: this vector component maps to no axis (matches the index= "unused" marker) -->
     <!-- ρ: radius cylindrical -->
     <!-- r: radius spherical & polar -->
     <!-- θ: polar angle -->
@@ -257,11 +252,15 @@
      The variable is just not a function of that index so any value is okay.
      (Note that "-" never appears in the dataset global space)
 
+  5. The special size "^" (borrow) means the variable adopts whatever extent
+     the dataset settles on for this index.  Legal only on a variable whose
+     generator is a <sequence>, a rule the grammar cannot express.
+
 -->
 <xs:simpleType name="VarIndexShape">
   <xs:restriction base="xs:string">
     <xs:pattern
-      value="(-|\*|[1-9][0-9]*)(;(-|\*|[1-9][0-9]*))*"
+      value="(-|\*|\^|[1-9][0-9]*)(;(-|\*|\^|[1-9][0-9]*))*"
     />
   </xs:restriction>
 </xs:simpleType>
@@ -278,12 +277,15 @@
 </xs:simpleType>
 
 
-<!-- The understanding of what kind of value this is, is it a countable (int), 
-     a state (bool), a floating point number (real), a calendar date (datetime),
-     or just some information (string) -->
+<!-- How to interpret a value: a countable (integer), a state (bool), a floating
+     point number (real), or a calendar date (datetime).  This is the pure
+     interpretation set: a parse target for utf8 text and a display hint, never a
+     structural fact.  The former "string" and "blob" members were STRUCTURAL
+     (they named a byte run); that role moved to the <bytes> element, told apart
+     from text by the packet encoding (utf8 vs raw/base64). -->
 <xs:simpleType name="Semantic">
   <xs:restriction base="xs:string">
-      <xs:pattern value="bool|datetime|integer|real|string|pixel|blob" />
+      <xs:pattern value="bool|datetime|integer|real" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -297,11 +299,22 @@
   </xs:restriction>
 </xs:simpleType>
 
-<!-- Data value types in packets, sizes and formats -->
+<!-- How a value is encoded on the wire.  Three parsing categories, by how a slice
+     self-terminates:
+       INTRINSIC (byte..LEreal): fixed width, size known a priori.
+       TEXT (utf8): a terminator (valTerm), or fixed width.
+       BYTES (raw, base64): a {len} byte-length tag when itemBytes="*", else fixed
+         width.  raw = opaque bytes; base64 = the same bytes ASCII-armored
+         (RFC 4648) so they survive das3_text.  These are the encodings a <bytes>
+         element uses (utf8 for a string, raw or base64 for a blob).
+     A <bytes> packet may use only utf8|base64|raw, and a <scalar>/<composite>
+     packet a binary or utf8 encoding; XSD shares one EncodingType across all
+     three, so the per-element restriction is a rule beyond the grammar.
+     (raw was formerly spelled "blob", and "none" before that; both removed.) -->
 <xs:simpleType name="EncodingType">
   <xs:restriction base="xs:string">
-    <xs:pattern 
-      value="byte|ubyte|BEint|BEuint|BEreal|LEint|LEuint|LEreal|utf8|png|jpeg|none" />
+    <xs:pattern
+      value="byte|ubyte|BEint|BEuint|BEreal|LEint|LEuint|LEreal|utf8|raw|base64" />
    </xs:restriction>
 </xs:simpleType>
 
@@ -314,29 +327,27 @@
   </xs:restriction>
 </xs:simpleType>
 
-<xs:simpleType name="ValRepeat">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="none|whole|each" />
-  </xs:restriction>
-</xs:simpleType>
+<!-- Terminators for utf8 variable-length data ===========================
 
-<!-- Separators for utf8 variable-length data ===========================
+  valTerm ends each variable-length VALUE.  idxTerm gives one terminator per ragged
+  index that inside a packet. 
 
-  valSep ends each variable-length VALUE; idxSep gives one separator per ragged
-  index (outer-most first, pipe-separated) ending each item run.  Separators are
-  ordinary utf8 bytes, NOT data values reused as boundaries.  Backslash escapes
-  \n \t \r \0 \\ are written literally and the reader interprets them.
+  The levels nest: valTerm is tightest, then each idxTerm level from inner-most out.
+  valTerm and every idxTerm level must be DISTINCT bytes.
 
-  These apply to text (encoding="utf8") only.  Binary variable-length data is
-  bounded by wire-level tags instead: an ascii count hint [dim|N] before a run,
-  and a uint16 byte length (or {N} ascii in text/base64) before a variable item.
-  A <packet> carrying valSep/idxSep with encoding != "utf8" is a bad header,
-  rejected by the decoder (XSD cannot express the cross-attribute rule).
+  Terminators are ordinary utf8 bytes, NOT data values reused as boundaries.  Escapes
+  \n \t \r \0 are written literally. The tough part is to pick terminators that can't
+  appear in data values. 
+
+  These apply to text (encoding="utf8") only. A <packet> carrying valTerm/idxTerm
+  with encoding != "utf8" is a bad header.
 -->
-<xs:simpleType name="SepList" >
-  <!-- One separator per ragged index, outer-most first, pipe-separated -->
+<xs:simpleType name="TermList" >
+  <!-- One terminator per ragged index, outer-most first, comma-separated.  Each level
+       is a single Terminator that also excludes the comma (the list separator); pipe
+       and everything else Terminator allows are fine as a level. -->
   <xs:restriction base="xs:string" >
-    <xs:pattern value="([ -{}~]|\\[ntr0\\])+(\|([ -{}~]|\\[ntr0\\])+)*" />
+    <xs:pattern value="([ -~-[(),&lt;&gt;\[\]{}\\&amp;&quot;]]|\\[ntr0])(,([ -~-[(),&lt;&gt;\[\]{}\\&amp;&quot;]]|\\[ntr0]))*" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -344,15 +355,17 @@
 <xs:complexType name="Values">
   <xs:simpleContent>
      <xs:extension base="ValuesContent" >
-      <xs:attribute name="repeat" type="ValRepeat" default="none" />
-      <xs:attribute name="repetitions" type="xs:positiveInteger"/>
 
-      <!-- valSep separates individual values; a values block has a natural end
-        point so the last value needs none.  idxSep gives one separator per
-        ragged index (outer-most first) for multi-index header values, e.g.
-        index "-;*;*".  See SepList. -->
-      <xs:attribute name="valSep" type="Terminator" default=";" />
-      <xs:attribute name="idxSep" type="SepList" />
+      <!-- valTerm separates individual values; a values block has a natural end
+        point so the last value needs none.  No default: an absent valTerm selects
+        the reader's 1-N whitespace decode (a single-char XSD default can't express
+        that run rule), matching <packet>.  A values block is whitespace-
+        insignificant, so adjacent-terminator empties are not expressible; set an
+        explicit non-space valTerm only where empties are needed.  There is no
+        idxTerm here: a values block's extents are fixed and fully declared by
+        index= (a ragged index cannot map to header values), so multi-index
+        content lines up by count alone. -->
+      <xs:attribute name="valTerm" type="Terminator" />
     </xs:extension>
   </xs:simpleContent>
 </xs:complexType>
@@ -365,14 +378,24 @@
   </xs:restriction>
 </xs:simpleType>
 
-<!-- A ';'-separated list of reals: one slope per dependent index of a
-     multi-index <sequence>, in index order (e.g. interval="16;0.125").  The
-     decoder additionally requires the component count to equal the number of
-     index axes the variable actually uses; that cross-attribute rule is beyond
-     XSD and is enforced in dataset_hdr3.c. -->
+<!-- RealList: a ';'-separated list of reals.  Kept as a pure-number list for
+     general use; the <sequence> interval uses SlopeList (below). -->
 <xs:simpleType name="RealList">
   <xs:restriction base="xs:string">
     <xs:pattern value="[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?(;[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?)*" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- SlopeList: a <sequence> interval, ';'-separated and positionally locked to the
+     variable's `index` (full-rank, one slot per DATASET index).  A slope sits at
+     each dependent index and a '-' marks each degenerate one; e.g. index="-;16;128"
+     pairs with interval="-;16;0.125".  A compact form (one slope per dependent index,
+     no '-') is also accepted on input during the transition to full-rank.  The
+     '-'-vs-index alignment is a cross-attribute rule enforced in dataset_hdr3.c,
+     beyond what XSD can express. -->
+<xs:simpleType name="SlopeList">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="(-|[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?)(;(-|[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?))*" />
   </xs:restriction>
 </xs:simpleType>
 
@@ -386,31 +409,74 @@
   </xs:restriction>
 </xs:simpleType>
 
-<!-- A sequence intercept (minval) is one value: a real for a numeric sequence,
-     or a datetime for an absolute-time (vtTime) sequence whose intercept is a
-     calendar time and whose slopes (interval) are seconds. -->
+<!-- A sequence origin: a real, or a datetime for an absolute-time sequence.
+     With a datetime origin the interval slopes are in seconds. -->
 <xs:simpleType name="SeqIntercept">
   <xs:union memberTypes="Real Datetime" />
 </xs:simpleType>
 
+<!-- Sequences are value generators that can be used with Scalar and
+     Composite variables instead of un-rolling all the values into a header.
+
+     A sequence provides data values from a single linear equation per
+     internal value of the variable type.  The linear equation is a function
+     of the dataset index values:
+
+       value = minval + interval[0]*i + interval[1]*j + ...
+
+     with one interval slope per dataset index, '-' marking each index the
+     variable ignores.
+
+     Scalar variables have one sequence element.  Composite types require 1
+     sequence element per internal value.  Thus a 3x3 matrix would require 9
+     sequence elements to define all 9 components.
+
+     For composite types, sequence elements are given in their "C" order, thus
+
+       Seq[0][0] Seq[0][1] Seq[0][2]  Seq[1][0] Seq[1][1] ... etc.
+
+     for a variable with intern="3;3"
+-->
 <xs:complexType name="Sequence">
   <xs:attribute name="minval"   type="SeqIntercept" use="required"/>
-  <xs:attribute name="interval" type="RealList" use="required"/>
-  <xs:attribute name="repeat"   type="ValRepeat" default="none"/>
-  <xs:attribute name="repetitions" type="xs:positiveInteger" />
+  <xs:attribute name="interval" type="SlopeList" use="required"/>
 </xs:complexType>
 
 <xs:complexType name="Packet">
+  <!-- numItems: the count of items ON THE WIRE to extract from this packet.  For a
+       block encoding that decodes to a larger structure (an embedded format, e.g.
+       embedded="image/png"), this need NOT equal the product of the parent index=
+       shape - the item expands to fill it only after decoding. -->
   <xs:attribute name="numItems"  type="NonZeroStar" use="required" />
+  <!-- itemBytes: the width of ONE wire value, never a count.  T
+       The rule to keep straight, and it's true regardless of any composite types: 
+
+       * numItems counts user facing VALUES (the lines a client would plot); 
+       * itemBytes counts BYTES inside one value.  
+
+       So an 11 byte fixed string is numItems="1" itemBytes="11" (one value, 11 wide), 
+  -->
   <xs:attribute name="itemBytes" type="NonZeroStar" use="required" />
   <xs:attribute name="encoding"  type="EncodingType" use="required" />
+  <!-- embedded: another codec's bytes embedded in this value, MIME-valued
+       (image/png, application/gzip).  The two-stage decode: encoding gets the
+       bytes off the wire, embedded= names the format those bytes must be decoded
+       FROM to realize the declared values.  This attribute is the extension-codec
+       trigger: a reader with no handler for the format must fail loud, not pass
+       the bytes along.  A purely descriptive content label belongs in a property
+       (e.g. contentType), never here.  MIME parameters (image/png; k=v) ride
+       through to the codec as hints. -->
+  <xs:attribute name="embedded"  type="xs:token" />
   <xs:attribute name="fill"      type="xs:string" />
-  <!-- valSep ends each variable-length VALUE (with itemBytes="*"); idxSep gives
-       one separator per ragged index ending each item run (with numItems="*").
-       utf8 only; the decoder rejects these for binary encodings, which use
-       wire-level length tags instead.  See SepList. -->
-  <xs:attribute name="valSep" type="Terminator" />
-  <xs:attribute name="idxSep" type="SepList" />
+  <!-- valTerm ends each variable-length utf8 VALUE (with itemBytes="*"); idxTerm gives
+       one terminator per in-packet ragged index, ending each item run (with numItems="*").
+       utf8 ONLY: binary output uses index-length (run) tags -->
+  <xs:attribute name="valTerm" type="Terminator" />
+  <xs:attribute name="idxTerm" type="TermList" />
+  <!-- trim (default true) ltrim+rtrim's each variable-width utf8 value, stripping
+       cosmetic pad while keeping internal spaces.  Set false to preserve surrounding
+       whitespace as data. -->
+  <xs:attribute name="trim" type="xs:boolean" default="true" />
 </xs:complexType>
 
 <!-- The purposes for values of a variable -->
@@ -419,8 +485,11 @@
   <xs:restriction base="xs:string">
     <xs:enumeration value="center" />
     <xs:enumeration value="offset" />
-    <xs:enumeration value="average" />
-    <xs:enumeration value="count" />
+    <xs:enumeration value="mean" />
+    <xs:enumeration value="median" />
+    <xs:enumeration value="mode" />
+    <xs:enumeration value="count" />   <!-- measurements behind a reduced value -->
+    <xs:enumeration value="weight" />  <!-- the same, fractionally weighted -->
     <xs:enumeration value="min" />
     <xs:enumeration value="reference" />  <!-- AKA the min -->
     <xs:enumeration value="max" />
@@ -432,9 +501,15 @@
   </xs:restriction>
 </xs:simpleType>
 
+<!-- A scalar variable: one value per point, no internal components.  Child order
+     reads purpose to bytes: properties, then an optional <ops>, then the
+     generator.  A scalar's usual formalism is the affine one, <ops kind="point"/>,
+     which a calendar-time producer SHOULD emit (the schema cannot force it).  A
+     plain number omits <ops>: linear is the default. -->
 <xs:complexType name="ScalarVar" >
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:element name="ops"        type="Ops"        minOccurs="0"/>
     <xs:choice>
       <xs:element name="values" type="Values" />
       <xs:element name="sequence" type="Sequence" />
@@ -442,57 +517,87 @@
     </xs:choice>
   </xs:sequence>
   <xs:attribute name="use"      type="VarRole" default="center" />
-  <xs:attribute name="units"    type="xs:token" use="required" />
+  <xs:attribute name="units"    type="xs:token" />  <!-- missing = dimensionless -->
   <xs:attribute name="storage"  type="Storage" />
   <xs:attribute name="semantic" type="Semantic" use="required" />
   <xs:attribute name="index"    type="VarIndexShape" use="required" />
 
 </xs:complexType>
 
-<!-- Vectors, Inherit from scalars and add elements ======== -->
-
-<xs:simpleType  name="NumComps">
-  <xs:restriction base="xs:nonNegativeInteger">
-    <xs:minInclusive value="1"/>
-    <xs:maxInclusive value="3"/>
-  </xs:restriction>
-</xs:simpleType>
-
-<xs:simpleType  name="ComponentList">
-  <xs:restriction base="xs:string">
-    <xs:pattern value="[0-2](;[0-2]){0,2}" />
-  </xs:restriction>
-</xs:simpleType>
-
-<xs:simpleType name="ComponentSystem">
-  <xs:restriction base="xs:string">
-    <xs:enumeration value="cartesian" />
-    <xs:enumeration value="cylindrical" />  <!-- polar is the 2-D case of this -->
-    <xs:enumeration value="spherical" />
-    <xs:enumeration value="centric" />
-    <xs:enumeration value="detic" />
-    <xs:enumeration value="graphic" />
-  </xs:restriction>
-</xs:simpleType>
-
-<xs:complexType name="VectorVar" >
+<!-- A byte-run variable: a string (utf8) or a blob (raw/base64).  The structural
+     family is the element name, so no semantic attribute; the packet encoding
+     tells string from blob.  An embedded= on the packet names an embedded
+     format (image/png) for a two-stage decode.  Bytes carry no <ops> (a byte
+     run has no auto-math).  index= is required; units is usually absent. -->
+<xs:complexType name="BytesVar" >
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:element name="packet"     type="Packet" />
+  </xs:sequence>
+  <xs:attribute name="use"     type="VarRole" default="center" />
+  <xs:attribute name="units"   type="xs:token" />
+  <xs:attribute name="storage" type="Storage" />
+  <xs:attribute name="index"   type="VarIndexShape" use="required" />
+</xs:complexType>
+
+<!-- Composites and their ops ============================= -->
+
+<!-- The internal component layout of a composite: one or more positive counts,
+     ';'-separated, '*' marking a ragged level.  "3" a vector, "3;3" a matrix,
+     "4;*" a ragged multi-level composite.  This is pure shape; the math is the
+     <ops>. -->
+<xs:simpleType name="InternShape">
+  <xs:restriction base="xs:string">
+    <xs:pattern value="(\*|[1-9][0-9]*)(;(\*|[1-9][0-9]*))*" />
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- The math a capable client can auto-apply to a composite's components (or a
+     scalar's value).  A SKIPPABLE annotation: a client that does not understand
+     kind= ignores the element and still plots the components as labeled lines.
+
+     kind= is an OPEN token, so a new formalism does not require a schema bump.
+
+     An <ops> element never has children.  Apart from the required kind=, any
+     attribute is permissible; each one is a parameter of that kind.
+
+     A reader that knows the kind must refuse a parameter that kind does not define;
+     a reader that does not know the kind carries every parameter through untouched.
+
+     For usage of this element, see information provided via the reader library.
+     Das2C's understanding of value formalisms and their associated operations
+     is provided in das2c_operations.md, in this directory.
+-->
+<xs:complexType name="Ops">
+  <xs:attribute name="kind" type="xs:token" use="required" />
+  <!-- Parameters of the kind.  Only a reader that knows the kind can check them. -->
+  <xs:anyAttribute processContents="skip" />
+</xs:complexType>
+
+<!-- A composite variable: N internal components per point (intern=), all numeric.
+     The math is the skippable <ops>; the components read as plain stacked lines to
+     a client that ignores it.  Child order reads purpose to bytes: properties,
+     then ops, then the generator.  A composite sequence uses one <sequence> per
+     component; the count must equal the intern= product (a rule the grammar
+     cannot express). -->
+<xs:complexType name="CompositeVar" >
+  <xs:sequence>
+    <xs:element name="properties" type="Properties" minOccurs="0"/>
+    <xs:element name="ops"        type="Ops"        minOccurs="0"/>
     <xs:choice>
       <xs:element name="values" type="Values" />
-      <xs:element name="sequence" type="Sequence" />
+      <xs:element name="sequence" type="Sequence" maxOccurs="unbounded" />
       <xs:element name="packet" type="Packet" />
     </xs:choice>
   </xs:sequence>
   <xs:attribute name="use"      type="VarRole" default="center" />
-  <xs:attribute name="units"    type="xs:token" use="required" />
-  <xs:attribute name="semantic" type="Semantic" use="required" />
+  <!-- units: one value shared by every component that is not an angle. 
+       A list is not legal. All angles are represented as degrees. -->
+  <xs:attribute name="units"    type="xs:token" />
   <xs:attribute name="storage"  type="Storage" />
+  <xs:attribute name="semantic" type="Semantic" use="required" />
   <xs:attribute name="index"    type="VarIndexShape" use="required" />
-  <xs:attribute name="components" type="NumComps"    use="required" />
-  <xs:attribute name="system"   type="ComponentSystem" default="cartesian"/>
-  <xs:attribute name="sysorder" type="ComponentList"/>
-  <xs:attribute name="refSurface"  type="xs:string" /> <!-- 0 = SPICE default for frame body -->
+  <xs:attribute name="intern"   type="InternShape" use="required" />
 </xs:complexType>
 
 <!-- Physical Dimensions ================================================= -->
@@ -502,8 +607,9 @@
     <xs:element name="properties" type="Properties" minOccurs="0"/>
 
     <xs:choice minOccurs="1" maxOccurs="unbounded">
-      <xs:element name="scalar" type="ScalarVar" />
-      <xs:element name="vector" type="VectorVar" />
+      <xs:element name="scalar"    type="ScalarVar" />
+      <xs:element name="bytes"     type="BytesVar" />
+      <xs:element name="composite" type="CompositeVar" />
     </xs:choice>
 
   </xs:sequence>
@@ -517,10 +623,17 @@
   <!-- The use of axes is required for primary coordinates -->
   <xs:attribute name="axis"     type="PlotDirection"/>
 
-  <!-- The use of annotation is recommened for secondard coordinates -->
-  <xs:attribute name="annotation" type="PlotDirection"/>  
+  <!-- axis= letters map dataset indices to the canonical component DIRECTIONS of a
+       frame (e.g. axis="y;x;-").  Those letters are interpreted in the frame named
+       by each composite's vector or geoloc ops; component representation
+       follows that ops' system=. -->
 
-  <xs:attribute name="frame"    type="StructName"   />
+  <!-- The use of annotation is recommened for secondard coordinates -->
+  <xs:attribute name="annotation" type="PlotDirection"/>
+
+  <!-- There is no frame= here: frames bind on each variable's <ops kind="vector">,
+       not on the dimension (two variables in one dim can reference different
+       frames). -->
   <!-- No need to provide for single component coordinates, if they are
        vectors, put them together as a vector so that they can be transform
        as a vector, using systems like SPICE -->
@@ -530,9 +643,10 @@
 <xs:complexType name="DataDim">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
-    <xs:choice minOccurs="1" maxOccurs="unbounded">      
-      <xs:element name="scalar" type="ScalarVar" />
-      <xs:element name="vector" type="VectorVar" />
+    <xs:choice minOccurs="1" maxOccurs="unbounded">
+      <xs:element name="scalar"    type="ScalarVar" />
+      <xs:element name="bytes"     type="BytesVar" />
+      <xs:element name="composite" type="CompositeVar" />
     </xs:choice>
   </xs:sequence>
 
@@ -543,7 +657,7 @@
   isn't needed
   -->
   <xs:attribute name="name"  type="StructName" />
-  <xs:attribute name="frame" type="StructName" />
+  <!-- No frame= here either; see the CoordDim note. -->
 </xs:complexType>
 
 <!-- Extended data objects in an extended data section -->
@@ -577,7 +691,7 @@
 <xs:simpleType name="DatasetRank">
   <xs:restriction base="xs:positiveInteger">
     <xs:minInclusive value="1" />
-    <!-- High ranks are rarely needed, support as many independent indicies as the PDS -->
+    <!-- High ranks are rarely needed, support as many independent indices as the PDS -->
     <xs:maxInclusive value="8" />
   </xs:restriction>
 </xs:simpleType>
@@ -631,6 +745,12 @@
 
   <xs:attribute name="rank"  type="DatasetRank" use="required" />
   <xs:attribute name="name"  type="DatasetName" use="required"/>
+  <!-- group: display-join intent.  Datasets sharing a group token belong on one
+       plot even when their shapes differ (the das2 survey-band join).  Absent,
+       a dataset self-groups (group defaults to name).  Group members' coord
+       physDims should agree and their units be interconvertible (km joins m;
+       km never joins nT). -->
+  <xs:attribute name="group" type="DatasetName" />
   <xs:attribute name="index" type="DsIndexShape" use="required" />
   <xs:attribute name="plot"  type="PlotType" />
 
@@ -654,7 +774,6 @@
 <xs:complexType name="Stream">
   <xs:sequence>
     <xs:element name="properties" type="Properties" minOccurs="0"/>
-    <xs:element name="frame" type="Frame" minOccurs="0" maxOccurs="unbounded"/>
     <xs:element name="extension" type="Extension" minOccurs="0" maxOccurs="unbounded" />
   </xs:sequence>
   <xs:attribute name="type" type="StreamType" use="required" />

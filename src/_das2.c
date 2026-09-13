@@ -36,15 +36,15 @@
 #endif
 
 
-#include <das2/util.h>
-#include <das2/das1.h>
-#include <das2/units.h>
-#include <das2/time.h>
-#include <das2/log.h>
-#include <das2/tt2000.h>
-#include <das2/units.h>
-#include <das2/credentials.h>
-#include <das2/operator.h>
+#include <das3/util.h>
+#include <das3/das1.h>
+#include <das3/units.h>
+#include <das3/time.h>
+#include <das3/log.h>
+#include <das3/tt2000.h>
+#include <das3/units.h>
+#include <das3/credentials.h>
+#include <das3/operator.h>
 /* #include <python3.4m/modsupport.h> */
 
 /* static char* myname i= "_das2"; */

@@ -19,11 +19,13 @@
 #include <limits.h>
 #include <Python.h>
 
-#include <das2/io.h>
-#include <das2/http.h>
-#include <das2/builder.h>
-#include <das2/units.h>
-#include <das2/log.h>
+#include <das3/io.h>
+#include <das3/http.h>
+#include <das3/builder.h>
+#include <das3/units.h>
+#include <das3/log.h>
+#include <das3/variable.h>
+#include <das3/form.h>
 
 #include <numpy/ndarrayobject.h>
 
@@ -404,7 +406,7 @@ PyObject* _DasTextAryToNumpyAry(DasAry* pAry)
 	/* Make sure we aren't ragged (except for the last dimension of vtByte
 	 * arrays of coarse. */
 	for(int d = 0; d < nAsRank; ++d){
-		if(shape[d] == DASIDX_RAGGED){
+		if(shape[d] == VARIDX_RAGGED){
 			PyErr_Format(g_pPyD2Error, "Ragged array translation is not yet implemented");
 			return NULL;
 		}
@@ -670,27 +672,6 @@ static PyObject* _DasAryFillToObj(DasAry* pAry)
 }
 
 /* ************************************************************************* */
-/* Create a dictionary of frames, or return Py_None  */
-
-static PyObject* _frameDictionary(DasStream* pStream)
-{
-	int8_t uFrames = DasStream_getNumFrames(pStream);
-	if(uFrames == 0)
-		return Py_None;  /* caller takes ownership, I don't */
-
-	PyObject* pFrames = PyDict_New();
-
-	char sBuf[256] = {'\0'};
-	for(int8_t u = 0; u < uFrames; ++u){
-		const DasFrame* pFrame = DasStream_getFrame(pStream, u);
-		DasFrame_info(pFrame, sBuf, 255);
-		PyObject* pInfo = PyString_FromString( sBuf );
-		PyDict_SetItemString(pFrames, DasFrame_getName(pFrame), pInfo);
-	}
-	return pFrames;
-}
-
-/* ************************************************************************* */
 /* Convert DasDesc to Python dictionary of the form  name : (type, value)    */
 
 static PyObject* _props2PyDict(DasDesc* pDesc)
@@ -732,6 +713,274 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
 	return pDict;
 }
 
+/* ************************************************************************* */
+/* Per-variable formalism: the <ops> element.
+ *
+ * Frames, bodies and coordinate systems ride on each variable's formalism
+ * (DasForm); there is no stream level registry to walk.  A form is optional,
+ * strings and blobs have none, and a kind das2C does not recognize still
+ * arrives, as the generic form with its parameters carried verbatim. */
+
+/* Hand a new reference to a dict and drop ours.  False if the value was
+ * never built or the insert failed, so callers can chain with && and let
+ * short-circuit skip the rest. */
+static bool _setDictItem(PyObject* pDict, const char* sKey, PyObject* pVal)
+{
+	if(pVal == NULL) return false;
+	int nRet = PyDict_SetItemString(pDict, sKey, pVal);
+	Py_DECREF(pVal);
+	return (nRet == 0);
+}
+
+/* Every parameter name a known kind can answer for.  A kind returns NULL for
+ * names it does not define, so one list serves all of them and the dict only
+ * carries what the form actually holds.  Order here is dict order. */
+static const char* g_sFormParams[] = {
+	"frame", "body", "fixed", "system", "sysorder", "surface", "from", "to", NULL
+};
+
+/* Booleans are the only parameter das2C hands back decoded (as "true" or
+ * "false"), everything else keeps its wire spelling. */
+static PyObject* _formParam2Py(const char* sVal, ubyte uType)
+{
+	if((uType & DASPROP_TYPE_MASK) == DASPROP_BOOL)
+		return PyBool_FromLong(strcmp(sVal, "true") == 0);
+	return PyString_FromString(sVal);
+}
+
+/* das_vt_toStr() answers NULL for a type it has no arm for, which as of
+ * das2C 65fb971 includes vtComposite.  Never hand that to PyString. */
+static const char* _valTypeStr(das_val_type vt)
+{
+	const char* sType = das_vt_toStr(vt);
+	if(sType != NULL) return sType;
+	return (vt == vtComposite) ? "composite" : "unknown";
+}
+
+/* The backing array's id, or None for a computed variable (a sequence, a
+ * constant, or reference + offset).  The python side binds ndarrays by this
+ * key; the expression string is for people. */
+static PyObject* _varArrayId2Py(const DasVar* pVar)
+{
+	const DasAry* pAry = DasVar_getAry(pVar);
+	if(pAry == NULL) Py_RETURN_NONE;
+	return PyString_FromString(pAry->sId);
+}
+
+/* External index -> array index, one entry per dataset index, None where
+ * the variable is degenerate in that index.  Only an array generator has a
+ * map; everything else answers None so callers can test one key. */
+static PyObject* _varIdxMap2PyList(const DasVar* pVar, int nDsRank)
+{
+	const DasGen* pGen = DasVar_gen(pVar);
+	if((pGen == NULL)||(DasGen_type(pGen) != gtArray)) Py_RETURN_NONE;
+
+	const DasGenAry* pGenAry = (const DasGenAry*)pGen;
+	PyObject* pList = PyList_New(nDsRank);
+	if(pList == NULL) return NULL;
+
+	for(int i = 0; i < nDsRank; ++i){
+		PyObject* pItem = NULL;
+		if((i >= pGenAry->nExtRank)||(pGenAry->idxmap[i] == VARIDX_UNUSED)){
+			Py_INCREF(Py_None); pItem = Py_None;
+		}
+		else{
+			pItem = PyLong_FromLong(pGenAry->idxmap[i]);
+		}
+		if(pItem == NULL){ Py_DECREF(pList); return NULL; }
+		PyList_SET_ITEM(pList, i, pItem);  /* steals the reference */
+	}
+	return pList;
+}
+
+/* Sequences and constants have no backing array, so the python side would
+ * have nothing to bind and the coordinate would silently vanish.  Compute the
+ * values once here over the dataset's extent, with every degenerate index
+ * pinned to one element and then dropped, so the result is as compact as a
+ * stored array would be.  It joins 'arrays' under the name dim.role, which
+ * cannot collide with a wire id.
+ *
+ * Reference + offset (a DasVarBin) is deliberately NOT done here.  The python
+ * Dimension makes that center itself, and doubling a waveform's memory to
+ * save it the trouble is a poor trade. */
+static bool _materialize(
+	const DasDs* pDs, const DasDim* pDim, const char* sRole, const DasVar* pVar,
+	PyObject* pVarDict, PyObject* pdArys, PyObject* pdFill
+){
+	ptrdiff_t aShape[VARIDX_MAX] = {0};
+	ptrdiff_t aMin[VARIDX_MAX] = {0};
+	ptrdiff_t aMax[VARIDX_MAX] = {0};
+	int nRank = DasDs_shape(pDs, aShape);
+
+	PyObject* pIdxMap = PyList_New(nRank);
+	if(pIdxMap == NULL) return false;
+
+	int nMapped = 0;
+	for(int i = 0; i < nRank; ++i){
+		PyObject* pItem = NULL;
+		if(DasVar_degenerate(pVar, i)){
+			aMax[i] = 1;
+			Py_INCREF(Py_None); pItem = Py_None;
+		}
+		else{
+			aMax[i] = aShape[i];
+			pItem = PyLong_FromLong(nMapped++);
+		}
+		if(pItem == NULL){ Py_DECREF(pIdxMap); return false; }
+		PyList_SET_ITEM(pIdxMap, i, pItem);  /* steals the reference */
+	}
+
+	/* materialize, not subset: the numeric converter below hands the
+	 * element memory to numpy and needs the array to own it outright */
+	DasAry* pAry = DasVar_materialize(pVar, nRank, aMin, aMax, NULL);
+	if(pAry == NULL){
+		Py_DECREF(pIdxMap);
+		pyd2_setException(g_pPyD2Error);
+		return false;
+	}
+
+	PyObject* pFill = _DasAryFillToObj(pAry);
+	PyObject* pNd = _DasAryToNumpyAry(pAry);
+	dec_DasAry(pAry);
+	if((pFill == NULL)||(pNd == NULL)){
+		Py_XDECREF(pFill); Py_XDECREF(pNd); Py_DECREF(pIdxMap);
+		return false;
+	}
+
+	/* Drop the pinned axes, but only if they are there to drop.  As of das2C
+	 * 65fb971 an array backed variable answers dataset shaped (rank 3 in,
+	 * rank 3 plus internal out) while a sequence answers already compact,
+	 * so decide from the ndarray's own dims rather than assume either.  The
+	 * ndarray is used rather than the DasAry since the text converter folds
+	 * the character axis away. */
+	int nNd = PyArray_NDIM((PyArrayObject*)pNd);
+	const npy_intp* pNdDims = PyArray_DIMS((PyArrayObject*)pNd);
+	bool bDsShaped = (nNd >= nRank);
+	for(int i = 0; bDsShaped && (i < nRank); ++i)
+		bDsShaped = (pNdDims[i] == (npy_intp)aMax[i]);
+
+	PyObject* pCompact = pNd;
+	if(bDsShaped && (nMapped < nRank)){
+		npy_intp aDims[2*VARIDX_MAX] = {0};
+		PyArray_Dims newDims = {aDims, 0};
+		for(int i = 0; i < nNd; ++i){
+			if((i < nRank) && DasVar_degenerate(pVar, i)) continue;
+			aDims[newDims.len++] = pNdDims[i];
+		}
+		if(newDims.len == 0){ aDims[0] = 1; newDims.len = 1; }  /* a lone constant */
+
+		pCompact = PyArray_Newshape((PyArrayObject*)pNd, &newDims, NPY_CORDER);
+		Py_DECREF(pNd);
+		if(pCompact == NULL){ Py_DECREF(pFill); Py_DECREF(pIdxMap); return false; }
+	}
+
+	char sAryId[256] = {'\0'};
+	snprintf(sAryId, 255, "%s.%s", pDim->sId, sRole);
+
+	bool bOkay =
+		_setDictItem(pdArys,   sAryId,   pCompact) &&
+		_setDictItem(pdFill,   sAryId,   pFill) &&
+		_setDictItem(pVarDict, "array",  PyString_FromString(sAryId)) &&
+		_setDictItem(pVarDict, "idxmap", pIdxMap);
+	return bOkay;
+}
+
+/* {'kind': token, param: value, ...} for a variable's formalism, or None when
+ * the variable carries no <ops>.  Keys are the wire attribute names, so what a
+ * caller sees here is what they would read in the stream header. */
+static PyObject* _form2PyDict(const DasVar* pVar)
+{
+	const DasForm* pForm = DasVar_form(pVar);
+	if(pForm == NULL) Py_RETURN_NONE;
+
+	PyObject* pOps = PyDict_New();
+	if(pOps == NULL) return NULL;
+
+	bool bOkay = true;
+	if(DasForm_isKind(pForm, DAS_FORM_EXT)){
+		bOkay = _setDictItem(pOps, "kind", PyString_FromString(DasFormGeneric_kind(pForm)));
+		const char* sName = NULL;
+		const char* sVal = NULL;
+		for(int i = 0; bOkay && DasFormGeneric_paramAt(pForm, i, &sName, &sVal); ++i)
+			bOkay = _setDictItem(pOps, sName, PyString_FromString(sVal));
+	}
+	else{
+		bOkay = _setDictItem(pOps, "kind", PyString_FromString(DasForm_kindStr(pForm)));
+		for(int i = 0; bOkay && (g_sFormParams[i] != NULL); ++i){
+			ubyte uType = 0;
+			const char* sVal = DasForm_getParam(pForm, g_sFormParams[i], &uType);
+			if(sVal == NULL) continue;
+			bOkay = _setDictItem(pOps, g_sFormParams[i], _formParam2Py(sVal, uType));
+		}
+	}
+
+	if(!bOkay){ Py_DECREF(pOps); return NULL; }
+	return pOps;
+}
+
+/* The internal shape as a list, empty for scalars.  A ragged level (a
+ * variable length string) is None, since its extent is per value. */
+static PyObject* _intrShape2PyList(const DasVar* pVar)
+{
+	ptrdiff_t aIntr[VARIDX_MAX] = {0};
+	int nIntrRank = DasVar_intrShape(pVar, aIntr);
+
+	PyObject* pList = PyList_New(nIntrRank);
+	if(pList == NULL) return NULL;
+
+	for(int i = 0; i < nIntrRank; ++i){
+		PyObject* pItem = NULL;
+		if(aIntr[i] == VARIDX_RAGGED){ Py_INCREF(Py_None); pItem = Py_None; }
+		else pItem = PyLong_FromInt64(aIntr[i]);
+		if(pItem == NULL){ Py_DECREF(pList); return NULL; }
+		PyList_SET_ITEM(pList, i, pItem);  /* steals the reference */
+	}
+	return pList;
+}
+
+/* One label per component in storage order, one label for anything that is
+ * not a composite.  The preference order (per component label property, then
+ * a single label as a stem, then the dimension name) is das2C's, so output
+ * from here matches what das3_cdf writes to LABL_PTR_1. */
+static PyObject* _compLabels2PyList(const DasVar* pVar)
+{
+	long nComp = 1;
+	if(strcmp(DasVar_element(pVar), "composite") == 0){
+		ptrdiff_t aIntr[VARIDX_MAX] = {0};
+		int nIntrRank = DasVar_intrShape(pVar, aIntr);
+		for(int i = 0; i < nIntrRank; ++i) nComp *= aIntr[i];
+	}
+
+	const size_t uLenEa = 128;
+	char** psBuf = (char**)calloc(nComp, sizeof(char*));
+	char* pStore = (char*)calloc(nComp, uLenEa);
+	if((psBuf == NULL)||(pStore == NULL)){
+		free(psBuf); free(pStore);
+		return PyErr_NoMemory();
+	}
+	for(long i = 0; i < nComp; ++i) psBuf[i] = pStore + i*uLenEa;
+
+	PyObject* pList = NULL;
+	int nGot = DasVar_compLabels(pVar, psBuf, (int)nComp, uLenEa);
+	if(nGot < 0){
+		PyErr_Format(g_pPyD2Error,
+			"das2C error %d labeling the components of variable %s", -nGot,
+			DasVar_element(pVar)
+		);
+	}
+	else{
+		pList = PyList_New(nGot);
+		for(int i = 0; (pList != NULL) && (i < nGot); ++i){
+			PyObject* pStr = PyString_FromString(psBuf[i]);
+			if(pStr == NULL){ Py_DECREF(pList); pList = NULL; break; }
+			PyList_SET_ITEM(pList, i, pStr);  /* steals the reference */
+		}
+	}
+
+	free(psBuf); free(pStore);
+	return pList;
+}
+
 /* Here's what we are going to output from each of the builder calls.
  * Right now it can only handle mapping square arrays.  Currently there
  * is no wrapper around DasVar, so no fancy operations are possible.
@@ -754,13 +1003,6 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  * d = {
  *   '_version': 	DasStream.version
  *   '_props':    DasStream.properties
- *   'frames':   {
- *       DasFrame.id: { 
- *         '_id':         DasFrame.id   (int)   
- *         'expression':  DasFrame_info (string)
- *         '_props':      DasFrame.properties (Dictionary)
- *       }
- *    }
  * }
  *
  * l =
@@ -782,9 +1024,12 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  *          DasDim.aRole[i] : {
  *            '_role'     : DasDim.aRole[i]
  *            '_units'    : DasVar.units
- *            '_idxmap'   : [ List of Ds.nRank ints ]
- *            '_isVec'    : True if last index is to be treated as geometric vector
+ *            'array'     : backing array id, or None if computed
+ *            'idxmap'    : [ Ds.nRank entries: array index or None ]
  *            'expression': [ concrete definition of variable, including arrays ]
+ *            'ops'       : None, or {'kind': token, wire param: value, ...}
+ *            'intern'    : [ internal shape, trailing the dataset indices ]
+ *            'labels'    : [ one label per component, in storage order ]
  *           }
  *           ... (next variable)
  *        }
@@ -802,8 +1047,11 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  *            '_role'  :  DasDim.aRole[i]
  *            '_units' : DasVar.units
  *            'expression' : [ concrete definition of variable includes arrays ]
- *            '_isVec' : True for geometric vectors
- *            'array'  : sArray (key in array dictionary below)
+ *            'array'  : sArray (key in array dictionary below), or None
+ *            'idxmap' : [ Ds.nRank entries: array index or None ]
+ *            'ops'    : None, or {'kind': token, wire param: value, ...}
+ *            'intern' : [ internal shape, trailing the dataset indices ]
+ *            'labels' : [ one label per component, in storage order ]
  *         }
  *         ... (next variable)
  *      }
@@ -830,8 +1078,11 @@ static PyObject* _props2PyDict(DasDesc* pDesc)
  *  this dictionary into a dataset object
  */
 
-static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
-{
+static bool _addVars(
+	const DasDs* pDs, DasDim* pDim, PyObject* pDimDict, PyObject* pdArys,
+	PyObject* pdFill
+){
+	int nDsRank = pDs->nRank;
 	DasVar* pVar = NULL;
 	PyObject* pVarDict = NULL;
 	PyObject* pStr = NULL;
@@ -860,7 +1111,7 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 		 * Since the dataset toStr() and dimension toStr() both call down to the
 		 * variables toStr() lets set the units now.
 		 */
-		if((pVar->vt == vtTime) || Units_haveCalRep(pVar->units))
+		if((DasVar_valType(pVar) == vtTime) || Units_haveCalRep(pVar->units))
 			pVar->units = Units_fromStr("ns1970");
 		
 		/* all units convertable to seconds get converted to nano seconds in the
@@ -869,7 +1120,7 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 			pVar->units = Units_fromStr("ns");
 		
 		
-		pStr = PyString_FromString(pVar->units);	
+		pStr = PyString_FromString(pVar->units ? pVar->units : "");
 		PyDict_SetItemString(pVarDict, "units", pStr);
 		Py_DECREF(pStr);
 		
@@ -879,21 +1130,35 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 		Py_DECREF(pStr);
 
 		/* Save the value type */
-		const char* sValType = das_vt_toStr(DasVar_valType(pVar));
-		pStr = PyString_FromString(sValType);
+		pStr = PyString_FromString(_valTypeStr(DasVar_valType(pVar)));
 		PyDict_SetItemString(pVarDict, "valtype", pStr);
 		Py_DECREF(pStr);
 
-		const char* sFrameName = DasVar_getFrameName(pVar);
-		if(sFrameName != NULL){
-			pStr = PyString_FromString(sFrameName);
-			PyDict_SetItemString(pVarDict, "frame", pStr);
-			Py_DECREF(pStr);
+		/* Array binding: stored arrays bind by id, sequences and constants
+		 * are computed into a synthesized array, reference + offset gets
+		 * None and is left to the python Dimension. */
+		const DasGen* pGen = DasVar_gen(pVar);
+		bool bBound = false;
+		if((pGen != NULL) && (DasGen_type(pGen) != gtArray))
+			bBound = _materialize(pDs, pDim, pDim->aRoles[v], pVar, pVarDict, pdArys, pdFill);
+		else
+			bBound = _setDictItem(pVarDict, "array",  _varArrayId2Py(pVar)) &&
+			         _setDictItem(pVarDict, "idxmap", _varIdxMap2PyList(pVar, nDsRank));
+		if(!bBound){
+			Py_DECREF(pVarDict);
+			return false;
 		}
-		else{
-			PyDict_SetItemString(pVarDict, "frame", Py_None);
+
+		/* The <ops> formalism, the internal shape and the component labels.
+		 * A scalar gets None, [] and a one item label list, so callers need
+		 * not test for the keys. */
+		if(!_setDictItem(pVarDict, "ops",    _form2PyDict(pVar)) ||
+		   !_setDictItem(pVarDict, "intern", _intrShape2PyList(pVar)) ||
+		   !_setDictItem(pVarDict, "labels", _compLabels2PyList(pVar))){
+			Py_DECREF(pVarDict);
+			return false;
 		}
-		
+
 
 		/* Could save each sub-variable, don't know about this yet */
 		/* pIdxMap = PyList_New(nDsRank);
@@ -906,6 +1171,7 @@ static bool _addVars(int nDsRank, DasDim* pDim, PyObject* pDimDict)
 		 */
 
 		PyDict_SetItemString(pDimDict, pDim->aRoles[v], pVarDict);
+		Py_DECREF(pVarDict);
 	}
 
 	return true;
@@ -927,7 +1193,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	size_t a = 0; /* Array index */
 	size_t m = 0; /* Dimension index */
 
-	ptrdiff_t shape[DASIDX_MAX] = {0};
+	ptrdiff_t shape[VARIDX_MAX] = {0};
 	int nRank, i = 0;
 	DasAry* pDasAry = NULL;
 
@@ -963,7 +1229,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 			DasAry_shape(pDasAry, shape);
 			for(i = 1; i < pDasAry->nRank; ++i){
 
-				if(shape[i] == DASIDX_RAGGED){
+				if(shape[i] == VARIDX_RAGGED){
 
 					/* Special exception if array is vtByte, has the flag
 					 * D2ARY_AS_STRING and raggedness is only in the last dimension
@@ -987,7 +1253,6 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	}
 	memset(sInfo, 0, 64);
 
-	PyObject* pFrames = NULL;
 	PyObject* pDsDict = NULL;
 	PyObject* pProps = NULL;
 	PyObject* pStr = NULL;
@@ -1006,8 +1271,6 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	/* Handle the stream header conversion */
 	pProps = _props2PyDict((DasDesc*)pStream);
 	PyDict_SetItemString(pHdrDict, "props", pProps);
-	pFrames = _frameDictionary(pStream);
-	PyDict_SetItemString(pHdrDict, "frames", pFrames);
 	DasStream_info(pStream, sInfo, 4095);
 	pStr = PyString_FromString(sInfo);
 	PyDict_SetItemString(pHdrDict, "info", pStr);
@@ -1074,6 +1337,15 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 		PyDict_SetItemString(pDsDict, "data", pDataDict);
 		Py_DECREF(pDataDict);
 
+		/* Arrays and their fill values.  Made before the dimension walk since
+		 * a computed variable adds a synthesized array of its own. */
+		pdArys = PyDict_New();
+		pdFill = PyDict_New();
+		PyDict_SetItemString(pDsDict, "arrays", pdArys);
+		PyDict_SetItemString(pDsDict, "fill",  pdFill);
+		Py_DECREF(pdArys);
+		Py_DECREF(pdFill);
+
 		for(m = 0; m < pDs->uDims; ++m){
 			pDim = pDs->lDims[m];
 
@@ -1096,19 +1368,15 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 			PyDict_SetItemString(pDimDict, "props", pProps);
 			Py_DECREF(pProps);
 
-			if( ! _addVars(pDs->nRank, pDim, pDimDict)){
-				Py_DECREF(pDsDict); return NULL;
+			if( ! _addVars(pDs, pDim, pDimDict, pdArys, pdFill)){
+				Py_DECREF(pDsDict); Py_DECREF(pDsList); return NULL;
 			}
 		}
 
-		/* Arrays and their fill values */
-		pdArys = PyDict_New();
-		pdFill = PyDict_New();
 		for(a = 0; a < pDs->uArrays; ++a){
 			pAry = _DasAryToNumpyAry(pDs->lArrays[a]);
 			if(pAry == NULL){
-				Py_DECREF(pdFill); Py_DECREF(pdArys); Py_DECREF(pDsDict);
-				Py_DECREF(pDsList);
+				Py_DECREF(pDsDict); Py_DECREF(pDsList);
 				return NULL;
 			}
 			PyDict_SetItemString(pdArys, pDs->lArrays[a]->sId, pAry);
@@ -1116,17 +1384,12 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 
 			pObj = _DasAryFillToObj(pDs->lArrays[a]);
 			if(pObj == NULL){
-				Py_DECREF(pdFill); Py_DECREF(pdArys); Py_DECREF(pDsDict);
-				Py_DECREF(pDsList);
+				Py_DECREF(pDsDict); Py_DECREF(pDsList);
 				return NULL;
 			}
 			PyDict_SetItemString(pdFill, pDs->lArrays[a]->sId, pObj);
 			Py_DECREF(pObj);
 		}
-		PyDict_SetItemString(pDsDict, "arrays", pdArys);
-		PyDict_SetItemString(pDsDict, "fill",  pdFill);
-		Py_DECREF(pdArys);
-		Py_DECREF(pdFill);
 		
 		/* okay, now it's safe to save the dataset info string, AFTER any unit
 		 * conversions that may have taken place */
@@ -1176,7 +1439,7 @@ const char pyd2help_read_file[] =
 "   datasets.  The stream header is a dictionary with the following keys:\n"
 "\n"
 "     * 'props' - A list of dictionaries providing metadata about the overall stream\n"
-"     * 'frames' - A list of dictionaries providing vector frame definitions, if any.\n"
+"     * 'info'  - A summary string for the stream\n"
 "\n"
 "Each correlated dataset is a dictionary with the with the following keys and items:\n"
 "\n"
@@ -1202,6 +1465,27 @@ const char pyd2help_read_file[] =
 "   * 'offset' - A variable definition for data offset value, to be added to reference\n"
 "\n"
 "  Other variable definitions may follow for min, max, stddev etc. values in a dimension\n"
+"\n"
+"  Each variable definition is a dictionary with the keys:\n"
+"\n"
+"   * 'role' - The variable's role in its dimension (center, reference, ...)\n"
+"   * 'units' - The units string, after conversion of times to nanoseconds\n"
+"   * 'expression' - A human readable description of the variable\n"
+"   * 'valtype' - The das2C value type name\n"
+"   * 'array' - The key in 'arrays' of the ndarray backing this variable.  A\n"
+"               sequence or constant is computed into an array named dim.role;\n"
+"               reference + offset is None, the dimension derives it.\n"
+"   * 'idxmap' - One entry per dataset index giving the array index it maps to,\n"
+"                None where the variable does not vary.  None as a whole when\n"
+"                'array' is None.\n"
+"   * 'ops' - None, or a dictionary of the variable's <ops> formalism: 'kind'\n"
+"             plus each parameter under its wire attribute name (frame, body,\n"
+"             fixed, system, sysorder, surface, from, to).  Unknown kinds carry\n"
+"             their parameters verbatim.\n"
+"   * 'intern' - The internal shape of one value as a list, empty for scalars;\n"
+"                None marks a ragged level such as a variable length string\n"
+"   * 'labels' - One label per component in storage order, or one label for a\n"
+"                scalar.  Same preference order as das3_cdf's LABL_PTR_1\n"
 "\n";
 
 static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
@@ -1214,6 +1498,7 @@ static PyObject* pyd2_read_file(PyObject* self, PyObject* args)
 
 	DasIO* pIn = new_DasIO_file("das2py", sFile, "r");
 	if(pIn == NULL) return pyd2_setException(g_pPyD2Error);
+	DasIO_model(pIn, -1);  /* Allow all stream versions */
 
 	DasDsBldr* pBldr = new_DasDsBldr();
 	if(pBldr == NULL) return pyd2_setException(g_pPyD2Error);
@@ -1368,7 +1653,8 @@ static PyObject* pyd2_read_cmd(PyObject* self, PyObject* args)
 
 	DasIO* pIn = new_DasIO_cmd("das2py", sCmd);
 	if(pIn == NULL )	return pyd2_setException(g_pPyD2Error);
-	
+	DasIO_model(pIn, -1);  /* Allow all stream versions */
+
 	DasDsBldr* pBldr = new_DasDsBldr();
 	if(pBldr == NULL){
 		del_DasIO(pIn);

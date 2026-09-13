@@ -27,9 +27,9 @@
 /* #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION */
 
 
-#include <das2/util.h>
-#include <das2/time.h>
-#include <das2/dft.h>
+#include <das3/util.h>
+#include <das3/time.h>
+#include <das3/dft.h>
 
 /* Python 2 doesn't have the Py_TYPE function but Python 3 does */
 /* Make code analzer happy, add this a second time */

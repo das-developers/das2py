@@ -172,6 +172,8 @@ value="sun_real[48]|little_endian_real[48]|ascii[1-9][0-9]*|time[1-9][0-9]*" />
 
 <xs:complexType name="Dataset">
     <xs:sequence>
+      <!-- packet-level properties (e.g. <properties double:zFill="0.0"/>) -->
+      <xs:element name="properties" type="Properties" minOccurs="0"/>
       <xs:element name="x"    type="CoordPoint" minOccurs="1" maxOccurs="unbounded"/>
       <xs:element name="y"    type="CoordPoint" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="z"    type="DataPoint" minOccurs="0" maxOccurs="unbounded"/>

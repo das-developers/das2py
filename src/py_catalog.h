@@ -21,9 +21,9 @@
 
 #include <Python.h>
 
-#include <das2/http.h>
-#include <das2/node.h>
-#include <das2/log.h>
+#include <das3/http.h>
+#include <das3/node.h>
+#include <das3/log.h>
 
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200112L
