@@ -28,7 +28,7 @@ FILL = -1.0e+31
 # source path is given without one.
 DEF_CATALOG_TAG = 'tag:das2.org,2012:'
 
-__version__ = '3.0-pre5'
+__version__ = '3.0-pre7'
 
 import sys as _sys
 

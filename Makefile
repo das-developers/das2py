@@ -8,7 +8,7 @@
 #  DAS_LIBDIR
 
 # Find a way to get this from the manifest
-DAS_PY_VER:=3.0rc5
+DAS_PY_VER:=3.0rc7
 
 ifeq ($(PY_BIN),)
 PY_BIN=$(shell which python)
@@ -54,16 +54,25 @@ endif
 PY_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print('%d%d'%sys.version_info[0:2])")
 PY_MAJ_VER_TOK:=$(shell $(PY_BIN) -c "import sys; print(sys.version_info[0])")
 
+# The ABI suffix in the wheel tag comes from the interpreter, not from a
+# guess: 'm' (pymalloc) through 3.7, nothing from 3.8 on, 'd' for a debug
+# build.  2.7 has no sys.abiflags; wheel tags it 'm', plus 'u' for a UCS-4
+# build (most distro pythons), which sys.maxunicode reveals.
+PY_ABI_TOK:=$(shell $(PY_BIN) -c "import sys; f=getattr(sys,'abiflags',None); print(f if f is not None else 'm'+('u' if sys.maxunicode>65535 else ''))")
+
+WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)$(PY_ABI_TOK)-linux_x86_64.whl
+
+# One pair of venvs per interpreter (build_py312_venv, test_py27_venv, ...),
+# not per major version.  A home directory shared between machines with
+# different pythons would otherwise have two boxes rebuilding one venv.
+VDIR:=py$(PY_VER_TOK)_venv
+
 ifeq ($(PY_MAJ_VER_TOK),3)
-WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)-linux_x86_64.whl
 VENV_MOD:=venv
 PY_VER_WARN:=
-VDIR:=py3_venv
 else
-WHEEL_FILE:=das2py-$(DAS_PY_VER)-cp$(PY_VER_TOK)-cp$(PY_VER_TOK)m-linux_x86_64.whl
 VENV_MOD:=virtualenv
 PY_VER_WARN:=--no-python-version-warning
-VDIR:=py2_venv
 endif
 
 # If you can't find libcdf.so CDF_LIBDIR then copy it in from das2C.
@@ -75,6 +84,8 @@ endif
 # rebuilt and you test the previous build.
 
 SRC:= \
+pyproject.toml \
+setup.py \
 src/_das3.c \
 src/py_builder.h \
 src/py_catalog.h \
@@ -110,8 +121,13 @@ build:dist/$(WHEEL_FILE)
 
 # The static das2C library is linked into the extension, so a das2C rebuild
 # must trigger a wheel rebuild too, or you test against the previous library.
+# The sdist step leaves das2py.egg-info in the source tree.  An old pip
+# (9.x, as on python 3.6 hosts) runs with the current directory on sys.path,
+# sees that egg-info, decides das2py is already installed here, and skips the
+# wheel; the test venv then has numpy but no das3.  Remove it right away.
 dist/$(WHEEL_FILE):$(SRC) $(DAS_LIBDIR)/libdas3.a build_$(VDIR)/bin/python
 	DAS_INCDIR=$(DAS_INCDIR) DAS_LIBDIR=$(DAS_LIBDIR) build_$(VDIR)/bin/python -m build
+	-rm -r *.egg-info
 
 build_$(VDIR)/bin/python:
 	$(PY_BIN) -m $(VENV_MOD) build_$(VDIR)
