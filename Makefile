@@ -129,6 +129,7 @@ test:dist/$(WHEEL_FILE)
 	./test_$(VDIR)/bin/python test/TestRead.py
 	./test_$(VDIR)/bin/python test/TestComposite.py
 	./test_$(VDIR)/bin/python test/TestAlias.py
+	./test_$(VDIR)/bin/python test/TestPkt.py
 	./test_$(VDIR)/bin/das_verify -h
 	./test_$(VDIR)/bin/das_verify test/ex05_waveform_extra.d3t
 	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3t

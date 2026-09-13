@@ -1,6 +1,5 @@
 /build.*
-das3/__pycache__
-das2/__pycache__
+__pycache__
 das3/*.pyc
 das2/*.pyc
 *.png
@@ -14,6 +13,5 @@ das3/pycdf/libcdf.so
 das3/pycdf/libcdf.dynlib
 das3/pycdf/dllcdf.dll
 /co_notes
-/das3/pycdf/__pycache__/
 session.txt
 /tmp
