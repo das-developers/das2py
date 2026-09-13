@@ -457,10 +457,18 @@ class Variable(object):
 	  - .name  - A name for this variable, defaults to it's role in the dimension
 	  - .unique - A list of indicies in which these values are (potentially)
 	        unique.
+	  - .ops   - None, or a dictionary describing the math formalism of a
+	        composite value: 'kind' plus the parameters from the stream's
+	        <ops> element under their wire names (frame, body, system, ...)
+	  - .subrank - How many trailing indices of .array are internal to one
+	        value (1 for a vector, 2 for a matrix), 0 for a scalar.  See
+	        extShape() and intrShape() for the two halves of the shape.
+	  - .labels - One label per component in storage order, or None when the
+	        variable was not read from a stream
 
 	Variables are very similar to Quantities in AstroPy.
 	"""
-	def __init__(self, dim, role, values, units, axis=None, fill=None):
+	def __init__(self, dim, role, values, units, axis=None, fill=None, subrank=0):
 		"""Create a new Variable.
 
 		Args:
@@ -481,6 +489,10 @@ class Variable(object):
 
 			fill (float,str) : If specified, a masked array will be constructed
 				using this value as mask-out flag.
+
+			subrank (int, optional) : How many trailing indices of values are
+				internal to one value (1 for a vector, 2 for a 3x3 matrix).  These
+				are not dataset indices and take no part in broadcasting.
 		"""
 
 		self.dim = dim
@@ -488,7 +500,9 @@ class Variable(object):
 		self.units = units
 		self.array = None
 		self.fill = fill
-		self.subrank = 0
+		self.subrank = subrank
+		self.ops = None
+		self.labels = None
 
 		# make sure we store time arrays in ns1970
 		if units.upper() == 'UTC':
@@ -519,6 +533,15 @@ class Variable(object):
 
 		ds_shape = dim.ds.shape
 
+		# Only the external shape takes part in index bookkeeping.  The
+		# internal shape rides along at the end of every broadcast below.
+		nExt = len(array.shape) - subrank
+		if nExt < 0:
+			raise DatasetError("Variable %s:%s has %d indices but claims %d internal"%(
+				dim.name, role, len(array.shape), subrank))
+		tExt = array.shape[:nExt]
+		tIntern = array.shape[nExt:]
+
 		scoot = 0                  # See if we need to scoot our indicies
 		if axis != None:
 			if isinstance(axis, int): scoot = axis
@@ -530,8 +553,8 @@ class Variable(object):
 			lShape += [None]*scoot
 			self.unique += [False]*scoot
 
-		lShape += list(array.shape)
-		self.unique += [True]*(len(array.shape))
+		lShape += list(tExt)
+		self.unique += [True]*len(tExt)
 
 		nMoreAx = len(ds_shape) - len(lShape)
 		if nMoreAx:
@@ -564,7 +587,7 @@ class Variable(object):
 			iLast = len(lShape) - 1
 			while lShape[iLast] == None: iLast -= 1
 
-			array = numpy.broadcast_to(array, lShape[:iLast+1])
+			array = numpy.broadcast_to(array, tuple(lShape[:iLast+1]) + tIntern)
 			#print("New var shape is: %s (%s)"%(lShape, array.shape))
 
 		# Now my shape array looks something like this:
@@ -590,21 +613,32 @@ class Variable(object):
 				else: new_shape[i] = ds_shape[i]
 
 			#print("New slice is: %s to be bcast to %s"%(lSlice, new_shape))
-			array = numpy.broadcast_to(array[tuple(lSlice)], new_shape)
+			array = numpy.broadcast_to(array[tuple(lSlice)], tuple(new_shape) + tIntern)
 
 		# Callback to tell dataset to adjust it's arrays if needed
 		self.array = array
-		self.dim.ds._bcast(array.shape)
+		self.dim.ds._bcast(self.extShape())
 
 		# After all is said and done make sure that the DS shape and the
 		# Variable shape now match
 		if (len(self.unique) != len(self.dim.ds.shape)) or \
-		   (len(self.array.shape) != len(self.dim.ds.shape)):
+		   (len(self.extShape()) != len(self.dim.ds.shape)):
 			raise DatasetError(
 				"Dataset Inconsistancy detected! %s:%s  %s %s, dateset: %s"%(
 				self.dim.name, self.name, self.unique, self.array.shape, self.dim.ds.shape)
 			)
 
+
+	def extShape(self):
+		"""The shape of this variable over the dataset indices alone, without
+		the trailing internal shape of a composite value."""
+		return self.array.shape[:len(self.array.shape) - self.subrank]
+
+	def intrShape(self):
+		"""The internal shape of one value: (3,) for a vector, (3, 3) for a
+		matrix, () for a scalar.  These indices trail extShape() in .array.
+		Mirrors DasVar_intrShape() in das2C."""
+		return self.array.shape[len(self.array.shape) - self.subrank:]
 
 	def __str__(self):
 		lIdx = []
@@ -621,24 +655,36 @@ class Variable(object):
 		sIdx = ','.join(lIdx)
 		#sRng = ', '.join(lRng)
 
+		# Internal indices get a second bracket with capital letters, matching
+		# das2C's printer, so var.array[i,j][I,J] is literally the indexing
+		# the string shows.  Scalars print as they always have.
+		if self.subrank > 0:
+			sIdx += ']['  + ','.join(g_sIdxNames[n].upper() for n in range(self.subrank))
+
 		#return "%s['%s'][%s] %s | %s"%(self.dim.name, self.name, sIdx, self.units, sRng)
-		return "%s['%s'][%s] (%s) %s"%(self.dim.name, self.name, sIdx, self.array.dtype, self.units)
+		sOut = "%s['%s'][%s] (%s) %s"%(self.dim.name, self.name, sIdx, self.array.dtype, self.units)
+		return sOut.rstrip()
 
 	def _bcast(self, shape):
-		if shape == self.array.shape: return
+		shape = tuple(shape)
+		nExt = len(self.array.shape) - self.subrank
+		tIntern = self.array.shape[nExt:]
+		if shape == self.array.shape[:nExt]: return
 
 		# The bcast can't ask me to shift to the right, but it can ask me to
 		# add indices to the right that I didn't have, or to repeat my self in
-		# higher indices
-		nExtra = len(shape) - len(self.array.shape)
+		# higher indices.  New indices go between the external and internal
+		# shapes: numpy keeps unnamed trailing axes, so a slice tuple that
+		# names only the external axes inserts there.
+		nExtra = len(shape) - nExt
 		if nExtra:
-			lSlice = [slice(None, None, None) for i in range(len(self.array.shape)) ]
+			lSlice = [slice(None, None, None) for i in range(nExt) ]
 			lSlice += [None]*nExtra
 			self.array = self.array[tuple(lSlice)]
 			self.unique += [False]*nExtra
 
 		# Okay, I have extra dimensions, now broadcast
-		self.array = numpy.broadcast_to(self.array, shape)
+		self.array = numpy.broadcast_to(self.array, shape + tIntern)
 
 	def __add__(self, other):
 		# Check that the units are compatable
@@ -658,7 +704,8 @@ class Variable(object):
 			rFactor = _das2.convert(1.0, other.units, self.units)
 			new_ary = self.array + (other.array * rFactor)
 
-		var = Variable(self.dim, None, new_ary, self.units, fill=self.fill)
+		var = Variable(self.dim, None, new_ary, self.units, fill=self.fill,
+		               subrank=self.subrank)
 		return var
 
 
@@ -774,14 +821,15 @@ class Dimension(object):
 		self.vars = {}
 		self.name = sName
 
-	def var(self, role, values, units, axis=None, fill=None):
+	def var(self, role, values, units, axis=None, fill=None, subrank=0):
 		"""Create or replace a variable in this dimension.
 
 		Add a variable to a dataset can trigger broadcasting of other variables
-		to fill the required index space.
+		to fill the required index space.  See :class:`das2.Variable` for the
+		meaning of subrank.
 		"""
 
-		_var = Variable(self, role, values, units, axis, fill)
+		_var = Variable(self, role, values, units, axis, fill, subrank)
 		self.vars[role] = _var
 
 		# If there happens to be both a reference and offset variable
@@ -1625,58 +1673,21 @@ def mk_prop_from_raw(tProp):
 
 # #########################
 
-def _mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask=False):
+def _mk_var_from_raw(dim, dRawDs, sRole, dRaw, bMask=False):
+	"""Bind one raw variable dictionary to a Variable in dim.
 
-	# TODO: Make a real expression parser, this is just for testing
-	#       Right now in das2 we only have straight array lookups and
-	#       waveforms which are of type a[i] + b[j].
-	#
-	#       This code will need to be significantly reworked to handle
-	#       das 3 streams.
+	Returns the new Variable, or None when the raw variable is not backed by
+	an array and so is not modeled here.
+	"""
+	sUnits = dRaw['units']
 
-	# Expression parts: array_lookup units "|" index_range
-	#
-	# array_lookup ends with ] unless array_lookup starts with (,
-	#              then it ends with )
-
-	perr = sys.stderr.write
-
-	sArrays = sExp[0:sExp.find('|')].strip()
-	sRange = sExp[sExp.find('|')+1:].strip()
-
-	if sArrays[0] == '(':
-		n = sArrays.rfind(')')
-		sUnits = sArrays[n+1:].strip()
-		sArrays = sArrays[1:n]
-	else:
-		n = sArrays.rfind(']')
-		sUnits = sArrays[n+1:].strip()
-
-		sArrays = sArrays[:n+1]
-
-	# Get a list of arrays (only + is supported as array op right now)
-	lArrays = [s.strip() for s in sArrays.split('+')]
-
-	# If we have more than one array separated by a plus this is probably a
-	# reference and an offset, so skip it.  The dimension will create the
-	# center value automatically for us.
-	if len(lArrays) > 1:
-		# TODO: Handle evaulating expression math here...
-		#
-		# if len(lArrays) > 0:
-		# array = _getNumpyAry(dRawDs, lArrays[0], bMask)
-		# for sArray in lArrays[1:]:
-		#    array = array + _getNumpyAry(dRawDs, sArray, bMask)
+	# Only array backed variables are built here.  A computed variable
+	# (reference + offset, a sequence, a constant) has no 'array' and is
+	# skipped: the dimension makes its own center from reference and offset,
+	# and the other generators are not modeled on the python side yet.
+	sName = dRaw['array']
+	if sName is None:
 		return None
-
-	# TODO: Proper expression parsing here...
-	sArray = lArrays[0]
-	n = sArray.find('[')
-	if n == -1:
-		raise ValueError("Unexpected variable expression: %s"%sArray)
-
-	sName = sArray[:n]
-	sIdx  = sArray[n:]
 
 	array = dRawDs['arrays'][sName]
 
@@ -1704,14 +1715,17 @@ def _mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask=False):
 
 	array = dRawDs['arrays'][sName]
 
-	# Find out where our values start
-	nAxis = None
-	if sIdx.startswith('[i]'): nAxis = 0
-	elif sIdx.startswith('[j]'): nAxis = 1
-	elif sIdx.startswith('[k]'): nAxis = 2
-	else: raise ValueError("I can't parse this %s"%sArray)
+	# The dataset index that feeds the array's first index is where this
+	# variable's values start; earlier dataset indices are degenerate.  A
+	# constant maps nothing and starts at zero like anything else.
+	lMap = dRaw['idxmap']
+	nAxis = lMap.index(0) if 0 in lMap else 0
 
-	var = dim.var(sRole, array, sUnits, axis=nAxis, fill=fill)
+	# Array indices past the mapped ones are internal to one value
+	nMapped = sum(1 for i in lMap if i is not None)
+	nSubRank = len(array.shape) - nMapped
+
+	return dim.var(sRole, array, sUnits, axis=nAxis, fill=fill, subrank=nSubRank)
 
 # #########################
 
@@ -1728,12 +1742,17 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 			for sProp in dRawProps:
 				dim.props[sProp] = mk_prop_from_raw(dRawProps[sProp])
 		else:
-			sExp = dRawDim[sVar]['expression']
-			sUnits = dRawDim[sVar]['units']
-			sRole = dRawDim[sVar]['role'].lower()
+			dRaw = dRawDim[sVar]
+			sRole = dRaw['role'].lower()
 
 			# mask fill values in data arrays
-			_mk_var_from_raw(dim, dRawDs, sRole, sExp, sUnits, bMask)
+			var = _mk_var_from_raw(dim, dRawDs, sRole, dRaw, bMask)
+
+			# None when the expression is reference + offset, the dimension
+			# makes that center variable itself and it has no formalism
+			if var is not None:
+				var.ops    = dRaw.get('ops')
+				var.labels = dRaw.get('labels')
 
 # #########################
 

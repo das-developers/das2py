@@ -159,7 +159,7 @@ def label(sStr):
 			return sNew   # incase all that's changed are newlines
 		else:
 			sNew = sNew.replace(' ','\\ ')
-			return '$\mathregular{' + sNew + '}$'
+			return r'$\mathregular{' + sNew + '}$'
 
 
 class TimeTicker(object):

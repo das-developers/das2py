@@ -1,0 +1,68 @@
+|Sx||388|
+<stream version="3.0" type="das-basic-stream">
+  <properties>
+    <p name="instrument">EFI</p>
+    <p name="Discipline">Space Physics>Magnetospheric Science</p>
+    <p name="Generated_by">The University of Iowa</p>
+    <p name="Mission_group">TRACERS</p>
+    <p name="modelId">fm2</p>
+    <p name="modelLabel">FM-2</p>
+    <p name="title">EFI FM2 - Level 1</p>
+  </properties>
+</stream>
+|Hx|80|1750|<dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
+  <properties>
+    <p name="info">Electric Field, 3D-Vectors in spin plane sampled at 128 Hz</p>
+    <p name="label">E-Field, 128 Hz</p>
+  </properties>
+  <coord axis="x" physDim="time" >
+    <properties><p name="label">UTC</p></properties>
+    <!-- calendar datetimes are affine values, stated outright: point formalism -->
+    <scalar semantic="datetime" storage="struct" index="*" units="UTC">
+      <ops kind="point"/>
+      <packet numItems="1" itemBytes="24" encoding="utf8" fill="0001-01-01"/>
+    </scalar>
+  </coord>
+  <data name="EAC" physDim="E" >
+    <properties>
+      <p name="label">EFI SCI @ 128 Hz</p>
+    </properties>
+    <!-- A geometric vector: the <composite> carries structure (intern= components),
+         the skippable <ops> carries the math, and the frame binds there and
+         never on the enclosing dim -->
+    <composite semantic="real" intern="3" index="*" units="">
+      <properties>
+        <p name="label" type="stringArray" term=";">Ex;Ey;Ez</p>
+        <p name="calType">polynomial</p>
+        <p name="calInfo">y = 1.455e+02 + 3.467e-01</p>
+        <p name="frameInfo">Tracers Spacecraft Coordinate Frame</p>
+      </properties>
+      <ops kind="vector" frame="TSCS" body="TS1" system="cartesian" sysorder="0;1;2"/>
+      <packet numItems="3" itemBytes="*" encoding="utf8" fill="-1e31"/>
+    </composite>
+  </data>
+  <data name="gain" physDim="state">
+    <properties>
+      <p name="label">Gain</p>
+      <p name="info">The current gain state of the receiver in dB</p>
+    </properties>
+    <scalar semantic="real" index="*" units="dB">
+      <packet numItems="1" itemBytes="5" encoding="utf8" fill="-1e31" />
+    </scalar>
+  </data>
+</dataset>
+|Pd|80|51|2024-05-23T02:58:59.466 -15.43 -2.776 -0.9903    0
+|Pd|80|51|2024-05-23T02:58:59.474 -15.34 -2.642 -0.9616    0
+|Pd|80|51|2024-05-23T02:58:59.482 -15.27 -2.920 -0.9903    0
+|Pd|80|51|2024-05-23T02:58:59.490 -15.46 -2.817 -0.9712    0
+|Pd|80|50|2024-05-23T02:58:59.498 -15.46 -2.673 -1.124    0
+|Pd|80|51|2024-05-23T02:58:59.505 -15.41 -2.714 -0.9425    0
+|Pd|80|50|2024-05-23T02:58:59.513 -15.44 -2.714 -1.048   20
+|Pd|80|50|2024-05-23T02:58:59.521 -15.32 -2.478 -1.067   20
+|Pd|80|51|2024-05-23T02:58:59.529 -15.44 -2.694 -0.9999   20
+|Pd|80|51|2024-05-23T02:58:59.537 -15.32 -2.560 -0.7894   20
+|Pd|80|50|2024-05-23T02:58:59.544 -15.38 -2.550 -1.057   20
+|Pd|80|50|2024-05-23T02:58:59.552 -15.63 -2.416 -1.134   20
+|Pd|80|51|2024-05-23T02:58:59.560 -15.41 -2.663 -0.9138   20
+|Pd|80|50|2024-05-23T02:58:59.568 -15.48 -2.725 -1.115   20
+|Pd|80|51|2024-05-23T02:58:59.576 -15.31 -2.612 -0.9807   20

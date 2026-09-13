@@ -44,7 +44,7 @@ class HeaderError(Exception):
 	def __init__(self, line, message):
 		self.line = line
 		self.message = message
-		super().__init__(self.message)
+		super(HeaderError, self).__init__(self.message)
 
 class DataError(Exception):
 	def __init__(self, pkt_type, pkt_id, pkt_number, message):
@@ -52,7 +52,7 @@ class DataError(Exception):
 		self.pkt_id = pkt_id
 		self.pkt_num = pkt_number
 		self.message = message
-		super().__init__(self.message)	
+		super(DataError, self).__init__(self.message)
 
 g_lValidTags = (
 	'Sx', # XML stream definition (parse for content)
@@ -207,7 +207,18 @@ def _getDas3PktLen(elDs, nPktId, bThrow=True):
 		if axis.tag in ('extension','properties'): continue
 
 		for array in axis:
-			if array.tag not in ('scalar','vector','object'): continue
+			# v3.0 renamed <vector> to <composite> and split fixed/variable width
+			# strings and blobs out of <scalar> into <bytes>.  <vector> is kept
+			# here so streams written against the pre-release schema still get a
+			# pre-computed length; all of these carry the same <packet> child, so
+			# the numItems * itemBytes rule below is unchanged.
+			#
+			# Sizing convention (see the Packet type in the schema): numItems
+			# counts user facing VALUES and itemBytes is the width of ONE value.
+			# A 3 component composite is numItems="3", NOT a factor of intern=,
+			# so there is nothing extra to multiply in here.
+			if array.tag not in ('scalar','bytes','composite','object','vector'):
+				continue
 
 			for pkt in array:
 				if pkt.tag != 'packet':  continue

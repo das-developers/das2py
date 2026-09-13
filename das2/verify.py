@@ -42,6 +42,87 @@ def namespace(element):
 	return m.group(0) if m else ''
 
 # ########################################################################### #
+# Structural rules the XSD grammar cannot state.  Takes the <dataset>
+# element of a das3 data header and raises das2.HeaderError on the first
+# violation, so the caller's schema error path prints the context.
+
+def _localName(el):
+	# Comments and processing instructions carry a factory function as their
+	# tag, and a header is allowed to hold them anywhere; they match nothing.
+	if not isinstance(el.tag, str):
+		return ''
+	return etree.QName(el).localname
+
+def _intProduct(sIntern):
+	n = 1
+	for sDim in sIntern.split(';'):
+		n *= int(sDim)
+	return n
+
+def checkDatasetRules(elDs):
+	"""Cross-element consistency for one das3 <dataset> header.
+
+	1. Every variable's index= has exactly rank positions, and a position
+	   that varies ('*' or a count) must also vary in the dataset's own
+	   index=.  das2C refuses such a stream at load time, so catching it
+	   here turns a silent authoring error into a verify failure.
+	2. A <composite> that generates its values with <sequence> children has
+	   one per internal cell: the count equals the intern= product.
+	3. A composite states one units= for all components.  A ';' list is not
+	   legal; angular components take their units from the kind's own law.
+	"""
+	sRank = elDs.attrib.get('rank')
+	lDsIdx = elDs.attrib.get('index', '').split(';')
+	nRank = int(sRank) if sRank else len(lDsIdx)
+
+	if len(lDsIdx) != nRank:
+		raise das2.HeaderError(elDs.sourceline,
+			"<dataset rank=\"%s\"> but index=\"%s\" has %d positions"%(
+			sRank, ';'.join(lDsIdx), len(lDsIdx)))
+
+	for elDim in elDs:
+		if _localName(elDim) not in ('coord', 'data'):
+			continue
+		for elVar in elDim:
+			sTag = _localName(elVar)
+			if sTag not in ('scalar', 'bytes', 'composite', 'object'):
+				continue
+			sName = elDim.attrib.get("name", elDim.attrib.get("physDim", "?"))
+			sWho = "<%s name=\"%s\"> %s"%(_localName(elDim), sName, sTag)
+
+			# Rule 1: index positions
+			if 'index' in elVar.attrib:
+				lIdx = elVar.attrib['index'].split(';')
+				if len(lIdx) != nRank:
+					raise das2.HeaderError(elVar.sourceline,
+						"%s index=\"%s\" has %d positions, dataset rank is %d"%(
+						sWho, elVar.attrib['index'], len(lIdx), nRank))
+				for i in range(nRank):
+					if (lIdx[i] != '-') and (lDsIdx[i] == '-'):
+						raise das2.HeaderError(elVar.sourceline,
+							"%s varies in index %d (\"%s\") but the dataset does not (\"%s\")"%(
+							sWho, i, elVar.attrib['index'], ';'.join(lDsIdx)))
+
+			if sTag != 'composite':
+				continue
+
+			# Rule 3: one units value
+			sUnits = elVar.attrib.get('units', '')
+			if ';' in sUnits:
+				raise das2.HeaderError(elVar.sourceline,
+					"%s units=\"%s\" is a list; a composite has one units value"%(
+					sWho, sUnits))
+
+			# Rule 2: sequence count
+			nSeq = sum(1 for el in elVar if _localName(el) == 'sequence')
+			if nSeq > 0:
+				nCells = _intProduct(elVar.attrib.get('intern', '1'))
+				if nSeq != nCells:
+					raise das2.HeaderError(elVar.sourceline,
+						"%s has %d <sequence> children but intern=\"%s\" has %d cells"%(
+						sWho, nSeq, elVar.attrib.get('intern', '1'), nCells))
+
+# ########################################################################### #
 
 def prnErrorContext(curPkt, nLine):
 	sHdr = curPkt.content.decode('utf-8')
@@ -115,6 +196,8 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 			schema.assertValid(docTree)
 		
 			if isinstance(pkt, das2.DataHdrPkt):
+				if sVersion.startswith('3'):
+					checkDatasetRules(elRoot)
 				dDataPktCount[pkt.id] = 0
 				dExpectPktSize[pkt.id] = pkt.dataLen()
 
