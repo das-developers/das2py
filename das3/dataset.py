@@ -45,8 +45,6 @@ __all__ = [
 	'Variable',
 	'Dimension',
 	'Dataset',
-	'mk_prop_from_raw',
-	'ds_from_raw',
 	'ds_strip_empty',
 	'ds_union',
 ]
@@ -377,6 +375,10 @@ class Quantity(namedtuple('Quantity', 'value unit')):
 
 	def to_value(self, unit=None):
 		"""Return the numeric value, possibly in different units.
+
+		Deliberately snake_case, unlike the other methods here: this is the
+		name AstroPy gives the same operation on its Quantity, so code that
+		handles both kinds of quantity can call one method.
 
 		Args:
 			unit (str) : If None this is the same as accessing the .value member
@@ -887,16 +889,14 @@ class Dimension(object):
 		
 		return None
 
-	def propEq(self, sKey, sValue):
-		"""Does this dimension have a given property and is that property
-		equal to the given value"""
+	def hasProp(self, sKey):
+		"""Does this dimension carry the named property"""
+		return sKey in self.props
 
-		#print("%s: %s"%(self.name, self.props.keys()))
-
-		if not (sKey in self.props):
-			return False
-		else:
-			return (self.props[sKey] == sValue)
+	def hasPropVal(self, sKey, sValue):
+		"""Does this dimension carry the named property with the given value.
+		False, not an error, when the property is absent."""
+		return (sKey in self.props) and (self.props[sKey] == sValue)
 
 	def __contains__(self,key):
 		if not isinstance(key, str):
@@ -1558,7 +1558,7 @@ class Dataset(object):
 # ########################################################################### #
 # das2C wrapper to high level interface conversion functions
 
-def mk_prop_from_raw(tProp):
+def _mk_prop_from_raw(tProp):
 	"""Make a property dictionary value given a :mod:_das3 property string
 
 	Low level properties are the tuples:
@@ -1755,7 +1755,7 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 		elif sVar == 'props':
 			dRawProps = dRawDim['props']
 			for sProp in dRawProps:
-				dim.props[sProp] = mk_prop_from_raw(dRawProps[sProp])
+				dim.props[sProp] = _mk_prop_from_raw(dRawProps[sProp])
 		else:
 			dRaw = dRawDim[sVar]
 			sRole = dRaw['role'].lower()
@@ -1771,7 +1771,7 @@ def _init_dim_from_raw(dim, dRawDs, dRawDim, bMask=False):
 
 # #########################
 
-def ds_from_raw(dRawDs):
+def _ds_from_raw(dRawDs):
 	"""Create a Dataset from a set of nested dictionaries.
 
 	The low-level _das3 madule returns datasets created by libdas2 in the form
@@ -1783,7 +1783,7 @@ def ds_from_raw(dRawDs):
 	ds = Dataset(dRawDs['id'], dRawDs['group'])
 
 	for sProp in dRawDs['props']:
-		ds.props[sProp] = mk_prop_from_raw(dRawDs['props'][sProp])
+		ds.props[sProp] = _mk_prop_from_raw(dRawDs['props'][sProp])
 
 	ds.shape = dRawDs['shape']
 

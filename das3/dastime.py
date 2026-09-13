@@ -28,6 +28,7 @@ import numpy
 import datetime
 import sys
 import math as M
+import warnings
 
 
 import _das3
@@ -61,12 +62,23 @@ class DasTime(object):
 	"""
 
 	@classmethod
-	def from_string(cls, sTime):
+	def fromString(cls, sTime):
 		"""Static method to generate a DasTime from a string, uses the
 		   C parsetime to get the work done"""
 		t = _das3.parsetime(sTime)
 		return cls(t[0], t[1], t[2], t[4], t[5], t[6])
 		
+	@classmethod
+	def from_string(cls, sTime):
+		"""Deprecated spelling of fromString(), kept because two missions
+		call it from a dozen places.  Same warning category as 'import das2',
+		so one -W error::PendingDeprecationWarning run finds both."""
+		warnings.warn(
+			"DasTime.from_string() is deprecated, use DasTime.fromString()",
+			PendingDeprecationWarning, stacklevel=2
+		)
+		return cls.fromString(sTime)
+
 	@classmethod
 	def now(cls):
 		"""Static method to generate a DasTime for right now."""
@@ -80,7 +92,7 @@ class DasTime(object):
 		return cls(t[0], t[1], t[2], t[3], t[4], fSec)
 		
 		
-	dDaysInMon = (
+	_dDaysInMon = (
 		(0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31),
 		(0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 	)		
@@ -605,7 +617,7 @@ class DasTime(object):
 	# Rounding with field bump
 	
 	
-	def domLeapIdx(self, nYear):
+	def _domLeapIdx(self, nYear):
 	
 		if (nYear % 4) != 0:
 			return 0
@@ -686,7 +698,7 @@ class DasTime(object):
 		nYear = self.year()
 		nMonth = self.month()
 		
-		nDaysInMonth = DasTime.dDaysInMon[self.domLeapIdx(nYear)][nMonth]
+		nDaysInMonth = DasTime._dDaysInMon[self._domLeapIdx(nYear)][nMonth]
 		
 		if nDom > nDaysInMonth:
 			nDom -= nDaysInMonth
@@ -699,7 +711,7 @@ class DasTime(object):
 		return "%04d-%02d-%02dT%s"%(nYear, nMonth, nDom, sTime)
 	
 	
-	def round_doy(self, nWhich):
+	def roundDoy(self, nWhich):
 		"""Round off times to Seconds, Milliseconds, or Microseconds
 		nWhich - One of the constants: SEC, MILLISEC, MICROSEC
 		returns as string to the desired precision in Year-Day format
@@ -712,7 +724,7 @@ class DasTime(object):
 		nYear = self.year()
 		
 		nDaysInYear = 365
-		if self.domLeapIdx(nYear) == 1:
+		if self._domLeapIdx(nYear) == 1:
 			nDaysInYear = 366
 		
 		if nDoy > nDaysInYear:

@@ -34,8 +34,8 @@ def main(argv):
 	                                   dt.minute(), dt.sec()))
 	print("")
 	
-	print("You can use the round_doy() function to help")
-	print(dt.round_doy(dt.MILLISEC))
+	print("You can use the roundDoy() function to help")
+	print(dt.roundDoy(dt.MILLISEC))
 	print("")
 	
 	print("Or the round() function too")

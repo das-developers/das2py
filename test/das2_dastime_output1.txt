@@ -7,7 +7,7 @@ Adding 364 days, 23 hours, 59 minutes, and 59.999999 seconds
 Blindly printing to millisecond resolution (error)
 1971-365T23:59:60.000
 
-You can use the round_doy() function to help
+You can use the roundDoy() function to help
 1972-001T00:00:00.000
 
 Or the round() function too

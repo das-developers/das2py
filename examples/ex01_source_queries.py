@@ -57,13 +57,13 @@ lDatasets = src.get()  # Gets the first example if no arguments are provide
 #    break.
 
 src = das3.get_source(sId)
-print( src.protoInfo() )
+print( src.infoProto() )
 
 dQuery = {
    'start_time':'2008-223T09:06', 'end_time':'2008-223T09:13',
    'params':'--80khz'
 }
-lDatasets = src.protoGet(dQuery, verbose=True)
+lDatasets = src.getProto(dQuery, verbose=True)
 print(lDatasets[0])
 
 # 2. Public interface query.  This interface exists to make it easier to

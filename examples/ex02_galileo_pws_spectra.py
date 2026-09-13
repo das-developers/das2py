@@ -61,7 +61,7 @@ aX = time['center'].array
 aY = freq['center'].array
 aZ = specDens['center'].array
 
-if specDens.propEq('scaleType','log'):
+if specDens.hasPropVal('scaleType','log'):
    clrscale = colors.LogNorm(vmin=aZ.min(), vmax=aZ.max())
 else:
    clrscale = None
@@ -71,7 +71,7 @@ else:
 im = ax0.pcolormesh(aX, aY, aZ, norm=clrscale, cmap='jet' )
 cbar = fig.colorbar(im, ax=ax0)
 
-if freq.propEq('scaleType','log'):
+if freq.hasPropVal('scaleType','log'):
    ax0.set_yscale('log')
 
 fig.autofmt_xdate()  # Fix date formating

@@ -23,12 +23,21 @@
 
 FILL = -1.0e+31
 
+# Das catalog URIs use the RFC 4151 tag scheme.  Any tag authority works
+# with the catalog system; this is the one the library fills in when a
+# source path is given without one.
+DEF_CATALOG_TAG = 'tag:das2.org,2012:'
+
 __version__ = '3.0-pre5'
 
-import sys
+import sys as _sys
+
+# Only the type comments below name Tuple, and those are read statically,
+# so the name need not stay on the package.
 try:
 	from typing import Tuple
-except:
+	del Tuple
+except ImportError:
 	pass
 	
 import _das3
@@ -74,13 +83,13 @@ def read_cmd(sCmd):
 	try:
 		(dHdr, lDs) = _das3.read_cmd(sCmd)
 	except Exception as e:
-		sys.stderr.write("Error running '%s': %s\n"%(sCmd, str(e)))
+		_sys.stderr.write("Error running '%s': %s\n"%(sCmd, str(e)))
 		return None
 
 	if lDs != None:
 		lOut = []
 		for ds in lDs:
-			lOut.append(ds_from_raw(ds))
+			lOut.append(dataset._ds_from_raw(ds))
 		return (dHdr, lOut)
 
 	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
@@ -103,13 +112,13 @@ def read_file(sFileName):
 	try:
 		(dHdr, lDs) = _das3.read_file(sFileName)
 	except Exception as e:
-		sys.stderr.write("Error reading '%s': %s\n"%(sFileName, str(e)))
+		_sys.stderr.write("Error reading '%s': %s\n"%(sFileName, str(e)))
 		return None
 
 	if lDs != None:
 		lOut = []
 		for ds in lDs:
-			lOut.append(ds_from_raw(ds))
+			lOut.append(dataset._ds_from_raw(ds))
 		return (dHdr, lOut)
 
 	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
@@ -149,18 +158,17 @@ def read_http(sUrl, rTimeOut=3.0, sAgent=None):
 		else:
 			(dHdr, lDs) = _das3.read_server(sUrl, rTimeOut)
 	except Exception as e:
-		sys.stderr.write("Error retrieving '%s': %s\n"%(sUrl, str(e)))
+		_sys.stderr.write("Error retrieving '%s': %s\n"%(sUrl, str(e)))
 		return None
 
 	if lDs != None:
 		lOut = []
 		for ds in lDs:
-			lOut.append(ds_from_raw(ds))
+			lOut.append(dataset._ds_from_raw(ds))
 		return (dHdr, lOut)
 
 	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
 
-g_sDefDas2SrcTag = 'tag:das2.org,2012:'
 
 # ########################################################################### #
 #
@@ -234,7 +242,7 @@ def get_node(sPathId, sUrl=None):
 	"""
 
 	if sPathId and (sPathId.startswith("site:") or sPathId.startswith('test:')):
-		sPathId = g_sDefDas2SrcTag + sPathId
+		sPathId = DEF_CATALOG_TAG + sPathId
 
 	bGlobal = None
 	if sUrl:

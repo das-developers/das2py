@@ -33,6 +33,7 @@ from . dastime import DasTime
 from . node import Node
 from . source import Source
 from . dataset import *
+from . dataset import _ds_from_raw, _mk_prop_from_raw
 from . util import *
 
 # Modules that moved from python2 to python3
@@ -190,7 +191,7 @@ class HttpStreamSrc(Source):
 		dEx = dExamples[sName]
 		dQuery = dEx['http_params']
 		
-		return self.protoGet(dQuery)
+		return self.getProto(dQuery)
 		
 
 	# ####################################################################### #
@@ -205,7 +206,7 @@ class HttpStreamSrc(Source):
 	#                "--Ew=false"         Do not output the Ew Antenna
 	# resolution  F  real          s      Maximum resolution between output time points
 	# start_time  T  isotime       UTC    Minimum time value to stream
-	def protoInfo(self):
+	def infoProto(self):
 		"""Pretty print information on the HTTP GET parameters supported by this
 		HttpStreamSrc object.
 
@@ -335,7 +336,7 @@ class HttpStreamSrc(Source):
 		return sOut
 
 	# ####################################################################### #
-	def protoGet(self, dQuery, verbose=False):
+	def getProto(self, dQuery, verbose=False):
 		"""Query for data using server specific HTTP GET key,value pairs.
 
 		This function is called by query() to communicate with an HTTP server.
@@ -410,13 +411,13 @@ class HttpStreamSrc(Source):
 		if lDs != None:
 			lOut = []
 			for ds in lDs:
-				lOut.append(ds_from_raw(ds))
+				lOut.append(_ds_from_raw(ds))
 
 			# Adapt the header properties 
 			dRawProps = dHdr['props']
 			dDictProps = {}
 			for sProp in dRawProps:
-				dDictProps[sProp] = mk_prop_from_raw(dRawProps[sProp])
+				dDictProps[sProp] = _mk_prop_from_raw(dRawProps[sProp])
 			
 			dHdr['props'] = dDictProps    # Now replace them
 
@@ -1236,4 +1237,4 @@ class HttpStreamSrc(Source):
 		#for sParam in lKeys:
 		#	print(sParam, "=", dProto[sParam])
 		
-		return self.protoGet(dProto, verbose)
+		return self.getProto(dProto, verbose)

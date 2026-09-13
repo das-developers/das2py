@@ -44,7 +44,6 @@ from lxml import etree
 __all__ = [
 	'HeaderError',
 	'DataError',
-	'Das22HdrParser',
 	'Packet',
 	'HdrPkt',
 	'DataHdrPkt',
@@ -304,7 +303,7 @@ def _getPktLen(elDs, sStreamVer, nPktId, bThrow=True):
 
 # ########################################################################### #
 
-class Das22HdrParser:
+class _Das22HdrParser:
 	"""Deal with original das2's bad choices on properties elements.  Convert
 	a single properties element into a container with sub elements so that
 	it can be checked by schema documents.
@@ -454,7 +453,7 @@ class HdrPkt(Packet):
 			fPkt = BytesIO(self.content)
 
 			if self.sver == '2.2':
-				parser = Das22HdrParser()
+				parser = _Das22HdrParser()
 				self.tree = parser.parse(fPkt)
 			else:
 				self.tree = etree.parse(fPkt)
@@ -755,7 +754,7 @@ class PacketReader:
 				# the higher level information just to get the size of a packet.
 				# Every other networking protocol in the world knows to include
 				# either lengths or terminators.  Geeeze.  Well... go parse it.
-				parser = Das22HdrParser()
+				parser = _Das22HdrParser()
 				fPkt = BytesIO(xDoc)
 				docTree = parser.parse(fPkt)
 				elRoot = docTree.getroot()

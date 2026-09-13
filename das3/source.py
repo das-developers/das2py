@@ -81,11 +81,11 @@ class Source(Node):
 		"""
 		raise NotImplementedError("Derived class needs to implement example()")
 
-	def protoGet(self, dConfig, verbose=False):
-		raise NotImplementedError("Derived class needs to implement protoGet()")
+	def getProto(self, dConfig, verbose=False):
+		raise NotImplementedError("Derived class needs to implement getProto()")
 
-	def protoInfo(self):
-		raise NotImplementedError("Derived class needs to implement protoInfo()")
+	def infoProto(self):
+		raise NotImplementedError("Derived class needs to implement infoProto()")
 
 	def get(self, where=None, verbose=False):
 		"""Get data from a Source.

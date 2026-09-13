@@ -95,5 +95,17 @@ class TestDasTime(unittest.TestCase):
 		self.assertEqual(True, das3.convertible('us2000','TT2000'))
 		self.assertEqual(False, das3.convertible('doggy','us2000'))
 
+	def test_from_string_alias(self):
+		# The old spelling still parses, and says so exactly once, in the
+		# same category the das2 import alias uses
+		import warnings
+		with warnings.catch_warnings(record=True) as lWarn:
+			warnings.simplefilter('always')
+			dtOld = das3.DasTime.from_string('2026-09-13T12:34:56')
+		dtNew = das3.DasTime.fromString('2026-09-13T12:34:56')
+		self.assertEqual(dtOld, dtNew)
+		lPend = [w for w in lWarn if issubclass(w.category, PendingDeprecationWarning)]
+		self.assertEqual(1, len(lPend))
+
 if __name__ == '__main__':
 	unittest.main()
