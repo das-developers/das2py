@@ -947,7 +947,7 @@ static PyObject* _intrShape2PyList(const DasVar* pVar)
 static PyObject* _compLabels2PyList(const DasVar* pVar)
 {
 	long nComp = 1;
-	if(strcmp(DasVar_element(pVar), "composite") == 0){
+	if(strcmp(DasVar_serialType(pVar), "composite") == 0){
 		ptrdiff_t aIntr[VARIDX_MAX] = {0};
 		int nIntrRank = DasVar_intrShape(pVar, aIntr);
 		for(int i = 0; i < nIntrRank; ++i) nComp *= aIntr[i];
@@ -967,7 +967,7 @@ static PyObject* _compLabels2PyList(const DasVar* pVar)
 	if(nGot < 0){
 		PyErr_Format(g_pPyD2Error,
 			"das2C error %d labeling the components of variable %s", -nGot,
-			DasVar_element(pVar)
+			DasVar_serialType(pVar)
 		);
 	}
 	else{
