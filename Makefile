@@ -153,6 +153,7 @@ test:dist/$(WHEEL_FILE)
 	./test_$(VDIR)/bin/das_verify test/ex40_rotation.d3t
 	./test_$(VDIR)/bin/das_verify test/ex43_msc_complex_cal.d3b
 	./test_$(VDIR)/bin/das_verify test/ex16_mag_grid_doc.d3x
+	./test_$(VDIR)/bin/das_verify test/ex20_tracers_aci.d3t
 	./test_$(VDIR)/bin/das_cdf_info -h 
 	./test_$(VDIR)/bin/das_cdf_info test/vg1_pws_wf_2023-10-24T03_v1.0.cdf
 	@echo "All tests ran without returning an error code"

@@ -28,7 +28,7 @@
   </properties>
 
 
-  <dataset name="merit_test" id="1" rank="1" index="*;4">
+  <dataset name="merit_test" plot="cartesian3d:movie" id="1" rank="2" index="*;4">
 
     <!-- the stream is asking for time to be on a time axis ('t'), so this
          is a movie.  A plotter could put a time slider below a 3-D cube plot
@@ -45,7 +45,7 @@
 	      show that these aren't intrinsically linked. -->	 
 	 <coord physDim="space" axis="y;x">
 	 	<composite semantic="real" storage="float" units="m" index="-;4" intern="2">
-			<ops kind="vector" frame="LAB601" fixed="true" system="cartesian" sysorder="0;1"/>
+			<ops kind="vector" frame="LAB601" system="cartesian" sysorder="0;1"/>
 			<values valTerm=";">1;1;2;1;1;2;2;2;</values>
 		</composite>
 	 </coord>
@@ -59,7 +59,7 @@
         <properties>
           <p name="label" type="stringArray" term=";">Bx_cal;By_cal;Bz_cal;</p>
         </properties>
-        <ops kind="vector" frame="LAB601" fixed="true" system="cartesian" sysorder="0;1;2"/>
+        <ops kind="vector" frame="LAB601" system="cartesian" sysorder="0;1;2"/>
         <packet numItems="12" valTerm=";"/>
       </composite>
     </data>
@@ -81,7 +81,7 @@
         <properties>
           <p name="label" type="stringArray" term=";">Bx_raw;By_raw;Bz_raw</p>
         </properties>
-        <ops kind="vector" frame="SENSOR" fixed="true" system="cartesian" sysorder="0;1;2"/>
+        <ops kind="vector" frame="SENSOR" system="cartesian" sysorder="0;1;2"/>
         <packet numItems="12" valTerm=";"/>
       </composite>
     </data>

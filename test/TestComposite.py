@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Composite values through both das2py read layers.
 
 Each das3 fixture below was written by das2C for one formalism.  The low
@@ -19,7 +20,7 @@ EXPECT = {
 	'test/ex15_vector_frame.d3t': ((15,), {
 		('time', 'center'): ((15,),   [],  ['UTC'], {'kind':'point'}),
 		('EAC',  'center'): ((15,3),  [3], ['Ex','Ey','Ez'],
-			{'kind':'vector', 'frame':'TSCS', 'body':'TS1', 'fixed':False,
+			{'kind':'vector', 'frame':'TSCS',
 			 'system':'cartesian', 'sysorder':'0;1;2'}),
 		('gain', 'center'): ((15,),   [],  ['Gain'], {'kind':'linear'}),
 	}),
@@ -53,9 +54,23 @@ EXPECT = {
 	'test/ex22_mag_grid_vec.d3t': ((5,2,2), {
 		('time',       'center'): ((5,2,2),   [],  None, {'kind':'point'}),
 		('space',      'center'): ((5,2,2,2), [2], ['space_x','space_y'],
-			{'kind':'vector', 'frame':'LAB601', 'fixed':True}),
+			{'kind':'vector', 'frame':'LAB601'}),
 		('calibrated', 'center'): ((5,2,2,3), [3], ['Bx_cal','By_cal','Bz_cal'],
 			{'kind':'vector', 'frame':'LAB601'}),
+	}),
+	# Since das2C f2d2ec1 only a position carries body= and fixed=, so this is
+	# the one fixture that exercises them.  fixed arrives as a python bool, and
+	# the unstated sysorder comes back as the default.  The anode is a single
+	# component spherical vector holding theta alone (sysorder="1").
+	'test/ex20_tracers_aci.d3t': ((4,47,16), {
+		('energy',   'center'): ((4,47,16),   [],  ['Ion Energy'], {'kind':'linear'}),
+		('anode',    'center'): ((4,47,16,1), [1], ['θ'],
+			{'kind':'vector', 'frame':'TS2_ACI_REDUCED', 'system':'spherical',
+			 'sysorder':'1'}),
+		('location', 'center'): ((4,47,16,3), [3], ['r','θ','φ'],
+			{'kind':'position', 'body':'EARTH', 'frame':'IAU_EARTH', 'fixed':True,
+			 'system':'spherical', 'sysorder':'0;1;2'}),
+		('flux',     'center'): ((4,47,16),   [],  ['Ion Diff En Flux'], {'kind':'linear'}),
 	}),
 }
 
@@ -68,6 +83,13 @@ LOW_LEVEL = {
 	'test/ex22_mag_grid_vec.d3t': {
 		('coords', 'time',  'center'): ('center_time',  [0, None, None]),
 		('coords', 'space', 'center'): ('space.center', [None, 0, 1]),
+	},
+	# The location annotation rides along with the records, unlike the anode
+	# and energy coordinates which are fixed in the header
+	'test/ex20_tracers_aci.d3t': {
+		('coords', 'location', 'center'): ('center_location', [0, None, None]),
+		('coords', 'anode',    'center'): ('center_anode',    [None, None, 0]),
+		('coords', 'time',     'offset'): ('time.offset',     [None, 0, None]),
 	},
 }
 
@@ -107,7 +129,7 @@ def checkHigh(fails, sFile, tDsShape, dVars):
 			fails.check(False, "%s missing"%sWho)
 			continue
 		var = dim.vars[sRole]
-		sKind = 'coord' if sDim in ('time', 'frequency', 'space') else 'data'
+		sKind = 'coord' if sDim in ('time', 'frequency', 'space', 'energy', 'anode', 'location') else 'data'
 		fails.check(dim.kind == sKind, "%s kind %r, expected %r"%(sWho, dim.kind, sKind))
 		fails.check(var.array.shape == tShape,
 			"%s array shape %s, expected %s"%(sWho, var.array.shape, tShape))

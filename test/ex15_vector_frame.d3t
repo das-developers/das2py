@@ -10,7 +10,7 @@
     <p name="title">EFI FM2 - Level 1</p>
   </properties>
 </stream>
-|Hx|80|1750|<dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
+|Hx|80|1739|<dataset name="EAC_ROI" plot="cartesian2d" rank="1" index="*">
   <properties>
     <p name="info">Electric Field, 3D-Vectors in spin plane sampled at 128 Hz</p>
     <p name="label">E-Field, 128 Hz</p>
@@ -37,7 +37,7 @@
         <p name="calInfo">y = 1.455e+02 + 3.467e-01</p>
         <p name="frameInfo">Tracers Spacecraft Coordinate Frame</p>
       </properties>
-      <ops kind="vector" frame="TSCS" body="TS1" system="cartesian" sysorder="0;1;2"/>
+      <ops kind="vector" frame="TSCS" system="cartesian" sysorder="0;1;2"/>
       <packet numItems="3" itemBytes="*" encoding="utf8" fill="-1e31"/>
     </composite>
   </data>

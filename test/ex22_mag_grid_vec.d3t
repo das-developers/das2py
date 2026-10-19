@@ -16,8 +16,8 @@
     <p name="sourceId">das3_text</p>
   </properties>
 </stream>
-|Hx|01|1751|
-<dataset name="merit_test" rank="3" index="*;2;2" >
+|Hx|01|1731|
+<dataset name="merit_test" rank="3" index="*;2;2" plot="cartesian3d" >
   <coord physDim="time" name="time" axis="t">
     <scalar semantic="datetime" storage="struct" index="*;-;-" units="UTC">
       <ops kind="point"/>
@@ -26,7 +26,7 @@
   </coord>
   <coord physDim="space" name="space" axis="y;x">
     <composite semantic="real" intern="2" index="-;2;2" units="m">
-      <ops kind="vector" frame="LAB601" fixed="true"/>
+      <ops kind="vector" frame="LAB601"/>
       <sequence minval="1" interval="-;1;0" />
       <sequence minval="1" interval="-;0;1" />
     </composite>
@@ -39,7 +39,7 @@
       <properties>
         <p type="stringArray" name="label" term=";">Bx_cal;By_cal;Bz_cal;</p>
       </properties>
-      <ops kind="vector" frame="LAB601" fixed="true"/>
+      <ops kind="vector" frame="LAB601"/>
       <packet numItems="12" itemBytes="11" encoding="utf8" fill="-1.000000e+31" />
     </composite>
   </data>
@@ -52,7 +52,7 @@
       <properties>
         <p type="stringArray" name="label" term=";">Bx_raw;By_raw;Bz_raw</p>
       </properties>
-      <ops kind="vector" frame="SENSOR" fixed="true"/>
+      <ops kind="vector" frame="SENSOR"/>
       <packet numItems="12" itemBytes="11" encoding="utf8" fill="-1.000000e+31" />
     </composite>
   </data>
