@@ -17,6 +17,7 @@ from das3.reader import streamType, loadSchema   # verify-only helpers
 # globals stay out of 'from das3.verify import *'.
 __all__ = [
 	'pout',
+	'pout_raw',
 	'errorExit',
 	'namespace',
 	'checkDatasetRules',
@@ -29,20 +30,28 @@ __all__ = [
 
 # ########################################################################## #
 
-def pout(item):
-	"""Encode strings if needed, send binary stuff out the door as is"""
+# Text and raw output are separate calls because the type cannot tell them
+# apart on python 2: a plain literal there is a byte string, so a message
+# looked like raw bytes and lost its newline.
+
+def pout(sText):
+	"""Write one line of text to stdout as utf-8, newline added"""
 	if sys.version_info[0] == 2:
-		if isinstance(item, unicode):
-			sys.stdout.write(item.encode('utf-8'))
-			sys.stdout.write(b'\n')
-		else:
-			sys.stdout.write(item)
+		if isinstance(sText, unicode):
+			sText = sText.encode('utf-8')
+		sys.stdout.write(sText)
+		sys.stdout.write(b'\n')
 	else:
-		if isinstance(item, str):
-			sys.stdout.buffer.write(item.encode('utf-8'))
-			sys.stdout.buffer.write(b'\n')
-		else:
-			sys.stdout.buffer.write(item)
+		sys.stdout.buffer.write(sText.encode('utf-8'))
+		sys.stdout.buffer.write(b'\n')
+
+
+def pout_raw(bData):
+	"""Write bytes to stdout as is, no newline"""
+	if sys.version_info[0] == 2:
+		sys.stdout.write(bData)
+	else:
+		sys.stdout.buffer.write(bData)
 
 
 def errorExit(sOut):
@@ -202,7 +211,7 @@ def checkStream(fIn, schema, sContent, sVersion, bUsingNs, bPrnHdr):
 			if (not isinstance(pkt, das3.HdrPkt) ):
 				raise ValueError("Unknown packet type '%s' encountered"%pkt.tag)
 			if bPrnHdr:
-				pout(pkt.content)
+				pout_raw(pkt.content)
 							
 			docTree = pkt.docTree()
 			elRoot = docTree.getroot()

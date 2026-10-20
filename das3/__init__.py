@@ -30,8 +30,6 @@ DEF_CATALOG_TAG = 'tag:das2.org,2012:'
 
 __version__ = '3.0-pre7'
 
-import sys as _sys
-
 # Only the type comments below name Tuple, and those are read statically,
 # so the name need not stay on the package.
 try:
@@ -77,23 +75,15 @@ def read_cmd(sCmd):
 
 	Returns: (dict, list)
 		A stream header followed by a list of dataset objects created from the
-		message body, or None if an error occured.  The return datasets may or
-		may not have data depending on if data packetes were part of the response.
+		message body.  The return datasets may or may not have data depending
+		on if data packetes were part of the response.
+
+	Raises:
+		_das3.Error : If the command cannot be run, or the stream does not parse.
 	"""
 
-	try:
-		(dHdr, lDs) = _das3.read_cmd(sCmd)
-	except Exception as e:
-		_sys.stderr.write("Error running '%s': %s\n"%(sCmd, str(e)))
-		return None
-
-	if lDs != None:
-		lOut = []
-		for ds in lDs:
-			lOut.append(dataset._ds_from_raw(ds))
-		return (dHdr, lOut)
-
-	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
+	(dHdr, lDs) = _das3.read_cmd(sCmd)
+	return (dHdr, [dataset._ds_from_raw(ds) for ds in lDs])
 
 
 
@@ -106,23 +96,15 @@ def read_file(sFileName):
 
 	Returns: (dict, list)
 		A stream header followed by a list of dataset objects created from the
-		message body, or None if an error occured.  The return datasets may or
-		may not have data depending on if data packetes were part of the response.
+		message body.  The return datasets may or may not have data depending
+		on if data packetes were part of the response.
+
+	Raises:
+		_das3.Error : If the file cannot be read, or the stream does not parse.
 	"""
 
-	try:
-		(dHdr, lDs) = _das3.read_file(sFileName)
-	except Exception as e:
-		_sys.stderr.write("Error reading '%s': %s\n"%(sFileName, str(e)))
-		return None
-
-	if lDs != None:
-		lOut = []
-		for ds in lDs:
-			lOut.append(dataset._ds_from_raw(ds))
-		return (dHdr, lOut)
-
-	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
+	(dHdr, lDs) = _das3.read_file(sFileName)
+	return (dHdr, [dataset._ds_from_raw(ds) for ds in lDs])
 
 
 def read_http(sUrl, rTimeOut=3.0, sAgent=None):
@@ -149,26 +131,20 @@ def read_http(sUrl, rTimeOut=3.0, sAgent=None):
 
 	Returns: (dict, list)
 		A stream header followed by a list of dataset objects created from the
-		message body, or None if an error occured.  The return datasets may or
-		may not have data depending on if data packetes were part of the response.
+		message body.  The return datasets may or may not have data depending
+		on if data packetes were part of the response.
+
+	Raises:
+		_das3.Error : If the server cannot be reached or returns an error, or
+			the stream does not parse.
 	"""
 
-	try:
-		if sAgent:
-			(dHdr, lDs) = _das3.read_server(sUrl, rTimeOut, sAgent)
-		else:
-			(dHdr, lDs) = _das3.read_server(sUrl, rTimeOut)
-	except Exception as e:
-		_sys.stderr.write("Error retrieving '%s': %s\n"%(sUrl, str(e)))
-		return None
+	if sAgent:
+		(dHdr, lDs) = _das3.read_server(sUrl, rTimeOut, sAgent)
+	else:
+		(dHdr, lDs) = _das3.read_server(sUrl, rTimeOut)
 
-	if lDs != None:
-		lOut = []
-		for ds in lDs:
-			lOut.append(dataset._ds_from_raw(ds))
-		return (dHdr, lOut)
-
-	raise _das3.Error("Unable to retrieve data using %s"%sUrl)
+	return (dHdr, [dataset._ds_from_raw(ds) for ds in lDs])
 
 
 # ########################################################################### #

@@ -22,6 +22,17 @@ def main(argv):
 
 	# High level
 	(dStream, lDs) = das3.read_file(sFile)
+
+	# A bad read must raise.  These readers once printed the error and
+	# returned None, which surfaced later as an unrelated TypeError.
+	for sBad in ('test/no_such_file.d3t', __file__):
+		try:
+			das3.read_file(sBad)
+		except das3._das3.Error:
+			continue
+		perr("ERROR: das3.read_file('%s') did not raise\n"%sBad)
+		return 13
+
 	return 0
 
 	for ds in lDs:
