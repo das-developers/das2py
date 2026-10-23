@@ -1187,7 +1187,7 @@ static PyObject* _Stream2Tuple(DasStream* pStream)
 	DasDs* pDs = NULL;
 	DasDim* pDim = NULL;
 
-	PyObject* pDsList = PyList_New( DasStream_getNPktDesc(pStream) );
+	PyObject* pDsList = PyList_New( DasStream_numDesc(pStream) );
 	PyObject* pHdrDict = PyDict_New();
 
 	/* Iteration variables used here */

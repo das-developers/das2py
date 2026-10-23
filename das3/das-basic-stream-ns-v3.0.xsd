@@ -12,7 +12,7 @@
   See the file das2-basic-doc-v3.0.xsd for a single-root schema definition
   suitable for validating standard (i.e. non-packitized) documents.
 
-  version 3.0, 2026-09-12
+  version 3.0, 2026-10-20
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
   version="3.0"
@@ -443,18 +443,18 @@
 </xs:complexType>
 
 <xs:complexType name="Packet">
-  <!-- numItems: the count of items ON THE WIRE to extract from this packet.  For a
+  <!-- numItems: the count of items IN THE PACKET to extract for this field.  For a
        block encoding that decodes to a larger structure (an embedded format, e.g.
        embedded="image/png"), this need NOT equal the product of the parent index=
        shape - the item expands to fill it only after decoding. -->
   <xs:attribute name="numItems"  type="NonZeroStar" use="required" />
-  <!-- itemBytes: the width of ONE wire value, never a count.  T
-       The rule to keep straight, and it's true regardless of any composite types: 
+  <!-- itemBytes: the width of ONE item, never a count.
+       The rule to keep straight, and it's true regardless of any composite types:
 
-       * numItems counts user facing VALUES (the lines a client would plot); 
-       * itemBytes counts BYTES inside one value.  
+       * numItems counts ITEMS (one number, or one whole string);
+       * itemBytes counts BYTES inside one item.
 
-       So an 11 byte fixed string is numItems="1" itemBytes="11" (one value, 11 wide), 
+       So an 11 byte fixed string is numItems="1" itemBytes="11" (one item, 11 wide),
   -->
   <xs:attribute name="itemBytes" type="NonZeroStar" use="required" />
   <xs:attribute name="encoding"  type="EncodingType" use="required" />
@@ -625,7 +625,7 @@
 
   <!-- axis= letters map dataset indices to the canonical component DIRECTIONS of a
        frame (e.g. axis="y;x;-").  Those letters are interpreted in the frame named
-       by each composite's vector or geoloc ops; component representation
+       by each composite's vector or position ops; component representation
        follows that ops' system=. -->
 
   <!-- The use of annotation is recommened for secondard coordinates -->
@@ -745,11 +745,20 @@
 
   <xs:attribute name="rank"  type="DatasetRank" use="required" />
   <xs:attribute name="name"  type="DatasetName" use="required"/>
-  <!-- group: display-join intent.  Datasets sharing a group token belong on one
-       plot even when their shapes differ (the das2 survey-band join).  Absent,
-       a dataset self-groups (group defaults to name).  Group members' coord
-       physDims should agree and their units be interconvertible (km joins m;
-       km never joins nT). -->
+  <!-- name: identifies the dataset within its group.  No two datasets in a
+       stream share both group and name, over the life of the stream, even
+       across packet ID redefinitions.
+
+       group: display-join intent.  Datasets sharing a group token belong on
+       one plot even when their shapes differ (the das2 survey-band join).
+       Absent, the dataset is in the null group, which joins nothing.
+
+       One member of a group must have every physDim (coordinate or data)
+       found anywhere in the group; the others may have fewer.  So a
+       (time, frequency) line may join a (time, frequency, E) spectrogram,
+       but a (time, frequency, B) dataset may not join with at E dataset.  
+       Units of a shared physDim must be interconvertible (km joins m; 
+       m never joins nT). -->
   <xs:attribute name="group" type="DatasetName" />
   <xs:attribute name="index" type="DsIndexShape" use="required" />
   <xs:attribute name="plot"  type="PlotType" />
